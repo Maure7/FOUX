@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Search,
   Settings,
@@ -6,67 +6,12 @@ import {
   HelpCircle,
   Plus,
   User,
-  ClipboardList,
   Inbox,
-  Clock,
-  Info,
+  FileCode,
 } from 'lucide-react';
+import ModalNovoProjeto from '../components/ModalNovoProjeto';
+import AtividadeRecente from '../components/AtividadeRecente';
 import '../styles/Dashboard.css';
-
-/* ===== TOAST SYSTEM ===== */
-let toastIdCounter = 0;
-
-function useToast() {
-  const [toasts, setToasts] = useState([]);
-  const timersRef = useRef({});
-
-  const showToast = useCallback((message) => {
-    const id = ++toastIdCounter;
-
-    setToasts((prev) => [...prev, { id, message, exiting: false }]);
-
-    // Start exit animation after 2.5s, remove after 2.75s
-    timersRef.current[id] = setTimeout(() => {
-      setToasts((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, exiting: true } : t))
-      );
-      setTimeout(() => {
-        setToasts((prev) => prev.filter((t) => t.id !== id));
-        delete timersRef.current[id];
-      }, 250);
-    }, 2500);
-
-    return id;
-  }, []);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    const timers = timersRef.current;
-    return () => {
-      Object.values(timers).forEach(clearTimeout);
-    };
-  }, []);
-
-  return { toasts, showToast };
-}
-
-function ToastContainer({ toasts }) {
-  if (toasts.length === 0) return null;
-
-  return (
-    <div className="toast-container" aria-live="polite">
-      {toasts.map((t) => (
-        <div
-          key={t.id}
-          className={`toast ${t.exiting ? 'toast--exiting' : ''}`}
-        >
-          <Info className="toast__icon" />
-          <span className="toast__message">{t.message}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 /* ===== HEADER ===== */
 function Header({ searchQuery, onSearchChange, onNotImplemented }) {
@@ -75,7 +20,7 @@ function Header({ searchQuery, onSearchChange, onNotImplemented }) {
       <span className="header__logo">FOUX</span>
 
       <div className="header__controls">
-        {/* Search — controlled input */}
+        {/* Search */}
         <div className="header__search">
           <Search className="header__search-icon" />
           <input
@@ -157,6 +102,38 @@ function NewProjectCard({ onClick }) {
   );
 }
 
+/* ===== PROJECT CARD (existing project) ===== */
+function ProjectCard({ project, onClick }) {
+  const dateLabel = new Date(project.updatedAt).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+  });
+
+  return (
+    <div
+      className="project-card project-card--saved"
+      onClick={() => onClick(project.id)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') onClick(project.id);
+      }}
+    >
+      <div className="project-card__preview">
+        {project.htmlContent ? (
+          <FileCode size={24} className="project-card__preview-icon project-card__preview-icon--active" />
+        ) : (
+          <FileCode size={24} className="project-card__preview-icon" />
+        )}
+      </div>
+      <div className="project-card__info">
+        <span className="project-card__name">{project.name}</span>
+        <span className="project-card__date">Editado {dateLabel}</span>
+      </div>
+    </div>
+  );
+}
+
 /* ===== EMPTY STATE (projects) ===== */
 function ProjectsEmptyState() {
   return (
@@ -172,26 +149,16 @@ function ProjectsEmptyState() {
   );
 }
 
-/* ===== ACTIVITY EMPTY STATE ===== */
-function ActivityEmptyState() {
-  return (
-    <div className="activity-empty">
-      <div className="activity-empty__icon-wrapper">
-        <Clock className="activity-empty__icon" />
-      </div>
-      <span className="activity-empty__text">
-        Nenhuma atividade recente registrada.
-      </span>
-    </div>
-  );
-}
-
 /* ===== MAIN DASHBOARD ===== */
-export default function Dashboard({ onNavigate }) {
-  const [projects] = useState([]);
-  const [activities] = useState([]);
+export default function Dashboard({
+  projects,
+  onCreateProject,
+  onOpenProject,
+  activities,
+  showToast,
+}) {
   const [searchQuery, setSearchQuery] = useState('');
-  const { toasts, showToast } = useToast();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleNotImplemented = useCallback(
     (featureName) => {
@@ -199,6 +166,32 @@ export default function Dashboard({ onNavigate }) {
     },
     [showToast]
   );
+
+  /* Modal handlers */
+  const handleOpenModal = useCallback(() => {
+    setIsModalOpen(true);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setIsModalOpen(false);
+  }, []);
+
+  const handleImportHTML = useCallback((projectName) => {
+    setIsModalOpen(false);
+    onCreateProject(projectName);
+  }, [onCreateProject]);
+
+  const handleOpenTutorial = useCallback(() => {
+    // Tutorial not available — show toast, do NOT navigate or create project
+    showToast('Esta funcionalidade ainda não foi implementada.');
+  }, [showToast]);
+
+  /* Filter projects by search */
+  const filteredProjects = searchQuery.trim()
+    ? projects.filter((p) =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : projects;
 
   return (
     <div className="app-shell">
@@ -231,13 +224,15 @@ export default function Dashboard({ onNavigate }) {
         {/* Projects area */}
         <div className="projects-area">
           <div className="projects-grid" id="projects-grid">
-            <NewProjectCard onClick={() => onNavigate('editor')} />
+            <NewProjectCard onClick={handleOpenModal} />
 
-            {projects.length > 0 ? (
-              projects.map((p) => (
-                <div className="project-card" key={p.id}>
-                  <span>{p.title}</span>
-                </div>
+            {filteredProjects.length > 0 ? (
+              filteredProjects.map((p) => (
+                <ProjectCard
+                  key={p.id}
+                  project={p}
+                  onClick={onOpenProject}
+                />
               ))
             ) : (
               <ProjectsEmptyState />
@@ -246,34 +241,10 @@ export default function Dashboard({ onNavigate }) {
         </div>
 
         {/* Recent Activity */}
-        <section className="activity-section" id="activity-section">
-          <div className="activity-header">
-            <div className="activity-header__left">
-              <ClipboardList className="activity-header__icon" />
-              <h2 className="activity-header__title">Atividade Recente</h2>
-            </div>
-            <a
-              className="activity-header__link"
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                handleNotImplemented('Histórico completo');
-              }}
-            >
-              Ver histórico completo
-            </a>
-          </div>
-
-          {activities.length > 0 ? (
-            activities.map((item) => (
-              <div className="activity-item" key={item.id}>
-                <span>{item.text}</span>
-              </div>
-            ))
-          ) : (
-            <ActivityEmptyState />
-          )}
-        </section>
+        <AtividadeRecente
+          activities={activities}
+          onNotImplemented={handleNotImplemented}
+        />
       </main>
 
       {/* Footer */}
@@ -294,8 +265,13 @@ export default function Dashboard({ onNavigate }) {
         </nav>
       </footer>
 
-      {/* Toast notifications */}
-      <ToastContainer toasts={toasts} />
+      {/* Modal Novo Projeto */}
+      <ModalNovoProjeto
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onImportHTML={handleImportHTML}
+        onOpenTutorial={handleOpenTutorial}
+      />
     </div>
   );
 }
