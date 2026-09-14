@@ -454,7 +454,7 @@ function StylesSidebar({ isLocked, onInteract }) {
 }
 
 /* ===== MAIN EDITOR ===== */
-export default function Editor({ project, onUpdateProject, onNavigate, showToast }) {
+export default function Editor({ project, onUpdateProject, onRenameProject, onNavigate, showToast, addActivity }) {
   const newFileInputRef = useRef(null);
 
   const handleToolbarAction = useCallback(
@@ -493,10 +493,14 @@ export default function Editor({ project, onUpdateProject, onNavigate, showToast
     e.target.value = '';
   };
 
-  /* Rename project (auto-saved via onUpdateProject) */
+  /* Rename project — uses dedicated rename callback with activity logging */
   const handleRename = useCallback((newName) => {
-    onUpdateProject({ name: newName });
-  }, [onUpdateProject]);
+    if (onRenameProject) {
+      onRenameProject(newName);
+    } else {
+      onUpdateProject({ name: newName });
+    }
+  }, [onRenameProject, onUpdateProject]);
 
   return (
     <div className="editor-shell">

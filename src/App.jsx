@@ -6,18 +6,20 @@ import { useToast, ToastContainer } from './components/ToastNotification';
 /* ===== LocalStorage helpers ===== */
 const STORAGE_KEY = 'foux_projects';
 const ACTIVE_KEY = 'foux_active_project';
+const FOLDERS_KEY = 'foux_folders';
+const ACTIVITIES_KEY = 'foux_activities';
 
-function loadProjects() {
+function loadFromStorage(key, fallback = []) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
   } catch {
-    return [];
+    return fallback;
   }
 }
 
-function saveProjects(projects) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+function saveToStorage(key, value) {
+  localStorage.setItem(key, JSON.stringify(value));
 }
 
 function loadActiveProjectId() {
@@ -32,51 +34,60 @@ function saveActiveProjectId(id) {
   }
 }
 
-/* ===== Activity ID counter ===== */
-let activityIdCounter = 0;
-
-/* ===== Unique project ID ===== */
-let projectIdCounter = Date.now();
-function nextProjectId() {
-  return `proj_${++projectIdCounter}`;
+/* ===== Unique ID generators ===== */
+let idCounter = Date.now();
+function nextId(prefix = 'id') {
+  return `${prefix}_${++idCounter}_${Math.random().toString(36).slice(2, 7)}`;
 }
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('dashboard');
-  const [projects, setProjects] = useState(() => loadProjects());
+  const [projects, setProjects] = useState(() => loadFromStorage(STORAGE_KEY));
+  const [folders, setFolders] = useState(() => loadFromStorage(FOLDERS_KEY));
+  const [activities, setActivities] = useState(() => loadFromStorage(ACTIVITIES_KEY));
   const [activeProjectId, setActiveProjectId] = useState(() => loadActiveProjectId());
-  const [activities, setActivities] = useState([]);
   const { toasts, showToast } = useToast();
 
-  /* Persist projects to localStorage whenever they change */
-  useEffect(() => {
-    saveProjects(projects);
-  }, [projects]);
-
-  /* Persist active project ID */
-  useEffect(() => {
-    saveActiveProjectId(activeProjectId);
-  }, [activeProjectId]);
+  /* Persist to localStorage whenever state changes */
+  useEffect(() => { saveToStorage(STORAGE_KEY, projects); }, [projects]);
+  useEffect(() => { saveToStorage(FOLDERS_KEY, folders); }, [folders]);
+  useEffect(() => { saveToStorage(ACTIVITIES_KEY, activities); }, [activities]);
+  useEffect(() => { saveActiveProjectId(activeProjectId); }, [activeProjectId]);
 
   /* Get the active project object */
   const activeProject = projects.find((p) => p.id === activeProjectId) || null;
 
-  /* Register a new activity entry */
+  /* ===== Activity ===== */
   const addActivity = useCallback((text) => {
     const newActivity = {
-      id: ++activityIdCounter,
+      id: nextId('act'),
       text,
       timestamp: new Date().toISOString(),
     };
     setActivities((prev) => [newActivity, ...prev]);
   }, []);
 
-  /* Create a new project and navigate to editor */
-  const createProject = useCallback((name) => {
-    const id = nextProjectId();
+  /* ===== Folders ===== */
+  const createFolder = useCallback((name, borderColor) => {
+    const id = nextId('folder');
+    const newFolder = {
+      id,
+      name,
+      borderColor: borderColor || '#e59843',
+      createdAt: new Date().toISOString(),
+    };
+    setFolders((prev) => [newFolder, ...prev]);
+    addActivity(`Criou a pasta '${name}'`);
+    return id;
+  }, [addActivity]);
+
+  /* ===== Projects ===== */
+  const createProject = useCallback((name, folderId = null) => {
+    const id = nextId('proj');
     const newProject = {
       id,
       name: name || 'Projeto sem título',
+      folderId,
       htmlFileName: null,
       htmlContent: null,
       createdAt: new Date().toISOString(),
@@ -88,7 +99,6 @@ export default function App() {
     addActivity(`Abriu '${newProject.name}'`);
   }, [addActivity]);
 
-  /* Open an existing project */
   const openProject = useCallback((projectId) => {
     setActiveProjectId(projectId);
     setCurrentScreen('editor');
@@ -98,7 +108,6 @@ export default function App() {
     }
   }, [projects, addActivity]);
 
-  /* Update an existing project (auto-save) */
   const updateProject = useCallback((projectId, updates) => {
     setProjects((prev) =>
       prev.map((p) =>
@@ -108,6 +117,79 @@ export default function App() {
       )
     );
   }, []);
+
+  const renameProject = useCallback((projectId, newName) => {
+    setProjects((prev) => {
+      const old = prev.find((p) => p.id === projectId);
+      if (!old) return prev;
+      const oldName = old.name;
+      const updated = prev.map((p) =>
+        p.id === projectId
+          ? { ...p, name: newName, updatedAt: new Date().toISOString() }
+          : p
+      );
+      // activity is added outside to avoid stale closure
+      setTimeout(() => {
+        addActivity(`Mudou o nome de '${oldName}' para '${newName}'`);
+      }, 0);
+      return updated;
+    });
+  }, [addActivity]);
+
+  const deleteProject = useCallback((projectId) => {
+    setProjects((prev) => {
+      const proj = prev.find((p) => p.id === projectId);
+      if (proj) {
+        setTimeout(() => addActivity(`Excluiu '${proj.name}'`), 0);
+      }
+      return prev.filter((p) => p.id !== projectId);
+    });
+    if (activeProjectId === projectId) {
+      setActiveProjectId(null);
+    }
+  }, [activeProjectId, addActivity]);
+
+  const duplicateProject = useCallback((projectId) => {
+    setProjects((prev) => {
+      const original = prev.find((p) => p.id === projectId);
+      if (!original) return prev;
+      const clone = {
+        ...original,
+        id: nextId('proj'),
+        name: `${original.name} (Cópia)`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setTimeout(() => addActivity(`Duplicou '${original.name}'`), 0);
+      return [clone, ...prev];
+    });
+  }, [addActivity]);
+
+  const moveProject = useCallback((projectId, targetFolderId) => {
+    setProjects((prev) =>
+      prev.map((p) =>
+        p.id === projectId
+          ? { ...p, folderId: targetFolderId, updatedAt: new Date().toISOString() }
+          : p
+      )
+    );
+  }, []);
+
+  const deleteFolder = useCallback((folderId) => {
+    // Move all projects inside to root first
+    setProjects((prev) =>
+      prev.map((p) =>
+        p.folderId === folderId ? { ...p, folderId: null } : p
+      )
+    );
+    setFolders((prev) => {
+      const folder = prev.find((f) => f.id === folderId);
+      if (folder) {
+        setTimeout(() => addActivity(`Excluiu a pasta '${folder.name}'`), 0);
+      }
+      return prev.filter((f) => f.id !== folderId);
+    });
+  }, [addActivity]);
 
   /* Navigate back to dashboard */
   const goToDashboard = useCallback(() => {
@@ -120,16 +202,26 @@ export default function App() {
         <Editor
           project={activeProject}
           onUpdateProject={(updates) => updateProject(activeProject.id, updates)}
+          onRenameProject={(newName) => renameProject(activeProject.id, newName)}
           onNavigate={goToDashboard}
           showToast={showToast}
+          addActivity={addActivity}
         />
       ) : (
         <Dashboard
           projects={projects}
+          folders={folders}
+          activities={activities}
           onCreateProject={createProject}
           onOpenProject={openProject}
+          onUpdateProject={updateProject}
+          onRenameProject={renameProject}
+          onDeleteProject={deleteProject}
+          onDuplicateProject={duplicateProject}
+          onMoveProject={moveProject}
+          onCreateFolder={createFolder}
+          onDeleteFolder={deleteFolder}
           onNavigate={setCurrentScreen}
-          activities={activities}
           addActivity={addActivity}
           showToast={showToast}
         />

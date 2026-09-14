@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { ClipboardList, Clock, FileCode } from 'lucide-react';
 
+const MAX_COLLAPSED = 6;
+
 /* ===== TIME AGO HELPER ===== */
 function timeAgo(date) {
   const now = Date.now();
@@ -61,7 +63,12 @@ function ActivityItem({ activity }) {
 }
 
 /* ===== MAIN COMPONENT ===== */
-export default function AtividadeRecente({ activities, onNotImplemented }) {
+export default function AtividadeRecente({ activities }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const hasMore = activities.length > MAX_COLLAPSED;
+  const visibleActivities = expanded ? activities : activities.slice(0, MAX_COLLAPSED);
+
   return (
     <section className="activity-section" id="activity-section">
       <div className="activity-header">
@@ -69,21 +76,23 @@ export default function AtividadeRecente({ activities, onNotImplemented }) {
           <ClipboardList className="activity-header__icon" />
           <h2 className="activity-header__title">Atividade Recente</h2>
         </div>
-        <a
-          className="activity-header__link"
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            onNotImplemented('Histórico completo');
-          }}
-        >
-          Ver histórico completo
-        </a>
+        {hasMore && (
+          <a
+            className="activity-header__link"
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              setExpanded((prev) => !prev);
+            }}
+          >
+            {expanded ? 'Ver resumo' : 'Ver histórico completo'}
+          </a>
+        )}
       </div>
 
       {activities.length > 0 ? (
-        <div className="activity-list">
-          {activities.map((item) => (
+        <div className={`activity-list ${expanded ? 'activity-list--expanded' : ''}`}>
+          {visibleActivities.map((item) => (
             <ActivityItem key={item.id} activity={item} />
           ))}
         </div>
