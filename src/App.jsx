@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import Dashboard from './pages/Dashboard';
 import Editor from './pages/Editor';
+import Settings from './pages/Settings';
 import { useToast, ToastContainer } from './components/ToastNotification';
 
 /* ===== LocalStorage helpers ===== */
@@ -8,6 +9,7 @@ const STORAGE_KEY = 'foux_projects';
 const ACTIVE_KEY = 'foux_active_project';
 const FOLDERS_KEY = 'foux_folders';
 const ACTIVITIES_KEY = 'foux_activities';
+const THEME_KEY = 'foux_theme';
 
 function loadFromStorage(key, fallback = []) {
   try {
@@ -34,6 +36,14 @@ function saveActiveProjectId(id) {
   }
 }
 
+function loadTheme() {
+  return localStorage.getItem(THEME_KEY) || 'dark';
+}
+
+function saveTheme(theme) {
+  localStorage.setItem(THEME_KEY, theme);
+}
+
 /* ===== Unique ID generators ===== */
 let idCounter = Date.now();
 function nextId(prefix = 'id') {
@@ -46,6 +56,7 @@ export default function App() {
   const [folders, setFolders] = useState(() => loadFromStorage(FOLDERS_KEY));
   const [activities, setActivities] = useState(() => loadFromStorage(ACTIVITIES_KEY));
   const [activeProjectId, setActiveProjectId] = useState(() => loadActiveProjectId());
+  const [theme, setTheme] = useState(() => loadTheme());
   const { toasts, showToast } = useToast();
 
   /* Persist to localStorage whenever state changes */
@@ -53,6 +64,12 @@ export default function App() {
   useEffect(() => { saveToStorage(FOLDERS_KEY, folders); }, [folders]);
   useEffect(() => { saveToStorage(ACTIVITIES_KEY, activities); }, [activities]);
   useEffect(() => { saveActiveProjectId(activeProjectId); }, [activeProjectId]);
+
+  /* Apply theme to DOM root */
+  useEffect(() => {
+    saveTheme(theme);
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   /* Get the active project object */
   const activeProject = projects.find((p) => p.id === activeProjectId) || null;
@@ -67,6 +84,11 @@ export default function App() {
     setActivities((prev) => [newActivity, ...prev]);
   }, []);
 
+  /* ===== Theme ===== */
+  const handleThemeChange = useCallback((newTheme) => {
+    setTheme(newTheme);
+  }, []);
+
   /* ===== Folders ===== */
   const createFolder = useCallback((name, borderColor) => {
     const id = nextId('folder');
@@ -74,11 +96,57 @@ export default function App() {
       id,
       name,
       borderColor: borderColor || '#e59843',
+      favorite: false,
       createdAt: new Date().toISOString(),
     };
     setFolders((prev) => [newFolder, ...prev]);
     addActivity(`Criou a pasta '${name}'`);
     return id;
+  }, [addActivity]);
+
+  const toggleFolderFavorite = useCallback((folderId) => {
+    setFolders((prev) => {
+      const folder = prev.find((f) => f.id === folderId);
+      if (!folder) return prev;
+      const newFav = !folder.favorite;
+      setTimeout(() => {
+        addActivity(
+          newFav
+            ? `Marcou pasta '${folder.name}' como favorita`
+            : `Removeu pasta '${folder.name}' dos favoritos`
+        );
+      }, 0);
+      return prev.map((f) =>
+        f.id === folderId ? { ...f, favorite: newFav } : f
+      );
+    });
+  }, [addActivity]);
+
+  const renameFolder = useCallback((folderId, newName) => {
+    setFolders((prev) => {
+      const folder = prev.find((f) => f.id === folderId);
+      if (!folder) return prev;
+      const oldName = folder.name;
+      setTimeout(() => {
+        addActivity(`Renomeou a pasta de '${oldName}' para '${newName}'`);
+      }, 0);
+      return prev.map((f) =>
+        f.id === folderId ? { ...f, name: newName } : f
+      );
+    });
+  }, [addActivity]);
+
+  const changeFolderColor = useCallback((folderId, newColor) => {
+    setFolders((prev) => {
+      const folder = prev.find((f) => f.id === folderId);
+      if (!folder) return prev;
+      setTimeout(() => {
+        addActivity(`Alterou a cor da pasta '${folder.name}'`);
+      }, 0);
+      return prev.map((f) =>
+        f.id === folderId ? { ...f, borderColor: newColor } : f
+      );
+    });
   }, [addActivity]);
 
   /* ===== Projects ===== */
@@ -88,6 +156,7 @@ export default function App() {
       id,
       name: name || 'Projeto sem título',
       folderId,
+      favorite: false,
       htmlFileName: null,
       htmlContent: null,
       createdAt: new Date().toISOString(),
@@ -128,7 +197,6 @@ export default function App() {
           ? { ...p, name: newName, updatedAt: new Date().toISOString() }
           : p
       );
-      // activity is added outside to avoid stale closure
       setTimeout(() => {
         addActivity(`Mudou o nome de '${oldName}' para '${newName}'`);
       }, 0);
@@ -175,8 +243,25 @@ export default function App() {
     );
   }, []);
 
+  const toggleProjectFavorite = useCallback((projectId) => {
+    setProjects((prev) => {
+      const proj = prev.find((p) => p.id === projectId);
+      if (!proj) return prev;
+      const newFav = !proj.favorite;
+      setTimeout(() => {
+        addActivity(
+          newFav
+            ? `Marcou '${proj.name}' como favorito`
+            : `Removeu '${proj.name}' dos favoritos`
+        );
+      }, 0);
+      return prev.map((p) =>
+        p.id === projectId ? { ...p, favorite: newFav } : p
+      );
+    });
+  }, [addActivity]);
+
   const deleteFolder = useCallback((folderId) => {
-    // Move all projects inside to root first
     setProjects((prev) =>
       prev.map((p) =>
         p.folderId === folderId ? { ...p, folderId: null } : p
@@ -203,9 +288,18 @@ export default function App() {
           project={activeProject}
           onUpdateProject={(updates) => updateProject(activeProject.id, updates)}
           onRenameProject={(newName) => renameProject(activeProject.id, newName)}
-          onNavigate={goToDashboard}
+          onNavigate={setCurrentScreen}
           showToast={showToast}
           addActivity={addActivity}
+          currentTheme={theme}
+          onThemeChange={handleThemeChange}
+        />
+      ) : currentScreen === 'settings' ? (
+        <Settings
+          onNavigate={setCurrentScreen}
+          currentTheme={theme}
+          onThemeChange={handleThemeChange}
+          showToast={showToast}
         />
       ) : (
         <Dashboard
@@ -221,9 +315,15 @@ export default function App() {
           onMoveProject={moveProject}
           onCreateFolder={createFolder}
           onDeleteFolder={deleteFolder}
+          onToggleFolderFavorite={toggleFolderFavorite}
+          onRenameFolder={renameFolder}
+          onChangeFolderColor={changeFolderColor}
+          onToggleProjectFavorite={toggleProjectFavorite}
           onNavigate={setCurrentScreen}
           addActivity={addActivity}
           showToast={showToast}
+          currentTheme={theme}
+          onThemeChange={handleThemeChange}
         />
       )}
 

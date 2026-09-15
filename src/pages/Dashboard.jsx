@@ -16,23 +16,25 @@ import {
   List,
   FolderOpen,
   SearchX,
+  Star,
 } from 'lucide-react';
 import ModalNovoProjeto from '../components/ModalNovoProjeto';
 import ModalNovaPasta from '../components/ModalNovaPasta';
 import ModalConfirm from '../components/ModalConfirm';
 import ModalRenomear from '../components/ModalRenomear';
 import ContextMenu from '../components/ContextMenu';
+import FolderContextMenu from '../components/FolderContextMenu';
+import ConfigModal from '../components/ConfigModal';
 import AtividadeRecente from '../components/AtividadeRecente';
 import '../styles/Dashboard.css';
 
 /* ===== HEADER ===== */
-function Header({ searchQuery, onSearchChange, onNewFolder, onNotImplemented }) {
+function Header({ searchQuery, onSearchChange, onNewFolder, onOpenConfig, onNotImplemented }) {
   return (
     <header className="header" id="header">
       <span className="header__logo">FOUX</span>
 
       <div className="header__controls">
-        {/* Search */}
         <div className="header__search">
           <Search className="header__search-icon" />
           <input
@@ -44,16 +46,14 @@ function Header({ searchQuery, onSearchChange, onNewFolder, onNotImplemented }) 
           />
         </div>
 
-        {/* Settings */}
         <button
           className="header__icon-btn"
           aria-label="Configurações"
-          onClick={() => onNotImplemented('Configurações')}
+          onClick={onOpenConfig}
         >
           <Settings size={17} />
         </button>
 
-        {/* New Folder */}
         <button
           className="header__new-folder"
           aria-label="Nova Pasta"
@@ -63,7 +63,6 @@ function Header({ searchQuery, onSearchChange, onNewFolder, onNotImplemented }) 
           <span>Nova Pasta</span>
         </button>
 
-        {/* Help */}
         <button
           className="header__icon-btn"
           aria-label="Ajuda"
@@ -72,7 +71,6 @@ function Header({ searchQuery, onSearchChange, onNewFolder, onNotImplemented }) 
           <HelpCircle size={17} />
         </button>
 
-        {/* Avatar */}
         <div
           className="header__avatar-wrapper"
           onClick={() => onNotImplemented('Perfil de Usuário')}
@@ -115,11 +113,16 @@ function NewProjectCard({ onClick, viewMode }) {
 }
 
 /* ===== FOLDER CARD ===== */
-function FolderCard({ folder, onClick, viewMode, onContextMenu }) {
+function FolderCard({ folder, onClick, viewMode, onContextMenu, onToggleFavorite }) {
   const dateLabel = new Date(folder.createdAt).toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: 'short',
   });
+
+  const handleStarClick = (e) => {
+    e.stopPropagation();
+    onToggleFavorite(folder.id);
+  };
 
   if (viewMode === 'list') {
     return (
@@ -133,6 +136,11 @@ function FolderCard({ folder, onClick, viewMode, onContextMenu }) {
       >
         <Folder size={18} className="list-item__icon" style={{ color: folder.borderColor }} />
         <span className="list-item__name">{folder.name}</span>
+        {folder.favorite && (
+          <button className="foux-star-btn foux-star-btn--active" onClick={handleStarClick} aria-label="Remover favorito">
+            <Star size={14} />
+          </button>
+        )}
         <span className="list-item__date">{dateLabel}</span>
       </div>
     );
@@ -148,6 +156,14 @@ function FolderCard({ folder, onClick, viewMode, onContextMenu }) {
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter') onClick(folder.id); }}
     >
+      {/* Estrela de favorito */}
+      <button
+        className={`foux-star-btn foux-star-btn--card ${folder.favorite ? 'foux-star-btn--active' : ''}`}
+        onClick={handleStarClick}
+        aria-label={folder.favorite ? 'Remover favorito' : 'Favoritar'}
+      >
+        <Star size={14} />
+      </button>
       <div className="project-card__preview project-card__preview--folder">
         <Folder size={28} style={{ color: folder.borderColor }} />
       </div>
@@ -159,7 +175,7 @@ function FolderCard({ folder, onClick, viewMode, onContextMenu }) {
   );
 }
 
-/* ===== PROJECT CARD (existing project) ===== */
+/* ===== PROJECT CARD ===== */
 function ProjectCard({
   project,
   onClick,
@@ -242,7 +258,7 @@ function ProjectCard({
   );
 }
 
-/* ===== EMPTY STATE ===== */
+/* ===== EMPTY STATES ===== */
 function ProjectsEmptyState() {
   return (
     <div className="empty-state">
@@ -257,7 +273,6 @@ function ProjectsEmptyState() {
   );
 }
 
-/* ===== FOLDER EMPTY STATE ===== */
 function FolderEmptyState({ onAddContent }) {
   return (
     <div className="folder-empty-state" onClick={onAddContent} role="button" tabIndex={0}>
@@ -268,7 +283,6 @@ function FolderEmptyState({ onAddContent }) {
   );
 }
 
-/* ===== SEARCH EMPTY STATE ===== */
 function SearchEmptyState() {
   return (
     <div className="empty-state">
@@ -294,13 +308,20 @@ export default function Dashboard({
   onMoveProject,
   onCreateFolder,
   onDeleteFolder,
+  onToggleFolderFavorite,
+  onRenameFolder,
+  onChangeFolderColor,
+  onToggleProjectFavorite,
   showToast,
+  currentTheme,
+  onThemeChange,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState('grid');
   const [currentFolderId, setCurrentFolderId] = useState(null);
+  const [configOpen, setConfigOpen] = useState(false);
 
   /* Selection mode state */
   const [selectionMode, setSelectionMode] = useState(false);
@@ -310,11 +331,14 @@ export default function Dashboard({
   /* Context menu state */
   const [contextMenu, setContextMenu] = useState(null);
 
+  /* Folder context menu state */
+  const [folderContextMenu, setFolderContextMenu] = useState(null);
+
   /* Confirmation modal state */
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, projectId: null, projectName: '' });
 
   /* Rename modal state */
-  const [renameModal, setRenameModal] = useState({ isOpen: false, projectId: null, currentName: '' });
+  const [renameModal, setRenameModal] = useState({ isOpen: false, targetId: null, currentName: '', isFolder: false });
 
   const handleNotImplemented = useCallback(
     (featureName) => {
@@ -329,25 +353,27 @@ export default function Dashboard({
     [folders, currentFolderId]
   );
 
-  /* Filtered items based on current directory and search */
-  const { filteredProjects, filteredFolders } = useMemo(() => {
+  /* Filtered and SORTED items — RIGID PRIORITY ORDER:
+     1. Folders favoritos
+     2. Folders normais
+     3. Projetos favoritos
+     4. Projetos normais
+  */
+  const { sortedFolders, sortedProjects } = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
     let visibleProjects;
     let visibleFolders;
 
     if (selectionMode) {
-      // In selection mode, show root-level projects only
       visibleProjects = projects.filter((p) => p.folderId === null);
       visibleFolders = [];
     } else if (currentFolderId) {
-      // Inside a folder
       visibleProjects = projects.filter((p) => p.folderId === currentFolderId);
       visibleFolders = [];
     } else {
-      // Root level
       visibleProjects = projects.filter((p) => p.folderId === null);
-      visibleFolders = folders;
+      visibleFolders = [...folders];
     }
 
     if (query) {
@@ -359,7 +385,20 @@ export default function Dashboard({
       );
     }
 
-    return { filteredProjects: visibleProjects, filteredFolders: visibleFolders };
+    // Sort: favoritos primeiro
+    const sf = visibleFolders.sort((a, b) => {
+      if (a.favorite && !b.favorite) return -1;
+      if (!a.favorite && b.favorite) return 1;
+      return 0;
+    });
+
+    const sp = visibleProjects.sort((a, b) => {
+      if (a.favorite && !b.favorite) return -1;
+      if (!a.favorite && b.favorite) return 1;
+      return 0;
+    });
+
+    return { sortedFolders: sf, sortedProjects: sp };
   }, [projects, folders, searchQuery, currentFolderId, selectionMode]);
 
   /* Modal handlers */
@@ -424,10 +463,11 @@ export default function Dashboard({
     setSelectedProjectIds(new Set());
   }, [selectedProjectIds, selectionTargetFolderId, onMoveProject, showToast]);
 
-  /* Context menu */
+  /* Project context menu */
   const handleContextMenu = useCallback((e, project) => {
     e.preventDefault();
     e.stopPropagation();
+    setFolderContextMenu(null);
     setContextMenu({
       x: e.clientX,
       y: e.clientY,
@@ -437,6 +477,20 @@ export default function Dashboard({
 
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
 
+  /* Folder context menu */
+  const handleFolderContextMenu = useCallback((e, folder) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu(null);
+    setFolderContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      folder,
+    });
+  }, []);
+
+  const closeFolderContextMenu = useCallback(() => setFolderContextMenu(null), []);
+
   /* Section title */
   const sectionTitle = selectionMode
     ? 'Selecione projetos para mover'
@@ -444,10 +498,10 @@ export default function Dashboard({
       ? currentFolder.name
       : 'Bem-vindo de volta!';
 
-  const hasItems = filteredProjects.length > 0 || filteredFolders.length > 0;
+  const hasItems = sortedProjects.length > 0 || sortedFolders.length > 0;
   const isSearching = searchQuery.trim().length > 0;
   const isInsideFolder = currentFolderId !== null && !selectionMode;
-  const isFolderEmpty = isInsideFolder && filteredProjects.length === 0 && !isSearching;
+  const isFolderEmpty = isInsideFolder && sortedProjects.length === 0 && !isSearching;
 
   return (
     <div className="app-shell">
@@ -455,6 +509,7 @@ export default function Dashboard({
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onNewFolder={() => setIsFolderModalOpen(true)}
+        onOpenConfig={() => setConfigOpen(true)}
         onNotImplemented={handleNotImplemented}
       />
 
@@ -504,31 +559,20 @@ export default function Dashboard({
                 <NewProjectCard onClick={handleOpenModal} viewMode={viewMode} />
               )}
 
-              {/* Folders (only at root level) */}
-              {filteredFolders.map((folder) => (
+              {/* Folders (sorted: fav first) */}
+              {sortedFolders.map((folder) => (
                 <FolderCard
                   key={folder.id}
                   folder={folder}
                   onClick={enterFolder}
                   viewMode={viewMode}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    // Simple folder context: just delete
-                    setContextMenu(null);
-                    // Use a confirm for folder deletion
-                    setConfirmModal({
-                      isOpen: true,
-                      projectId: folder.id,
-                      projectName: folder.name,
-                      isFolder: true,
-                    });
-                  }}
+                  onToggleFavorite={onToggleFolderFavorite}
+                  onContextMenu={(e) => handleFolderContextMenu(e, folder)}
                 />
               ))}
 
-              {/* Projects */}
-              {filteredProjects.map((p) => (
+              {/* Projects (sorted: fav first) */}
+              {sortedProjects.map((p) => (
                 <ProjectCard
                   key={p.id}
                   project={p}
@@ -541,7 +585,6 @@ export default function Dashboard({
                 />
               ))}
 
-              {/* Empty states */}
               {!hasItems && !selectionMode && !isInsideFolder && <ProjectsEmptyState />}
               {isSearching && !hasItems && <SearchEmptyState />}
             </div>
@@ -609,7 +652,16 @@ export default function Dashboard({
         existingFolders={folders}
       />
 
-      {/* Context Menu */}
+      {/* Config Modal */}
+      <ConfigModal
+        isOpen={configOpen}
+        onClose={() => setConfigOpen(false)}
+        currentTheme={currentTheme}
+        onThemeChange={onThemeChange}
+        showToast={showToast}
+      />
+
+      {/* Project Context Menu */}
       {contextMenu && (
         <ContextMenu
           x={contextMenu.x}
@@ -619,8 +671,9 @@ export default function Dashboard({
           onRename={() => {
             setRenameModal({
               isOpen: true,
-              projectId: contextMenu.project.id,
+              targetId: contextMenu.project.id,
               currentName: contextMenu.project.name,
+              isFolder: false,
             });
           }}
           onMoveTo={(targetFolderId) => {
@@ -642,6 +695,38 @@ export default function Dashboard({
         />
       )}
 
+      {/* Folder Context Menu */}
+      {folderContextMenu && (
+        <FolderContextMenu
+          x={folderContextMenu.x}
+          y={folderContextMenu.y}
+          folder={folderContextMenu.folder}
+          onClose={closeFolderContextMenu}
+          onDelete={() => {
+            setConfirmModal({
+              isOpen: true,
+              projectId: folderContextMenu.folder.id,
+              projectName: folderContextMenu.folder.name,
+              isFolder: true,
+            });
+          }}
+          onRename={() => {
+            setRenameModal({
+              isOpen: true,
+              targetId: folderContextMenu.folder.id,
+              currentName: folderContextMenu.folder.name,
+              isFolder: true,
+            });
+          }}
+          onChangeColor={(color) => {
+            onChangeFolderColor(folderContextMenu.folder.id, color);
+          }}
+          onToggleFavorite={() => {
+            onToggleFolderFavorite(folderContextMenu.folder.id);
+          }}
+        />
+      )}
+
       {/* Confirmation Modal */}
       <ModalConfirm
         isOpen={confirmModal.isOpen}
@@ -657,11 +742,17 @@ export default function Dashboard({
         message={`Tem certeza que deseja excluir "${confirmModal.projectName}"? ${confirmModal.isFolder ? 'Os projetos dentro dela serão movidos para a raiz.' : 'Esta ação não pode ser desfeita.'}`}
       />
 
-      {/* Rename Modal */}
+      {/* Rename Modal (projects + folders) */}
       <ModalRenomear
         isOpen={renameModal.isOpen}
-        onClose={() => setRenameModal({ isOpen: false, projectId: null, currentName: '' })}
-        onRename={(newName) => onRenameProject(renameModal.projectId, newName)}
+        onClose={() => setRenameModal({ isOpen: false, targetId: null, currentName: '', isFolder: false })}
+        onRename={(newName) => {
+          if (renameModal.isFolder) {
+            onRenameFolder(renameModal.targetId, newName);
+          } else {
+            onRenameProject(renameModal.targetId, newName);
+          }
+        }}
         currentName={renameModal.currentName}
       />
     </div>

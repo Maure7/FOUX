@@ -7,23 +7,13 @@ import {
   Settings,
   HelpCircle,
   Upload,
-  ChevronDown,
-  ChevronRight,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignJustify,
-  Type,
-  Square,
-  Maximize,
 } from 'lucide-react';
+import useIframeInspector from '../hooks/useIframeInspector';
+import SidebarEstilos from '../components/SidebarEstilos';
 import '../styles/Dashboard.css';
 
 /* ===== HTML SANITIZER — neutralize navigation inside srcDoc ===== */
 function neutralizeHtml(html) {
-  // Inject <base target="_blank"> so all links target a popup.
-  // Since the sandbox does NOT include allow-popups, the browser
-  // silently blocks every link click — zero navigation side-effects.
   const baseTag = '<base target="_blank">';
   if (/<head[^>]*>/i.test(html)) {
     return html.replace(/<head([^>]*)>/i, `<head$1>${baseTag}`);
@@ -31,7 +21,6 @@ function neutralizeHtml(html) {
   if (/<html[^>]*>/i.test(html)) {
     return html.replace(/<html([^>]*)>/i, `<html$1><head>${baseTag}</head>`);
   }
-  // No <head> or <html> — prepend
   return `<head>${baseTag}</head>${html}`;
 }
 
@@ -41,9 +30,7 @@ function EditableProjectName({ name, onRename }) {
   const [draft, setDraft] = useState(name);
   const inputRef = useRef(null);
 
-  useEffect(() => {
-    setDraft(name);
-  }, [name]);
+  useEffect(() => { setDraft(name); }, [name]);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -69,10 +56,7 @@ function EditableProjectName({ name, onRename }) {
         onBlur={commit}
         onKeyDown={(e) => {
           if (e.key === 'Enter') commit();
-          if (e.key === 'Escape') {
-            setDraft(name);
-            setIsEditing(false);
-          }
+          if (e.key === 'Escape') { setDraft(name); setIsEditing(false); }
         }}
       />
     );
@@ -84,9 +68,7 @@ function EditableProjectName({ name, onRename }) {
       onClick={() => setIsEditing(true)}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') setIsEditing(true);
-      }}
+      onKeyDown={(e) => { if (e.key === 'Enter') setIsEditing(true); }}
       title="Clique para renomear"
     >
       {name}
@@ -95,7 +77,7 @@ function EditableProjectName({ name, onRename }) {
 }
 
 /* ===== EDITOR HEADER ===== */
-function EditorHeader({ project, onRename, onNavigate, onAction, onNewFile }) {
+function EditorHeader({ project, onRename, onNavigate, onAction, onNewFile, onOpenConfig }) {
   return (
     <header className="editor-header">
       <div className="editor-header__left">
@@ -113,23 +95,20 @@ function EditorHeader({ project, onRename, onNavigate, onAction, onNewFile }) {
           onClick={onNavigate}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') onNavigate();
-          }}
+          onKeyDown={(e) => { if (e.key === 'Enter') onNavigate(); }}
         >
           FOUX
         </span>
 
         <div className="editor-header__separator" />
 
-        {/* Toolbar actions */}
         <button className="editor-toolbar-btn" onClick={onNewFile}>
           <FilePlus size={14} />
           <span>Novo</span>
         </button>
-        <button className="editor-toolbar-btn" onClick={() => onAction('Salvar')}>
+        <button className="editor-toolbar-btn" onClick={() => onAction('Salvar Como')}>
           <Save size={14} />
-          <span>Salvar</span>
+          <span>Salvar Como</span>
         </button>
         <button className="editor-toolbar-btn" onClick={() => onAction('Importar CSS')}>
           <FileCode size={14} />
@@ -138,12 +117,11 @@ function EditorHeader({ project, onRename, onNavigate, onAction, onNewFile }) {
 
         <div className="editor-header__separator" />
 
-        {/* Editable project name */}
         <EditableProjectName name={project.name} onRename={onRename} />
       </div>
 
       <div className="editor-header__right">
-        <button className="editor-header__icon-btn" onClick={() => onAction('Configurações')} aria-label="Configurações">
+        <button className="editor-header__icon-btn" onClick={onOpenConfig} aria-label="Configurações">
           <Settings size={16} />
         </button>
         <button className="editor-header__icon-btn" onClick={() => onAction('Ajuda')} aria-label="Ajuda">
@@ -154,57 +132,50 @@ function EditorHeader({ project, onRename, onNavigate, onAction, onNewFile }) {
   );
 }
 
-/* ===== DROPZONE / CANVAS ===== */
-function EditorCanvas({ htmlContent, htmlFileName, onFileSelect }) {
+/* ===== DROPZONE / CANVAS =====
+   FIX CRÍTICO: O iframe usa initialHtml (ref estável) como srcDoc.
+   Mudanças subsequentes de estilo NÃO alteram srcDoc — elas mutam
+   diretamente os nós do DOM dentro do contentDocument.
+   Assim o iframe nunca é remontado durante a edição.
+   ============================================================= */
+function EditorCanvas({ initialHtml, onFileSelect, iframeRef }) {
   const fileInputRef = useRef(null);
 
-  // Neutralize the HTML so links/forms can't navigate
   const safeHtml = useMemo(
-    () => (htmlContent ? neutralizeHtml(htmlContent) : null),
-    [htmlContent]
+    () => (initialHtml ? neutralizeHtml(initialHtml) : null),
+    [initialHtml]
   );
 
   const handleClick = () => {
-    if (!htmlContent) {
-      fileInputRef.current?.click();
-    }
+    if (!initialHtml) fileInputRef.current?.click();
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      onFileSelect(file);
-    }
-    // Reset the input so the same file can be re-selected
+    if (file) onFileSelect(file);
     e.target.value = '';
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
+  const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); };
 
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
     const file = e.dataTransfer.files?.[0];
-    if (file && file.name.endsWith('.html')) {
-      onFileSelect(file);
-    }
+    if (file && file.name.endsWith('.html')) onFileSelect(file);
   };
 
   return (
     <div className="editor-canvas">
       {safeHtml ? (
-        /* ---- Isolated HTML preview via sandboxed iframe ---- */
         <iframe
+          ref={iframeRef}
           className="editor-canvas__iframe"
           srcDoc={safeHtml}
           title="HTML Preview Canvas"
           sandbox="allow-same-origin"
         />
       ) : (
-        /* ---- Dropzone state ---- */
         <div
           className="editor-dropzone"
           onClick={handleClick}
@@ -212,9 +183,7 @@ function EditorCanvas({ htmlContent, htmlFileName, onFileSelect }) {
           onDrop={handleDrop}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleClick();
-          }}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleClick(); }}
         >
           <div className="editor-dropzone__icon-wrapper">
             <Upload size={36} />
@@ -238,224 +207,88 @@ function EditorCanvas({ htmlContent, htmlFileName, onFileSelect }) {
   );
 }
 
-/* ===== COLLAPSIBLE SECTION ===== */
-function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true }) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  return (
-    <div className="sidebar-section">
-      <button
-        className="sidebar-section__header"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <div className="sidebar-section__header-left">
-          {Icon && <Icon size={14} className="sidebar-section__icon" />}
-          <span className="sidebar-section__title">{title}</span>
-        </div>
-        {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-      </button>
-      {isOpen && (
-        <div className="sidebar-section__body">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ===== SIDEBAR STYLES PANEL ===== */
-function StylesSidebar({ isLocked, onInteract }) {
-  const [activeTab, setActiveTab] = useState('estilos');
-  const [fontSize, setFontSize] = useState(18);
-  const [borderRadius, setBorderRadius] = useState(8);
-  const [padding, setPadding] = useState(24);
-  const [margin, setMargin] = useState(0);
-  const [borderColor, setBorderColor] = useState('#CBD5E1');
-  const [activeAlign, setActiveAlign] = useState('left');
-
-  const handleInteraction = useCallback(() => {
-    if (!isLocked) {
-      onInteract();
-    }
-  }, [isLocked, onInteract]);
-
-  return (
-    <aside className={`editor-sidebar ${isLocked ? 'editor-sidebar--locked' : ''}`}>
-      {/* Locked overlay message */}
-      {isLocked && (
-        <div className="editor-sidebar__locked-overlay">
-          <span className="editor-sidebar__locked-text">
-            Esperando o carregamento do HTML
-          </span>
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div className="sidebar-tabs">
-        {['Estilos', 'Layout', 'Eventos'].map((tab) => (
-          <button
-            key={tab}
-            className={`sidebar-tab ${activeTab === tab.toLowerCase() ? 'sidebar-tab--active' : ''}`}
-            onClick={() => {
-              setActiveTab(tab.toLowerCase());
-              handleInteraction();
-            }}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      <div className="sidebar-content">
-        {/* ── TIPOGRAFIA ── */}
-        <CollapsibleSection title="TIPOGRAFIA" icon={Type}>
-          {/* Font Size */}
-          <div className="sidebar-control">
-            <div className="sidebar-control__label-row">
-              <span className="sidebar-control__label">Tamanho da Fonte</span>
-              <span className="sidebar-control__value">{fontSize}px</span>
-            </div>
-            <input
-              type="range"
-              className="sidebar-slider"
-              min="8"
-              max="72"
-              value={fontSize}
-              onChange={(e) => {
-                setFontSize(Number(e.target.value));
-                handleInteraction();
-              }}
-            />
-          </div>
-
-          {/* Alignment */}
-          <div className="sidebar-control">
-            <span className="sidebar-control__label">Alinhamento</span>
-            <div className="sidebar-align-group">
-              {[
-                { value: 'left', Icon: AlignLeft },
-                { value: 'center', Icon: AlignCenter },
-                { value: 'right', Icon: AlignRight },
-                { value: 'justify', Icon: AlignJustify },
-              ].map(({ value, Icon }) => (
-                <button
-                  key={value}
-                  className={`sidebar-align-btn ${activeAlign === value ? 'sidebar-align-btn--active' : ''}`}
-                  onClick={() => {
-                    setActiveAlign(value);
-                    handleInteraction();
-                  }}
-                >
-                  <Icon size={14} />
-                </button>
-              ))}
-            </div>
-          </div>
-        </CollapsibleSection>
-
-        {/* ── BORDAS E FORMAS ── */}
-        <CollapsibleSection title="BORDAS E FORMAS" icon={Square}>
-          {/* Border Radius */}
-          <div className="sidebar-control">
-            <div className="sidebar-control__label-row">
-              <span className="sidebar-control__label">Arredondamento (Radius)</span>
-              <span className="sidebar-control__value">{borderRadius}px</span>
-            </div>
-            <input
-              type="range"
-              className="sidebar-slider"
-              min="0"
-              max="50"
-              value={borderRadius}
-              onChange={(e) => {
-                setBorderRadius(Number(e.target.value));
-                handleInteraction();
-              }}
-            />
-          </div>
-
-          {/* Border Color */}
-          <div className="sidebar-control">
-            <span className="sidebar-control__label">Cor da Borda</span>
-            <div className="sidebar-color-input">
-              <input
-                type="color"
-                className="sidebar-color-picker"
-                value={borderColor}
-                onChange={(e) => {
-                  setBorderColor(e.target.value);
-                  handleInteraction();
-                }}
-              />
-              <input
-                type="text"
-                className="sidebar-color-text"
-                value={borderColor}
-                onChange={(e) => {
-                  setBorderColor(e.target.value);
-                  handleInteraction();
-                }}
-              />
-            </div>
-          </div>
-        </CollapsibleSection>
-
-        {/* ── ESPAÇAMENTO ── */}
-        <CollapsibleSection title="ESPAÇAMENTO" icon={Maximize}>
-          <div className="sidebar-control sidebar-control--row">
-            <div className="sidebar-control__half">
-              <span className="sidebar-control__label">Padding (px)</span>
-              <input
-                type="number"
-                className="sidebar-number-input"
-                value={padding}
-                min="0"
-                onChange={(e) => {
-                  setPadding(Number(e.target.value));
-                  handleInteraction();
-                }}
-              />
-            </div>
-            <div className="sidebar-control__half">
-              <span className="sidebar-control__label">Margin (px)</span>
-              <input
-                type="number"
-                className="sidebar-number-input"
-                value={margin}
-                min="0"
-                onChange={(e) => {
-                  setMargin(Number(e.target.value));
-                  handleInteraction();
-                }}
-              />
-            </div>
-          </div>
-        </CollapsibleSection>
-
-        {/* ── PREVIEW BOX ── */}
-        <div className="sidebar-section sidebar-section--preview">
-          <span className="sidebar-section__title sidebar-section__title--small">PREVIEW BOX</span>
-          <div
-            className="sidebar-preview-box"
-            style={{
-              borderRadius: `${borderRadius}px`,
-              padding: `${padding}px`,
-              margin: `${margin}px`,
-              borderColor: borderColor,
-              fontSize: `${fontSize}px`,
-            }}
-          >
-            <div className="sidebar-preview-box__inner" />
-          </div>
-        </div>
-      </div>
-    </aside>
-  );
-}
-
 /* ===== MAIN EDITOR ===== */
-export default function Editor({ project, onUpdateProject, onRenameProject, onNavigate, showToast, addActivity }) {
+export default function Editor({
+  project,
+  onUpdateProject,
+  onRenameProject,
+  onNavigate,
+  showToast,
+  addActivity,
+  currentTheme,
+  onThemeChange,
+}) {
   const newFileInputRef = useRef(null);
+  const iframeRef = useRef(null);
+
+  /*
+   * FIX CRÍTICO: initialHtmlRef armazena o HTML que será usado APENAS
+   * para o primeiro srcDoc do iframe. Uma vez carregado, o iframe
+   * permanece estável — as edições mutam o DOM diretamente.
+   * O auto-save serializa o DOM vivo e persiste sem re-montar o iframe.
+   */
+  const [initialHtml, setInitialHtml] = useState(() => project.htmlContent);
+  const hasLoadedRef = useRef(!!project.htmlContent);
+
+  /* ---- Iframe Inspector Hook ---- */
+  const {
+    selectedElement,
+    selectedTagName,
+    computedStyles,
+    applyStyle,
+    clearSelection,
+    serializeDocument,
+    injectFont,
+    getElementsWithId,
+    selectElementById,
+  } = useIframeInspector(iframeRef);
+
+  /* ---- Debounced auto-save ----
+     Serializa o DOM vivo do iframe e persiste no projeto.
+     IMPORTANTE: onUpdateProject é chamado com um wrapper que NÃO
+     re-seta initialHtml, assim o iframe nunca é remontado. */
+  const saveTimerRef = useRef(null);
+  const onUpdateProjectRef = useRef(onUpdateProject);
+  onUpdateProjectRef.current = onUpdateProject;
+
+  const debouncedSave = useCallback(() => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      const html = serializeDocument();
+      if (html) {
+        onUpdateProjectRef.current({ htmlContent: html });
+      }
+    }, 800);
+  }, [serializeDocument]);
+
+  /* Callback para SidebarEstilos: notifica que um estilo mudou */
+  const handleStyleChange = useCallback(() => {
+    debouncedSave();
+  }, [debouncedSave]);
+
+  /* Auto-save ao desmontar (sair do editor) */
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      const iframe = iframeRef.current;
+      if (iframe?.contentDocument) {
+        try {
+          const doc = iframe.contentDocument;
+          const els = doc.querySelectorAll('[data-foux-selected],[data-foux-hovered]');
+          els.forEach((el) => {
+            el.style.outline = '';
+            el.style.outlineOffset = '';
+            el.removeAttribute('data-foux-selected');
+            el.removeAttribute('data-foux-hovered');
+          });
+          const html = `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
+          onUpdateProjectRef.current({ htmlContent: html });
+        } catch {
+          // iframe may already be detached
+        }
+      }
+    };
+  }, []);
 
   const handleToolbarAction = useCallback(
     (actionName) => {
@@ -464,43 +297,48 @@ export default function Editor({ project, onUpdateProject, onRenameProject, onNa
     [showToast]
   );
 
-  const handleSidebarInteraction = useCallback(() => {
-    showToast('Função ainda não implementada');
-  }, [showToast]);
-
-  /* Read file with FileReader and auto-save to project */
+  /* Importar novo HTML — este É o caso onde devemos atualizar o srcDoc */
   const handleFileSelect = useCallback((file) => {
     const reader = new FileReader();
     reader.onload = (e) => {
-      onUpdateProject({
+      const content = e.target.result;
+      setInitialHtml(content);
+      hasLoadedRef.current = true;
+      onUpdateProjectRef.current({
         htmlFileName: file.name,
-        htmlContent: e.target.result,
+        htmlContent: content,
       });
     };
     reader.readAsText(file);
-  }, [onUpdateProject]);
+  }, []);
 
-  /* "Novo" button opens native file picker */
   const handleNewFile = useCallback(() => {
     newFileInputRef.current?.click();
   }, []);
 
   const handleNewFileChange = (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      handleFileSelect(file);
-    }
+    if (file) handleFileSelect(file);
     e.target.value = '';
   };
 
-  /* Rename project — uses dedicated rename callback with activity logging */
   const handleRename = useCallback((newName) => {
     if (onRenameProject) {
       onRenameProject(newName);
     } else {
-      onUpdateProject({ name: newName });
+      onUpdateProjectRef.current({ name: newName });
     }
-  }, [onRenameProject, onUpdateProject]);
+  }, [onRenameProject]);
+
+  /* Navegar para Configurações como tela */
+  const handleOpenConfig = useCallback(() => {
+    // Salvar antes de navegar
+    const html = serializeDocument();
+    if (html) {
+      onUpdateProjectRef.current({ htmlContent: html });
+    }
+    onNavigate('settings');
+  }, [serializeDocument, onNavigate]);
 
   return (
     <div className="editor-shell">
@@ -510,9 +348,9 @@ export default function Editor({ project, onUpdateProject, onRenameProject, onNa
         onNavigate={onNavigate}
         onAction={handleToolbarAction}
         onNewFile={handleNewFile}
+        onOpenConfig={handleOpenConfig}
       />
 
-      {/* Hidden file input for "Novo" toolbar button */}
       <input
         ref={newFileInputRef}
         type="file"
@@ -523,13 +361,20 @@ export default function Editor({ project, onUpdateProject, onRenameProject, onNa
 
       <div className="editor-layout">
         <EditorCanvas
-          htmlContent={project.htmlContent}
-          htmlFileName={project.htmlFileName}
+          initialHtml={initialHtml}
           onFileSelect={handleFileSelect}
+          iframeRef={iframeRef}
         />
-        <StylesSidebar
-          isLocked={!project.htmlContent}
-          onInteract={handleSidebarInteraction}
+        <SidebarEstilos
+          isLocked={!initialHtml}
+          selectedElement={selectedElement}
+          selectedTagName={selectedTagName}
+          computedStyles={computedStyles}
+          applyStyle={applyStyle}
+          injectFont={injectFont}
+          getElementsWithId={getElementsWithId}
+          selectElementById={selectElementById}
+          onStyleChange={handleStyleChange}
         />
       </div>
     </div>

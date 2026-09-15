@@ -2292,3 +2292,125 @@ body {
   }
 }
 
+/* ======================================================
+   FOUX EDITOR — VISUAL SELECTION ENGINE
+   Estilos com namespace foux-editor-* para isolamento.
+   ====================================================== */
+
+/* ---------- Element Badge (indicador de tag selecionada) ---------- */
+.foux-editor-element-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(212, 144, 63, 0.06);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  min-height: 36px;
+}
+
+.foux-editor-element-badge__icon {
+  color: var(--accent-gold);
+  flex-shrink: 0;
+}
+
+.foux-editor-element-badge__icon--muted {
+  color: var(--text-muted);
+}
+
+.foux-editor-element-badge__tag {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent-gold-light);
+  background: var(--accent-gold-bg);
+  padding: 2px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+
+.foux-editor-element-badge__hint {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.2px;
+}
+
+/* ---------- Empty State (nenhum elemento selecionado) ---------- */
+.foux-editor-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: var(--sp-4) var(--sp-2);
+  text-align: center;
+}
+
+.foux-editor-empty-state__icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.foux-editor-empty-state__title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  max-width: 220px;
+}
+
+.foux-editor-empty-state__hint {
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  line-height: 1.4;
+  max-width: 200px;
+}
+
+/* ---------- Disabled Controls (sem seleção ativa) ---------- */
+.sidebar-slider:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.sidebar-slider:disabled::-webkit-slider-thumb {
+  background: var(--text-muted);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.sidebar-slider:disabled::-moz-range-thumb {
+  background: var(--text-muted);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.sidebar-number-input:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.sidebar-color-picker:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.sidebar-color-text:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.sidebar-align-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
