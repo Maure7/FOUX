@@ -31,11 +31,16 @@
   --border-light: rgba(255, 255, 255, 0.10);
 
   /* Spacing scale (8px base) */
-  --sp-1: 0.5rem;   /* 8px */
-  --sp-2: 1rem;     /* 16px */
-  --sp-3: 1.5rem;   /* 24px */
-  --sp-4: 2rem;     /* 32px */
-  --sp-5: 2.5rem;   /* 40px */
+  --sp-1: 0.5rem;
+  /* 8px */
+  --sp-2: 1rem;
+  /* 16px */
+  --sp-3: 1.5rem;
+  /* 24px */
+  --sp-4: 2rem;
+  /* 32px */
+  --sp-5: 2.5rem;
+  /* 40px */
 
   /* Misc */
   --radius-sm: 8px;
@@ -100,9 +105,9 @@
 
 /* ============ TEMA: Osaka Solarized Pro ============ */
 [data-theme="solarized"] {
-  --bg-app: #002b36;
+  --bg-app: #032027;
   --bg-card: #073642;
-  --bg-card-hover: #0a4050;
+  --bg-card-hover: #0e4a5c;
   --bg-input: #053541;
   --bg-header: rgba(0, 43, 54, 0.92);
   --bg-sidebar: #073642;
@@ -110,10 +115,10 @@
   --accent-gold-light: #2aa198;
   --accent-gold-bg: rgba(38, 139, 210, 0.12);
   --accent-purple: #d33682;
-  --accent-purple-light: #cb4b16;
+  --accent-purple-light: #e94600;
   --accent-purple-bg: rgba(211, 54, 130, 0.12);
-  --text-primary: #93a1a1;
-  --text-secondary: #839496;
+  --text-primary: #ebf5f5;
+  --text-secondary: #ebf5f5;
   --text-muted: #586e75;
   --text-dark: #657b83;
   --border-subtle: rgba(147, 161, 161, 0.1);
@@ -234,7 +239,7 @@ body {
   width: 260px;
 }
 
-.header__search-input:focus ~ .header__search-icon,
+.header__search-input:focus~.header__search-icon,
 .header__search:focus-within .header__search-icon {
   color: var(--accent-gold);
 }
@@ -807,6 +812,7 @@ body {
     opacity: 0;
     transform: translateY(12px) scale(0.96);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -818,6 +824,7 @@ body {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+
   to {
     opacity: 0;
     transform: translateY(8px) scale(0.96);
@@ -841,8 +848,13 @@ body {
 }
 
 @keyframes modal-overlay-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modal-card {
@@ -865,6 +877,7 @@ body {
     opacity: 0;
     transform: translateY(20px) scale(0.96);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -1799,6 +1812,7 @@ body {
     opacity: 0;
     transform: scale(0.95) translateY(-4px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -1944,6 +1958,7 @@ body {
     opacity: 0;
     transform: translateX(-50%) translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
@@ -2261,6 +2276,7 @@ body {
   from {
     opacity: 0.7;
   }
+
   to {
     opacity: 1;
   }
@@ -2279,6 +2295,7 @@ body {
     opacity: 0;
     transform: translateY(6px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -2292,12 +2309,15 @@ body {
   .main-content {
     padding: var(--sp-3);
   }
+
   .projects-grid {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   }
+
   .editor-sidebar {
     width: 240px;
   }
+
   .context-menu__submenu {
     left: auto;
     right: 100%;
@@ -2305,42 +2325,53 @@ body {
 }
 
 @media (max-width: 640px) {
+
   .header,
   .editor-header {
     padding: 0 var(--sp-2);
   }
+
   .header__search-input {
     width: 140px;
   }
+
   .projects-grid {
     grid-template-columns: 1fr;
   }
+
   .empty-state {
     grid-column: 1 / -1;
   }
+
   .footer {
     flex-direction: column;
     gap: var(--sp-2);
     text-align: center;
   }
+
   .toast-container {
     right: var(--sp-2);
     left: var(--sp-2);
     bottom: var(--sp-2);
   }
+
   .toast {
     max-width: 100%;
   }
+
   .editor-layout {
     flex-direction: column;
   }
+
   .editor-sidebar {
     width: 100%;
     max-height: 50vh;
   }
+
   .editor-toolbar-btn span {
     display: none;
   }
+
   .selection-bar {
     left: var(--sp-2);
     right: var(--sp-2);
@@ -2348,16 +2379,19 @@ body {
     flex-direction: column;
     gap: var(--sp-1);
   }
+
   @keyframes selection-bar-in {
     from {
       opacity: 0;
       transform: translateY(20px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
     }
   }
+
   .context-menu {
     left: var(--sp-2) !important;
     right: var(--sp-2) !important;
@@ -2885,8 +2919,13 @@ body {
 }
 
 @keyframes pulse-border {
-  from { border-color: rgba(239, 68, 68, 0.5); }
-  to { border-color: #ef4444; }
+  from {
+    border-color: rgba(239, 68, 68, 0.5);
+  }
+
+  to {
+    border-color: #ef4444;
+  }
 }
 
 .activity-item__delete {
