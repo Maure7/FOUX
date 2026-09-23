@@ -15,12 +15,15 @@ import {
   Upload,
   Layers,
   Palette,
+  Zap,
 } from 'lucide-react';
 
 /* ===================================================================
    SidebarEstilos — Painel lateral reativo de estilização visual.
    Adapta controles conforme a tag do elemento selecionado.
    Inclui slider de opacidade (alpha) nos color pickers.
+   Inclui sliders bidirecionais com input numérico.
+   Inclui aba Eventos com controles de :hover.
    =================================================================== */
 
 /* Tags de texto que exibem controles de tipografia */
@@ -92,6 +95,44 @@ function formatTagName(tag) {
   return `<${tag.toLowerCase()}>`;
 }
 
+/* ===== BIDIRECTIONAL SLIDER WITH NUMERIC INPUT ===== */
+function SliderControl({ label, unit, value, min, max, step, disabled, onChange }) {
+  const numValue = parseFloat(value) || 0;
+  const displayValue = step && step < 1 ? numValue.toFixed(2) : Math.round(numValue);
+
+  return (
+    <div className="sidebar-control">
+      <div className="sidebar-control__label-row">
+        <span className="sidebar-control__label">{label}</span>
+        <input
+          type="number"
+          className="sidebar-inline-number"
+          value={displayValue}
+          min={min}
+          max={max}
+          step={step || 1}
+          disabled={disabled}
+          onChange={(e) => {
+            const v = parseFloat(e.target.value);
+            if (Number.isFinite(v)) onChange(v);
+          }}
+        />
+        {unit && <span className="sidebar-control__unit">{unit}</span>}
+      </div>
+      <input
+        type="range"
+        className="sidebar-slider"
+        min={min}
+        max={max}
+        step={step || 1}
+        value={numValue}
+        disabled={disabled}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+      />
+    </div>
+  );
+}
+
 /* ===== COLOR CONTROL WITH ALPHA SLIDER ===== */
 function ColorControl({ label, hexValue, alphaValue, disabled, onColorChange, onAlphaChange }) {
   const displayAlpha = Math.round((alphaValue ?? 1) * 100);
@@ -115,10 +156,22 @@ function ColorControl({ label, hexValue, alphaValue, disabled, onColorChange, on
           onChange={(e) => onColorChange(e.target.value)}
         />
       </div>
-      {/* Slider de Opacidade */}
+      {/* Slider de Opacidade com input numérico bidirecional */}
       <div className="sidebar-opacity-row">
-        <span className="sidebar-opacity-row__label">Opacidade</span>
-        <span className="sidebar-opacity-row__value">{displayAlpha}%</span>
+        <span className="sidebar-opacity-row__label">Opacidade:</span>
+        <input
+          type="number"
+          className="sidebar-inline-number sidebar-inline-number--small"
+          value={displayAlpha}
+          min={0}
+          max={100}
+          disabled={disabled}
+          onChange={(e) => {
+            const v = parseInt(e.target.value, 10);
+            if (Number.isFinite(v)) onAlphaChange(Math.max(0, Math.min(100, v)) / 100);
+          }}
+        />
+        <span className="sidebar-control__unit">%</span>
       </div>
       <input
         type="range"
@@ -144,6 +197,11 @@ export default function SidebarEstilos({
   getElementsWithId,
   selectElementById,
   onStyleChange,
+  /* Hover events — from useIframeInspector */
+  assignHoverClass,
+  getHoverClass,
+  injectHoverStyles,
+  iframeRef,
 }) {
   const [activeTab, setActiveTab] = useState('estilos');
   const [customFonts, setCustomFonts] = useState([]);
@@ -154,6 +212,16 @@ export default function SidebarEstilos({
   const [alphaColor, setAlphaColor] = useState(1);
   const [alphaBg, setAlphaBg] = useState(1);
   const [alphaBorder, setAlphaBorder] = useState(1);
+
+  /* Hover event states */
+  const [hoverBgColor, setHoverBgColor] = useState('#000000');
+  const [hoverTextColor, setHoverTextColor] = useState('#ffffff');
+  const [hoverBgEnabled, setHoverBgEnabled] = useState(false);
+  const [hoverTextEnabled, setHoverTextEnabled] = useState(false);
+  const [hoverScale, setHoverScale] = useState(1.0);
+  const [hoverScaleEnabled, setHoverScaleEnabled] = useState(false);
+  const [hoverShadowEnabled, setHoverShadowEnabled] = useState(false);
+  const [hoverShadowIntensity, setHoverShadowIntensity] = useState(50);
 
   const hasSelection = !!selectedElement;
   const disabled = isLocked || !hasSelection;
@@ -168,6 +236,16 @@ export default function SidebarEstilos({
       setAlphaBorder(extractAlpha(computedStyles._rawBorderColor));
     }
   }, [computedStyles]);
+
+  /* Reset hover states when selection changes */
+  useEffect(() => {
+    setHoverBgEnabled(false);
+    setHoverTextEnabled(false);
+    setHoverScaleEnabled(false);
+    setHoverShadowEnabled(false);
+    setHoverScale(1.0);
+    setHoverShadowIntensity(50);
+  }, [selectedElement]);
 
   /* Helper: ler valor com fallback */
   const val = useCallback(
@@ -253,6 +331,41 @@ export default function SidebarEstilos({
     apply('borderColor', hexAlphaToRgba(hex, a));
   }, [apply, val]);
 
+  /* ============================================================
+     HOVER EVENTS — Build and inject :hover CSS
+     ============================================================ */
+  const buildAndInjectHoverCSS = useCallback(() => {
+    if (!selectedElement || !assignHoverClass || !injectHoverStyles) return;
+
+    const cls = assignHoverClass(selectedElement);
+    if (!cls) return;
+
+    const rules = [];
+    if (hoverBgEnabled) rules.push(`background-color: ${hoverBgColor} !important`);
+    if (hoverTextEnabled) rules.push(`color: ${hoverTextColor} !important`);
+    if (hoverScaleEnabled) rules.push(`transform: scale(${hoverScale}) !important`);
+    if (hoverShadowEnabled) {
+      const opacity = (hoverShadowIntensity / 100).toFixed(2);
+      rules.push(`box-shadow: 0 8px 20px rgba(0, 0, 0, ${opacity}) !important`);
+    }
+
+    // Always add transition for smooth hover
+    rules.push('transition: all 0.25s ease !important');
+
+    if (rules.length > 1) {
+      injectHoverStyles(`.${cls}`, rules.join('; '));
+    }
+
+    if (onStyleChange) onStyleChange();
+  }, [selectedElement, assignHoverClass, injectHoverStyles, hoverBgEnabled, hoverBgColor, hoverTextEnabled, hoverTextColor, hoverScaleEnabled, hoverScale, hoverShadowEnabled, hoverShadowIntensity, onStyleChange]);
+
+  // Auto-inject hover CSS whenever hover states change
+  useEffect(() => {
+    if (activeTab === 'eventos' && hasSelection) {
+      buildAndInjectHoverCSS();
+    }
+  }, [activeTab, hasSelection, buildAndInjectHoverCSS]);
+
   return (
     <aside className={`editor-sidebar ${isLocked ? 'editor-sidebar--locked' : ''}`}>
       {/* Locked overlay */}
@@ -321,36 +434,24 @@ export default function SidebarEstilos({
             {/* ── DIMENSÕES (só para <img>) ── */}
             {isImage && (
               <CollapsibleSection title="DIMENSÕES" icon={Image}>
-                <div className="sidebar-control">
-                  <div className="sidebar-control__label-row">
-                    <span className="sidebar-control__label">Largura</span>
-                    <span className="sidebar-control__value">{val('width', 0)}px</span>
-                  </div>
-                  <input
-                    type="range"
-                    className="sidebar-slider"
-                    min="20"
-                    max="1200"
-                    value={val('width', 200)}
-                    disabled={disabled}
-                    onChange={(e) => apply('width', `${e.target.value}px`)}
-                  />
-                </div>
-                <div className="sidebar-control">
-                  <div className="sidebar-control__label-row">
-                    <span className="sidebar-control__label">Altura</span>
-                    <span className="sidebar-control__value">{val('height', 0)}px</span>
-                  </div>
-                  <input
-                    type="range"
-                    className="sidebar-slider"
-                    min="20"
-                    max="1200"
-                    value={val('height', 200)}
-                    disabled={disabled}
-                    onChange={(e) => apply('height', `${e.target.value}px`)}
-                  />
-                </div>
+                <SliderControl
+                  label="Largura"
+                  unit="px"
+                  value={val('width', 200)}
+                  min={20}
+                  max={1200}
+                  disabled={disabled}
+                  onChange={(v) => apply('width', `${v}px`)}
+                />
+                <SliderControl
+                  label="Altura"
+                  unit="px"
+                  value={val('height', 200)}
+                  min={20}
+                  max={1200}
+                  disabled={disabled}
+                  onChange={(v) => apply('height', `${v}px`)}
+                />
                 <div className="sidebar-control">
                   <span className="sidebar-control__label">Disposição</span>
                   <div className="sidebar-align-group">
@@ -417,22 +518,16 @@ export default function SidebarEstilos({
                   </div>
                 )}
 
-                {/* Font Size */}
-                <div className="sidebar-control">
-                  <div className="sidebar-control__label-row">
-                    <span className="sidebar-control__label">Tamanho da Fonte</span>
-                    <span className="sidebar-control__value">{val('fontSize', 16)}px</span>
-                  </div>
-                  <input
-                    type="range"
-                    className="sidebar-slider"
-                    min="8"
-                    max="72"
-                    value={val('fontSize', 16)}
-                    disabled={disabled}
-                    onChange={(e) => apply('fontSize', `${e.target.value}px`)}
-                  />
-                </div>
+                {/* Font Size — Bidirectional */}
+                <SliderControl
+                  label="Tamanho da Fonte"
+                  unit="px"
+                  value={val('fontSize', 16)}
+                  min={8}
+                  max={72}
+                  disabled={disabled}
+                  onChange={(v) => apply('fontSize', `${v}px`)}
+                />
 
                 {/* Alignment */}
                 <div className="sidebar-control">
@@ -470,43 +565,28 @@ export default function SidebarEstilos({
 
             {/* ── BORDAS E FORMAS ── */}
             <CollapsibleSection title="BORDAS E FORMAS" icon={Square}>
-              <div className="sidebar-control">
-                <div className="sidebar-control__label-row">
-                  <span className="sidebar-control__label">Arredondamento (Radius)</span>
-                  <span className="sidebar-control__value">{val('borderRadius', 0)}px</span>
-                </div>
-                <input
-                  type="range"
-                  className="sidebar-slider"
-                  min="0"
-                  max="50"
-                  value={val('borderRadius', 0)}
-                  disabled={disabled}
-                  onChange={(e) => apply('borderRadius', `${e.target.value}px`)}
-                />
-              </div>
+              <SliderControl
+                label="Arredondamento (Radius)"
+                unit="px"
+                value={val('borderRadius', 0)}
+                min={0}
+                max={50}
+                disabled={disabled}
+                onChange={(v) => apply('borderRadius', `${v}px`)}
+              />
 
-              <div className="sidebar-control">
-                <div className="sidebar-control__label-row">
-                  <span className="sidebar-control__label">Espessura da Borda</span>
-                  <span className="sidebar-control__value">{val('borderWidth', 0)}px</span>
-                </div>
-                <input
-                  type="range"
-                  className="sidebar-slider"
-                  min="0"
-                  max="20"
-                  value={val('borderWidth', 0)}
-                  disabled={disabled}
-                  onChange={(e) => {
-                    const px = e.target.value;
-                    apply('borderWidth', `${px}px`);
-                    if (parseInt(px) > 0) {
-                      apply('borderStyle', 'solid');
-                    }
-                  }}
-                />
-              </div>
+              <SliderControl
+                label="Espessura da Borda"
+                unit="px"
+                value={val('borderWidth', 0)}
+                min={0}
+                max={20}
+                disabled={disabled}
+                onChange={(v) => {
+                  apply('borderWidth', `${v}px`);
+                  if (v > 0) apply('borderStyle', 'solid');
+                }}
+              />
 
               {/* Border Color with Alpha */}
               <ColorControl
@@ -616,17 +696,134 @@ export default function SidebarEstilos({
 
         {/* ═══════════════ ABA EVENTOS ═══════════════ */}
         {activeTab === 'eventos' && (
-          <div className="foux-editor-empty-state">
-            <div className="foux-editor-empty-state__icon-wrap">
-              <Paintbrush size={28} />
-            </div>
-            <span className="foux-editor-empty-state__title">
-              Eventos interativos
-            </span>
-            <span className="foux-editor-empty-state__hint">
-              Em breve — acompanhe as atualizações
-            </span>
-          </div>
+          <>
+            {!hasSelection ? (
+              <div className="foux-editor-empty-state">
+                <div className="foux-editor-empty-state__icon-wrap">
+                  <Zap size={28} />
+                </div>
+                <span className="foux-editor-empty-state__title">
+                  Selecione um elemento para configurar eventos hover
+                </span>
+                <span className="foux-editor-empty-state__hint">
+                  Clique em um elemento no canvas para começar
+                </span>
+              </div>
+            ) : (
+              <>
+                <CollapsibleSection title="HOVER — MUDAR COR" icon={Palette} defaultOpen={true}>
+                  {/* Background Color on Hover */}
+                  <div className="sidebar-control">
+                    <label className="sidebar-toggle-row">
+                      <input
+                        type="checkbox"
+                        className="sidebar-toggle-checkbox"
+                        checked={hoverBgEnabled}
+                        onChange={(e) => setHoverBgEnabled(e.target.checked)}
+                      />
+                      <span className="sidebar-control__label">Cor de Fundo no Hover</span>
+                    </label>
+                    {hoverBgEnabled && (
+                      <div className="sidebar-color-input">
+                        <input
+                          type="color"
+                          className="sidebar-color-picker"
+                          value={hoverBgColor}
+                          onChange={(e) => setHoverBgColor(e.target.value)}
+                        />
+                        <input
+                          type="text"
+                          className="sidebar-color-text"
+                          value={hoverBgColor}
+                          onChange={(e) => setHoverBgColor(e.target.value)}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Text Color on Hover */}
+                  <div className="sidebar-control">
+                    <label className="sidebar-toggle-row">
+                      <input
+                        type="checkbox"
+                        className="sidebar-toggle-checkbox"
+                        checked={hoverTextEnabled}
+                        onChange={(e) => setHoverTextEnabled(e.target.checked)}
+                      />
+                      <span className="sidebar-control__label">Cor do Texto no Hover</span>
+                    </label>
+                    {hoverTextEnabled && (
+                      <div className="sidebar-color-input">
+                        <input
+                          type="color"
+                          className="sidebar-color-picker"
+                          value={hoverTextColor}
+                          onChange={(e) => setHoverTextColor(e.target.value)}
+                        />
+                        <input
+                          type="text"
+                          className="sidebar-color-text"
+                          value={hoverTextColor}
+                          onChange={(e) => setHoverTextColor(e.target.value)}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </CollapsibleSection>
+
+                <CollapsibleSection title="HOVER — ESCALA" icon={Maximize} defaultOpen={true}>
+                  <div className="sidebar-control">
+                    <label className="sidebar-toggle-row">
+                      <input
+                        type="checkbox"
+                        className="sidebar-toggle-checkbox"
+                        checked={hoverScaleEnabled}
+                        onChange={(e) => setHoverScaleEnabled(e.target.checked)}
+                      />
+                      <span className="sidebar-control__label">Ativar Escala no Hover</span>
+                    </label>
+                    {hoverScaleEnabled && (
+                      <SliderControl
+                        label="Escala"
+                        unit=""
+                        value={hoverScale}
+                        min={0.8}
+                        max={1.3}
+                        step={0.01}
+                        disabled={false}
+                        onChange={(v) => setHoverScale(v)}
+                      />
+                    )}
+                  </div>
+                </CollapsibleSection>
+
+                <CollapsibleSection title="HOVER — SOMBRA" icon={Square} defaultOpen={true}>
+                  <div className="sidebar-control">
+                    <label className="sidebar-toggle-row">
+                      <input
+                        type="checkbox"
+                        className="sidebar-toggle-checkbox"
+                        checked={hoverShadowEnabled}
+                        onChange={(e) => setHoverShadowEnabled(e.target.checked)}
+                      />
+                      <span className="sidebar-control__label">Sombra Externa no Hover</span>
+                    </label>
+                    {hoverShadowEnabled && (
+                      <SliderControl
+                        label="Intensidade"
+                        unit="%"
+                        value={hoverShadowIntensity}
+                        min={10}
+                        max={100}
+                        disabled={false}
+                        onChange={(v) => setHoverShadowIntensity(v)}
+                      />
+                    )}
+                  </div>
+                </CollapsibleSection>
+              </>
+            )}
+          </>
         )}
       </div>
     </aside>

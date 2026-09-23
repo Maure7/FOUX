@@ -16,7 +16,6 @@ import {
   List,
   FolderOpen,
   SearchX,
-  Star,
 } from 'lucide-react';
 import ModalNovoProjeto from '../components/ModalNovoProjeto';
 import ModalNovaPasta from '../components/ModalNovaPasta';
@@ -24,7 +23,6 @@ import ModalConfirm from '../components/ModalConfirm';
 import ModalRenomear from '../components/ModalRenomear';
 import ContextMenu from '../components/ContextMenu';
 import FolderContextMenu from '../components/FolderContextMenu';
-import ConfigModal from '../components/ConfigModal';
 import AtividadeRecente from '../components/AtividadeRecente';
 import '../styles/Dashboard.css';
 
@@ -113,16 +111,13 @@ function NewProjectCard({ onClick, viewMode }) {
 }
 
 /* ===== FOLDER CARD ===== */
-function FolderCard({ folder, onClick, viewMode, onContextMenu, onToggleFavorite }) {
+function FolderCard({ folder, onClick, viewMode, onContextMenu, fileCount }) {
   const dateLabel = new Date(folder.createdAt).toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: 'short',
   });
 
-  const handleStarClick = (e) => {
-    e.stopPropagation();
-    onToggleFavorite(folder.id);
-  };
+  const fileCountLabel = fileCount === 1 ? '1 arquivo' : `${fileCount} arquivos`;
 
   if (viewMode === 'list') {
     return (
@@ -136,11 +131,7 @@ function FolderCard({ folder, onClick, viewMode, onContextMenu, onToggleFavorite
       >
         <Folder size={18} className="list-item__icon" style={{ color: folder.borderColor }} />
         <span className="list-item__name">{folder.name}</span>
-        {folder.favorite && (
-          <button className="foux-star-btn foux-star-btn--active" onClick={handleStarClick} aria-label="Remover favorito">
-            <Star size={14} />
-          </button>
-        )}
+        <span className="list-item__file-count">{fileCountLabel}</span>
         <span className="list-item__date">{dateLabel}</span>
       </div>
     );
@@ -156,19 +147,12 @@ function FolderCard({ folder, onClick, viewMode, onContextMenu, onToggleFavorite
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter') onClick(folder.id); }}
     >
-      {/* Estrela de favorito */}
-      <button
-        className={`foux-star-btn foux-star-btn--card ${folder.favorite ? 'foux-star-btn--active' : ''}`}
-        onClick={handleStarClick}
-        aria-label={folder.favorite ? 'Remover favorito' : 'Favoritar'}
-      >
-        <Star size={14} />
-      </button>
       <div className="project-card__preview project-card__preview--folder">
         <Folder size={28} style={{ color: folder.borderColor }} />
       </div>
       <div className="project-card__info">
         <span className="project-card__name">{folder.name}</span>
+        <span className="project-card__file-count">{fileCountLabel}</span>
         <span className="project-card__date">Criada {dateLabel}</span>
       </div>
     </div>
@@ -312,16 +296,18 @@ export default function Dashboard({
   onRenameFolder,
   onChangeFolderColor,
   onToggleProjectFavorite,
+  onNavigate,
   showToast,
   currentTheme,
   onThemeChange,
+  onClearActivities,
+  onRemoveActivity,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState('grid');
   const [currentFolderId, setCurrentFolderId] = useState(null);
-  const [configOpen, setConfigOpen] = useState(false);
 
   /* Selection mode state */
   const [selectionMode, setSelectionMode] = useState(false);
@@ -352,6 +338,18 @@ export default function Dashboard({
     () => folders.find((f) => f.id === currentFolderId) || null,
     [folders, currentFolderId]
   );
+
+  /* Pre-compute file counts for each folder */
+  const folderFileCounts = useMemo(() => {
+    const counts = {};
+    folders.forEach((f) => { counts[f.id] = 0; });
+    projects.forEach((p) => {
+      if (p.folderId && counts[p.folderId] !== undefined) {
+        counts[p.folderId]++;
+      }
+    });
+    return counts;
+  }, [projects, folders]);
 
   /* Filtered and SORTED items — RIGID PRIORITY ORDER:
      1. Folders favoritos
@@ -509,7 +507,7 @@ export default function Dashboard({
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onNewFolder={() => setIsFolderModalOpen(true)}
-        onOpenConfig={() => setConfigOpen(true)}
+        onOpenConfig={() => onNavigate('settings')}
         onNotImplemented={handleNotImplemented}
       />
 
@@ -566,7 +564,7 @@ export default function Dashboard({
                   folder={folder}
                   onClick={enterFolder}
                   viewMode={viewMode}
-                  onToggleFavorite={onToggleFolderFavorite}
+                  fileCount={folderFileCounts[folder.id] || 0}
                   onContextMenu={(e) => handleFolderContextMenu(e, folder)}
                 />
               ))}
@@ -614,7 +612,11 @@ export default function Dashboard({
 
         {/* Recent Activity */}
         {!selectionMode && (
-          <AtividadeRecente activities={activities} />
+          <AtividadeRecente
+            activities={activities}
+            onClearActivities={onClearActivities}
+            onRemoveActivity={onRemoveActivity}
+          />
         )}
       </main>
 
@@ -650,15 +652,6 @@ export default function Dashboard({
         onClose={() => setIsFolderModalOpen(false)}
         onCreate={onCreateFolder}
         existingFolders={folders}
-      />
-
-      {/* Config Modal */}
-      <ConfigModal
-        isOpen={configOpen}
-        onClose={() => setConfigOpen(false)}
-        currentTheme={currentTheme}
-        onThemeChange={onThemeChange}
-        showToast={showToast}
       />
 
       {/* Project Context Menu */}

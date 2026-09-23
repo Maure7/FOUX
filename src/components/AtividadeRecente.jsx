@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ClipboardList, Clock, FileCode } from 'lucide-react';
+import { ClipboardList, Clock, FileCode, Trash2, X } from 'lucide-react';
 
 const MAX_COLLAPSED = 6;
 
@@ -37,7 +37,7 @@ function ActivityEmptyState() {
 }
 
 /* ===== ACTIVITY ITEM ===== */
-function ActivityItem({ activity }) {
+function ActivityItem({ activity, onRemove }) {
   const [timeLabel, setTimeLabel] = useState(() => timeAgo(activity.timestamp));
 
   // Auto-refresh the relative timestamp every 30s
@@ -58,16 +58,41 @@ function ActivityItem({ activity }) {
         <span className="activity-item__time">{timeLabel}</span>
       </div>
       <span className="activity-item__tag">projeto</span>
+      {onRemove && (
+        <button
+          className="activity-item__delete"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove(activity.id);
+          }}
+          aria-label="Remover atividade"
+          title="Remover"
+        >
+          <X size={14} />
+        </button>
+      )}
     </div>
   );
 }
 
 /* ===== MAIN COMPONENT ===== */
-export default function AtividadeRecente({ activities }) {
+export default function AtividadeRecente({ activities, onClearActivities, onRemoveActivity }) {
   const [expanded, setExpanded] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
 
   const hasMore = activities.length > MAX_COLLAPSED;
   const visibleActivities = expanded ? activities : activities.slice(0, MAX_COLLAPSED);
+
+  const handleClearAll = () => {
+    if (confirmClear) {
+      if (onClearActivities) onClearActivities();
+      setConfirmClear(false);
+    } else {
+      setConfirmClear(true);
+      // Auto-dismiss confirmation after 4s
+      setTimeout(() => setConfirmClear(false), 4000);
+    }
+  };
 
   return (
     <section className="activity-section" id="activity-section">
@@ -76,24 +101,40 @@ export default function AtividadeRecente({ activities }) {
           <ClipboardList className="activity-header__icon" />
           <h2 className="activity-header__title">Atividade Recente</h2>
         </div>
-        {hasMore && (
-          <a
-            className="activity-header__link"
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              setExpanded((prev) => !prev);
-            }}
-          >
-            {expanded ? 'Ver resumo' : 'Ver histórico completo'}
-          </a>
-        )}
+        <div className="activity-header__right">
+          {activities.length > 0 && onClearActivities && (
+            <button
+              className={`activity-header__clear ${confirmClear ? 'activity-header__clear--confirm' : ''}`}
+              onClick={handleClearAll}
+              title={confirmClear ? 'Clique novamente para confirmar' : 'Limpar histórico'}
+            >
+              <Trash2 size={13} />
+              <span>{confirmClear ? 'Confirmar limpeza' : 'Limpar'}</span>
+            </button>
+          )}
+          {hasMore && (
+            <a
+              className="activity-header__link"
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                setExpanded((prev) => !prev);
+              }}
+            >
+              {expanded ? 'Ver resumo' : 'Ver histórico completo'}
+            </a>
+          )}
+        </div>
       </div>
 
       {activities.length > 0 ? (
         <div className={`activity-list ${expanded ? 'activity-list--expanded' : ''}`}>
           {visibleActivities.map((item) => (
-            <ActivityItem key={item.id} activity={item} />
+            <ActivityItem
+              key={item.id}
+              activity={item}
+              onRemove={onRemoveActivity}
+            />
           ))}
         </div>
       ) : (

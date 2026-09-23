@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Dashboard from './pages/Dashboard';
 import Editor from './pages/Editor';
 import Settings from './pages/Settings';
@@ -59,6 +59,17 @@ export default function App() {
   const [theme, setTheme] = useState(() => loadTheme());
   const { toasts, showToast } = useToast();
 
+  /* Track the previous screen for Settings "back" navigation */
+  const previousScreenRef = useRef('dashboard');
+
+  /* Navigate wrapper: tracks previous screen for Settings */
+  const navigateTo = useCallback((screen) => {
+    if (screen === 'settings') {
+      previousScreenRef.current = currentScreen;
+    }
+    setCurrentScreen(screen);
+  }, [currentScreen]);
+
   /* Persist to localStorage whenever state changes */
   useEffect(() => { saveToStorage(STORAGE_KEY, projects); }, [projects]);
   useEffect(() => { saveToStorage(FOLDERS_KEY, folders); }, [folders]);
@@ -82,6 +93,14 @@ export default function App() {
       timestamp: new Date().toISOString(),
     };
     setActivities((prev) => [newActivity, ...prev]);
+  }, []);
+
+  const clearActivities = useCallback(() => {
+    setActivities([]);
+  }, []);
+
+  const removeActivity = useCallback((activityId) => {
+    setActivities((prev) => prev.filter((a) => a.id !== activityId));
   }, []);
 
   /* ===== Theme ===== */
@@ -288,7 +307,7 @@ export default function App() {
           project={activeProject}
           onUpdateProject={(updates) => updateProject(activeProject.id, updates)}
           onRenameProject={(newName) => renameProject(activeProject.id, newName)}
-          onNavigate={setCurrentScreen}
+          onNavigate={navigateTo}
           showToast={showToast}
           addActivity={addActivity}
           currentTheme={theme}
@@ -296,7 +315,8 @@ export default function App() {
         />
       ) : currentScreen === 'settings' ? (
         <Settings
-          onNavigate={setCurrentScreen}
+          onNavigate={navigateTo}
+          previousScreen={previousScreenRef.current}
           currentTheme={theme}
           onThemeChange={handleThemeChange}
           showToast={showToast}
@@ -319,11 +339,13 @@ export default function App() {
           onRenameFolder={renameFolder}
           onChangeFolderColor={changeFolderColor}
           onToggleProjectFavorite={toggleProjectFavorite}
-          onNavigate={setCurrentScreen}
+          onNavigate={navigateTo}
           addActivity={addActivity}
           showToast={showToast}
           currentTheme={theme}
           onThemeChange={handleThemeChange}
+          onClearActivities={clearActivities}
+          onRemoveActivity={removeActivity}
         />
       )}
 

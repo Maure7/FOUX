@@ -13,6 +13,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
    6. Serialização limpa do documento para persistência
    7. Injeção de fontes locais (@font-face)
    8. Listagem de elementos com id para aba Layout
+   9. Injeção de estilos dinâmicos de hover (aba Eventos)
    =================================================================== */
 
 /* ---------- Utilities ---------- */
@@ -40,6 +41,9 @@ const SELECT_OFFSET = '1px';
 
 const ATTR_HOVERED = 'data-foux-hovered';
 const ATTR_SELECTED = 'data-foux-selected';
+
+const HOVER_STYLE_ID = 'foux-dynamic-events';
+const HOVER_CLASS_PREFIX = 'foux-hover-target-';
 
 /**
  * Lê os estilos computados relevantes de um elemento DOM.
@@ -200,7 +204,7 @@ export default function useIframeInspector(iframeRef) {
     const result = [];
     elements.forEach((el) => {
       // Filtrar ids de inspeção e internos
-      if (el.id && !el.id.startsWith('foux-font-')) {
+      if (el.id && !el.id.startsWith('foux-font-') && el.id !== HOVER_STYLE_ID) {
         result.push({
           id: el.id,
           tagName: el.tagName,
@@ -241,109 +245,175 @@ export default function useIframeInspector(iframeRef) {
     element.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [iframeRef, clearHover, clearSelectionOutline]);
 
+  /* ============================================================
+     HOVER STYLES — Aba Eventos (Injeção Dinâmica)
+     ============================================================ */
+
+  /** Atribui uma classe hover única ao elemento, se ainda não tiver */
+  const assignHoverClass = useCallback((element) => {
+    if (!element) return null;
+    // Verifica se já tem uma classe foux-hover-target
+    const existing = Array.from(element.classList).find((c) => c.startsWith(HOVER_CLASS_PREFIX));
+    if (existing) return existing;
+    // Gerar classe única
+    const cls = `${HOVER_CLASS_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    element.classList.add(cls);
+    return cls;
+  }, []);
+
+  /** Obtém a classe hover existente de um elemento */
+  const getHoverClass = useCallback((element) => {
+    if (!element) return null;
+    return Array.from(element.classList).find((c) => c.startsWith(HOVER_CLASS_PREFIX)) || null;
+  }, []);
+
+  /** Injeta/atualiza regras de :hover no <style> dinâmico dentro do iframe */
+  const injectHoverStyles = useCallback((selector, cssText) => {
+    const iframe = iframeRef.current;
+    if (!iframe?.contentDocument) return;
+    const doc = iframe.contentDocument;
+
+    let styleEl = doc.getElementById(HOVER_STYLE_ID);
+    if (!styleEl) {
+      styleEl = doc.createElement('style');
+      styleEl.id = HOVER_STYLE_ID;
+      doc.head.appendChild(styleEl);
+    }
+
+    // Parsear regras existentes e atualizar/adicionar para o seletor
+    const sheet = styleEl.sheet;
+    if (!sheet) {
+      // Fallback: sobrescrever textContent
+      styleEl.textContent = `${selector}:hover { ${cssText} }`;
+      return;
+    }
+
+    // Procurar regra existente para este seletor
+    const hoverSelector = `${selector}:hover`;
+    let found = false;
+    for (let i = 0; i < sheet.cssRules.length; i++) {
+      if (sheet.cssRules[i].selectorText === hoverSelector) {
+        sheet.deleteRule(i);
+        sheet.insertRule(`${hoverSelector} { ${cssText} }`, i);
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      sheet.insertRule(`${hoverSelector} { ${cssText} }`, sheet.cssRules.length);
+    }
+  }, [iframeRef]);
+
+  /* ------ Função de setup dos listeners (extraída para reuso) ------ */
+  const setupListeners = useCallback(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    const doc = iframe.contentDocument;
+    const win = iframe.contentWindow;
+    if (!doc || !win) return;
+
+    // Limpar listeners anteriores se existirem
+    if (cleanupRef.current) {
+      cleanupRef.current();
+      cleanupRef.current = null;
+    }
+
+    // Reset state
+    selectedRef.current = null;
+    hoveredRef.current = null;
+    setSelectedElement(null);
+    setSelectedTagName(null);
+    setComputedStyles(null);
+
+    function onMouseOver(e) {
+      const target = e.target;
+      if (!target || target === doc.documentElement) return;
+      clearHover();
+      if (target === selectedRef.current) return;
+      target.style.outline = HOVER_OUTLINE;
+      target.style.outlineOffset = HOVER_OFFSET;
+      target.setAttribute(ATTR_HOVERED, '');
+      hoveredRef.current = target;
+    }
+
+    function onMouseOut(e) {
+      const target = e.target;
+      if (target === hoveredRef.current) {
+        clearHover();
+      }
+    }
+
+    function onClick(e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const target = e.target;
+      if (!target) return;
+
+      clearHover();
+      clearSelectionOutline();
+
+      const element = target;
+      element.style.outline = SELECT_OUTLINE;
+      element.style.outlineOffset = SELECT_OFFSET;
+      element.setAttribute(ATTR_SELECTED, '');
+      selectedRef.current = element;
+
+      const tagName = element.tagName || 'ELEMENT';
+      const styles = extractComputedStyles(element, win);
+
+      setSelectedElement(element);
+      setSelectedTagName(tagName);
+      setComputedStyles(styles);
+    }
+
+    function onSubmit(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    function onAnchorClick(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    doc.addEventListener('mouseover', onMouseOver, true);
+    doc.addEventListener('mouseout', onMouseOut, true);
+    doc.addEventListener('click', onClick, true);
+    doc.addEventListener('submit', onSubmit, true);
+
+    const anchors = doc.querySelectorAll('a');
+    anchors.forEach((a) => {
+      a.addEventListener('click', onAnchorClick, true);
+    });
+
+    cleanupRef.current = () => {
+      doc.removeEventListener('mouseover', onMouseOver, true);
+      doc.removeEventListener('mouseout', onMouseOut, true);
+      doc.removeEventListener('click', onClick, true);
+      doc.removeEventListener('submit', onSubmit, true);
+      anchors.forEach((a) => {
+        a.removeEventListener('click', onAnchorClick, true);
+      });
+      clearHover();
+      clearSelectionOutline();
+    };
+  }, [iframeRef, clearHover, clearSelectionOutline]);
+
   /* ------ Configurar listeners no contentDocument ------ */
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
 
-    function setup() {
-      const doc = iframe.contentDocument;
-      const win = iframe.contentWindow;
-      if (!doc || !win) return;
-
-      function onMouseOver(e) {
-        const target = e.target;
-        if (!target || target === doc.documentElement) return;
-        clearHover();
-        if (target === selectedRef.current) return;
-        target.style.outline = HOVER_OUTLINE;
-        target.style.outlineOffset = HOVER_OFFSET;
-        target.setAttribute(ATTR_HOVERED, '');
-        hoveredRef.current = target;
-      }
-
-      function onMouseOut(e) {
-        const target = e.target;
-        if (target === hoveredRef.current) {
-          clearHover();
-        }
-      }
-
-      function onClick(e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const target = e.target;
-        if (!target) return;
-
-        clearHover();
-        clearSelectionOutline();
-
-        const element = target;
-        element.style.outline = SELECT_OUTLINE;
-        element.style.outlineOffset = SELECT_OFFSET;
-        element.setAttribute(ATTR_SELECTED, '');
-        selectedRef.current = element;
-
-        const tagName = element.tagName || 'ELEMENT';
-        const styles = extractComputedStyles(element, win);
-
-        setSelectedElement(element);
-        setSelectedTagName(tagName);
-        setComputedStyles(styles);
-      }
-
-      function onSubmit(e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-
-      function onAnchorClick(e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-
-      doc.addEventListener('mouseover', onMouseOver, true);
-      doc.addEventListener('mouseout', onMouseOut, true);
-      doc.addEventListener('click', onClick, true);
-      doc.addEventListener('submit', onSubmit, true);
-
-      const anchors = doc.querySelectorAll('a');
-      anchors.forEach((a) => {
-        a.addEventListener('click', onAnchorClick, true);
-      });
-
-      cleanupRef.current = () => {
-        doc.removeEventListener('mouseover', onMouseOver, true);
-        doc.removeEventListener('mouseout', onMouseOut, true);
-        doc.removeEventListener('click', onClick, true);
-        doc.removeEventListener('submit', onSubmit, true);
-        anchors.forEach((a) => {
-          a.removeEventListener('click', onAnchorClick, true);
-        });
-        clearHover();
-        clearSelectionOutline();
-      };
-    }
-
     function onLoad() {
-      if (cleanupRef.current) {
-        cleanupRef.current();
-        cleanupRef.current = null;
-      }
-      selectedRef.current = null;
-      hoveredRef.current = null;
-      setSelectedElement(null);
-      setSelectedTagName(null);
-      setComputedStyles(null);
-
-      setup();
+      setupListeners();
     }
 
     iframe.addEventListener('load', onLoad);
 
     if (iframe.contentDocument?.readyState === 'complete') {
-      setup();
+      setupListeners();
     }
 
     return () => {
@@ -353,7 +423,7 @@ export default function useIframeInspector(iframeRef) {
         cleanupRef.current = null;
       }
     };
-  }, [iframeRef, clearHover, clearSelectionOutline]);
+  }, [iframeRef, setupListeners]);
 
   return {
     selectedElement,
@@ -365,5 +435,11 @@ export default function useIframeInspector(iframeRef) {
     injectFont,
     getElementsWithId,
     selectElementById,
+    /* FIX #1: Editabilidade imediata */
+    setupIframeListeners: setupListeners,
+    /* FIX #6: Hover events */
+    assignHoverClass,
+    getHoverClass,
+    injectHoverStyles,
   };
 }

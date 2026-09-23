@@ -47,6 +47,79 @@
 
   /* Status */
   --status-green: #22c55e;
+  --border-color: rgba(255, 255, 255, 0.055);
+}
+
+/* ============ TEMA: Padrão FOUX (dark, padrão via :root) ============ */
+[data-theme="dark"] {
+  --bg-app: #16141a;
+  --bg-card: #221e29;
+  --bg-card-hover: #2a2533;
+  --bg-input: #1e1a25;
+  --bg-header: rgba(22, 20, 26, 0.88);
+  --bg-sidebar: #1c1823;
+  --accent-gold: #e59843;
+  --accent-gold-light: #f0a85d;
+  --accent-gold-bg: #3d2e20;
+  --accent-purple: #9333ea;
+  --accent-purple-light: #a855f7;
+  --accent-purple-bg: rgba(147, 51, 234, 0.12);
+  --text-primary: #ededf0;
+  --text-secondary: #95989f;
+  --text-muted: #636670;
+  --text-dark: #484b55;
+  --border-subtle: rgba(255, 255, 255, 0.055);
+  --border-light: rgba(255, 255, 255, 0.10);
+  --border-color: rgba(255, 255, 255, 0.055);
+  --status-green: #22c55e;
+}
+
+/* ============ TEMA: Padrão Light ============ */
+[data-theme="light"] {
+  --bg-app: #f8f9fa;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f3f4f6;
+  --bg-input: #f1f2f5;
+  --bg-header: rgba(248, 249, 250, 0.92);
+  --bg-sidebar: #ffffff;
+  --accent-gold: #f97316;
+  --accent-gold-light: #ea580c;
+  --accent-gold-bg: rgba(249, 115, 22, 0.08);
+  --accent-purple: #ef4444;
+  --accent-purple-light: #dc2626;
+  --accent-purple-bg: rgba(239, 68, 68, 0.08);
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+  --text-dark: #6b7280;
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-light: rgba(0, 0, 0, 0.14);
+  --border-color: rgba(0, 0, 0, 0.08);
+  --status-green: #16a34a;
+}
+
+/* ============ TEMA: Osaka Solarized Pro ============ */
+[data-theme="solarized"] {
+  --bg-app: #002b36;
+  --bg-card: #073642;
+  --bg-card-hover: #0a4050;
+  --bg-input: #053541;
+  --bg-header: rgba(0, 43, 54, 0.92);
+  --bg-sidebar: #073642;
+  --accent-gold: #268bd2;
+  --accent-gold-light: #2aa198;
+  --accent-gold-bg: rgba(38, 139, 210, 0.12);
+  --accent-purple: #d33682;
+  --accent-purple-light: #cb4b16;
+  --accent-purple-bg: rgba(211, 54, 130, 0.12);
+  --text-primary: #93a1a1;
+  --text-secondary: #839496;
+  --text-muted: #586e75;
+  --text-dark: #657b83;
+  --border-subtle: rgba(147, 161, 161, 0.1);
+  --border-light: rgba(147, 161, 161, 0.18);
+  --border-color: rgba(147, 161, 161, 0.1);
+  --status-green: #859900;
 }
 
 /* ---------- Reset & Base ---------- */
@@ -2414,3 +2487,667 @@ body {
   pointer-events: none;
 }
 
+/* ======================================================
+   SETTINGS PAGE — FULL-PAGE STYLES
+   ====================================================== */
+.settings-page {
+  min-height: 100vh;
+  background: var(--bg-app);
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-page__header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-header);
+  backdrop-filter: blur(14px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.settings-page__back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.settings-page__back:hover {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-light);
+}
+
+.settings-page__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.settings-page__body {
+  flex: 1;
+  max-width: 680px;
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--sp-4) var(--sp-3);
+}
+
+.settings-section {
+  margin-bottom: var(--sp-3);
+}
+
+.settings-section__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--sp-2);
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-field__label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.settings-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: var(--sp-2) 0;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-1) 0;
+}
+
+.settings-row__info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.settings-row__label {
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.settings-row__badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--accent-gold-light);
+  background: var(--accent-gold-bg);
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+}
+
+.settings-row__hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* ======================================================
+   POLISHED FORM ELEMENTS — Global overrides
+   ====================================================== */
+
+/* Select boxes (settings + sidebar) */
+.settings-select,
+.sidebar-select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 8px 12px;
+  padding-right: 32px;
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 0.82rem;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2395989f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.settings-select:hover,
+.sidebar-select:hover {
+  border-color: var(--border-light);
+}
+
+.settings-select:focus,
+.sidebar-select:focus {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 2px rgba(212, 144, 63, 0.12);
+}
+
+.settings-select option,
+.sidebar-select option {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+/* Buttons in settings rows */
+.settings-row__btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 8px 16px;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.settings-row__btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--border-light);
+}
+
+.settings-row__btn--danger {
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.settings-row__btn--danger:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* ======================================================
+   SIDEBAR — Inline Number Input (Bidirectional Sliders)
+   ====================================================== */
+.sidebar-inline-number {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: var(--accent-gold-light);
+  font-family: var(--font);
+  font-size: 0.72rem;
+  font-weight: 600;
+  width: 52px;
+  text-align: center;
+  outline: none;
+  transition: all 0.2s ease;
+  -moz-appearance: textfield;
+}
+
+.sidebar-inline-number::-webkit-inner-spin-button,
+.sidebar-inline-number::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.sidebar-inline-number:focus {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 2px rgba(212, 144, 63, 0.12);
+}
+
+.sidebar-inline-number:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.sidebar-inline-number--small {
+  width: 42px;
+  font-size: 0.7rem;
+}
+
+.sidebar-control__unit {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* Opacity row — spaced label and value */
+.sidebar-opacity-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-opacity-row__label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.sidebar-opacity-row__value {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent-gold-light);
+}
+
+/* ======================================================
+   SIDEBAR — Toggle Checkbox (Eventos tab)
+   ====================================================== */
+.sidebar-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.sidebar-toggle-checkbox {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--border-light);
+  border-radius: 4px;
+  background: var(--bg-input);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.sidebar-toggle-checkbox:checked {
+  background: var(--accent-gold);
+  border-color: var(--accent-gold);
+}
+
+.sidebar-toggle-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 10px;
+  color: #fff;
+  font-weight: 700;
+}
+
+.sidebar-toggle-checkbox:hover {
+  border-color: var(--accent-gold);
+}
+
+/* ======================================================
+   SIDEBAR — Import Font Button
+   ====================================================== */
+.sidebar-import-font-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 4px;
+}
+
+.sidebar-import-font-btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--border-light);
+}
+
+.sidebar-import-font-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ======================================================
+   FOLDER CARD — File Count
+   ====================================================== */
+.project-card__file-count {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.list-item__file-count {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-right: auto;
+  margin-left: 0;
+}
+
+/* ======================================================
+   ACTIVITY — Clear/Delete Controls
+   ====================================================== */
+.activity-header__right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.activity-header__clear {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.activity-header__clear:hover {
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.activity-header__clear--confirm {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  animation: pulse-border 0.8s ease infinite alternate;
+}
+
+@keyframes pulse-border {
+  from { border-color: rgba(239, 68, 68, 0.5); }
+  to { border-color: #ef4444; }
+}
+
+.activity-item__delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  opacity: 0;
+  margin-left: 4px;
+}
+
+.activity-item:hover .activity-item__delete {
+  opacity: 1;
+}
+
+.activity-item__delete:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+/* ======================================================
+   LAYOUT ID LIST
+   ====================================================== */
+.foux-layout-id-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.foux-layout-id-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: 0.76rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.foux-layout-id-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+}
+
+.foux-layout-id-item--active {
+  background: var(--accent-gold-bg);
+  color: var(--accent-gold-light);
+}
+
+.foux-layout-id-item__hash {
+  color: var(--accent-gold);
+  font-weight: 700;
+}
+
+.foux-layout-id-item__name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.foux-layout-id-item__tag {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.foux-editor-empty-state--compact {
+  padding: var(--sp-2);
+  gap: 8px;
+}
+
+.foux-editor-empty-state__icon-inline {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+/* ======================================================
+   CONFIG MODAL — Preserved for backwards compatibility
+   ====================================================== */
+.foux-config-modal {
+  max-width: 560px;
+}
+
+.foux-config-section {
+  margin-bottom: var(--sp-3);
+}
+
+.foux-config-section__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--sp-2);
+}
+
+.foux-config-themes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.foux-config-theme-card {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: left;
+  font-family: var(--font);
+  position: relative;
+  width: 100%;
+}
+
+.foux-config-theme-card:hover {
+  border-color: var(--border-light);
+  background: var(--bg-card-hover);
+}
+
+.foux-config-theme-card--active {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 0 2px rgba(212, 144, 63, 0.15);
+}
+
+.foux-config-theme-card__preview {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.foux-config-theme-card__swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.foux-config-theme-card__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.foux-config-theme-card__name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+}
+
+.foux-config-theme-card__name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.foux-config-theme-card__desc {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.foux-config-theme-card__check {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent-gold);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.foux-config-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-1) 0;
+}
+
+.foux-config-row__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.foux-config-row__label {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.foux-config-row__badge {
+  font-size: 0.68rem;
+  color: var(--accent-gold-light);
+}
+
+.foux-config-row__hint {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.foux-config-row__btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 7px 14px;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.foux-config-row__btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+  border-color: var(--border-light);
+}
+
+.foux-config-row__btn--danger {
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.foux-config-row__btn--danger:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: #ef4444;
+}
+
+/* ======================================================
+   STAR BUTTON (removed from UI but styles kept for safety)
+   ====================================================== */
+.foux-star-btn {
+  display: none;
+}

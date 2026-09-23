@@ -2,24 +2,30 @@ import { ArrowLeft } from 'lucide-react';
 import '../styles/Dashboard.css';
 
 /* ===================================================================
-   Settings — Página dedicada de configurações.
+   Settings — Página dedicada de configurações (SEMPRE tela inteira).
    Sem emojis, sem descrições verbosas. Design limpo FOUX.
+   O botão "Voltar" retorna para a tela anterior (dashboard ou editor).
    =================================================================== */
 
 const THEMES = [
-  { id: 'dark', name: 'Padrão FOUX' },
-  { id: 'light', name: 'Padrão Light' },
+  { id: 'dark', name: 'Padrão FOUX (Dark / Cyber)' },
+  { id: 'light', name: 'Padrão Light (Alto Contraste)' },
   { id: 'solarized', name: 'Osaka Solarized Pro' },
 ];
 
-export default function Settings({ onNavigate, currentTheme, onThemeChange, showToast }) {
+export default function Settings({ onNavigate, previousScreen, currentTheme, onThemeChange, showToast }) {
+  const handleBack = () => {
+    // Retorna para a tela anterior (dashboard ou editor)
+    onNavigate(previousScreen || 'dashboard');
+  };
+
   return (
     <div className="settings-page">
       {/* Header */}
       <header className="settings-page__header">
         <button
           className="settings-page__back"
-          onClick={() => onNavigate('dashboard')}
+          onClick={handleBack}
           aria-label="Voltar"
         >
           <ArrowLeft size={16} />

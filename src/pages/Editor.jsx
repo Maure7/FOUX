@@ -138,7 +138,7 @@ function EditorHeader({ project, onRename, onNavigate, onAction, onNewFile, onOp
    diretamente os nós do DOM dentro do contentDocument.
    Assim o iframe nunca é remontado durante a edição.
    ============================================================= */
-function EditorCanvas({ initialHtml, onFileSelect, iframeRef }) {
+function EditorCanvas({ initialHtml, onFileSelect, iframeRef, onIframeLoad }) {
   const fileInputRef = useRef(null);
 
   const safeHtml = useMemo(
@@ -174,6 +174,7 @@ function EditorCanvas({ initialHtml, onFileSelect, iframeRef }) {
           srcDoc={safeHtml}
           title="HTML Preview Canvas"
           sandbox="allow-same-origin"
+          onLoad={onIframeLoad}
         />
       ) : (
         <div
@@ -241,7 +242,18 @@ export default function Editor({
     injectFont,
     getElementsWithId,
     selectElementById,
+    setupIframeListeners,
+    assignHoverClass,
+    getHoverClass,
+    injectHoverStyles,
   } = useIframeInspector(iframeRef);
+
+  /* ---- FIX #1: Editabilidade imediata no primeiro upload ----
+     Quando o iframe termina de carregar (incluindo o primeiro upload),
+     reinicializa os listeners de inspeção imediatamente. */
+  const handleIframeLoad = useCallback(() => {
+    setupIframeListeners();
+  }, [setupIframeListeners]);
 
   /* ---- Debounced auto-save ----
      Serializa o DOM vivo do iframe e persiste no projeto.
@@ -345,7 +357,7 @@ export default function Editor({
       <EditorHeader
         project={project}
         onRename={handleRename}
-        onNavigate={onNavigate}
+        onNavigate={() => onNavigate('dashboard')}
         onAction={handleToolbarAction}
         onNewFile={handleNewFile}
         onOpenConfig={handleOpenConfig}
@@ -364,6 +376,7 @@ export default function Editor({
           initialHtml={initialHtml}
           onFileSelect={handleFileSelect}
           iframeRef={iframeRef}
+          onIframeLoad={handleIframeLoad}
         />
         <SidebarEstilos
           isLocked={!initialHtml}
@@ -375,6 +388,10 @@ export default function Editor({
           getElementsWithId={getElementsWithId}
           selectElementById={selectElementById}
           onStyleChange={handleStyleChange}
+          assignHoverClass={assignHoverClass}
+          getHoverClass={getHoverClass}
+          injectHoverStyles={injectHoverStyles}
+          iframeRef={iframeRef}
         />
       </div>
     </div>
