@@ -137,6 +137,11 @@ export default function useIframeInspector(iframeRef) {
     if (!iframe?.contentDocument) return null;
     const doc = iframe.contentDocument;
 
+    // Blindagem: se o documento ou body estiver vazio (ex: about:blank durante desmontagem), não serializa
+    if (!doc.body || (!doc.body.innerHTML.trim() && doc.body.children.length === 0)) {
+      return null;
+    }
+
     // Remover temporariamente atributos de inspeção
     const markedHover = doc.querySelectorAll(`[${ATTR_HOVERED}]`);
     const markedSelect = doc.querySelectorAll(`[${ATTR_SELECTED}]`);

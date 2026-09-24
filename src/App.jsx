@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Dashboard from './pages/Dashboard';
 import Editor from './pages/Editor';
 import Settings from './pages/Settings';
@@ -14,28 +14,11 @@ const ACTIVITIES_KEY = 'foux_activities';
 const THEME_KEY = 'foux_theme';
 const PROFILE_KEY = 'foux_user_profile';
 
-function loadFromStorage(key, fallback = []) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
 function saveToStorage(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
     console.warn('Erro ao salvar no localStorage:', e);
-  }
-}
-
-function loadActiveProjectId() {
-  try {
-    return localStorage.getItem(ACTIVE_KEY) || null;
-  } catch {
-    return null;
   }
 }
 
@@ -48,14 +31,6 @@ function saveActiveProjectId(id) {
     }
   } catch (e) {
     console.warn('Erro ao salvar projeto ativo:', e);
-  }
-}
-
-function loadTheme() {
-  try {
-    return localStorage.getItem(THEME_KEY) || 'dark';
-  } catch {
-    return 'dark';
   }
 }
 
@@ -75,19 +50,76 @@ function nextId(prefix = 'id') {
 
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState('dashboard');
-  const [projects, setProjects] = useState(() => loadFromStorage(STORAGE_KEY));
-  const [folders, setFolders] = useState(() => loadFromStorage(FOLDERS_KEY));
-  const [activities, setActivities] = useState(() => loadFromStorage(ACTIVITIES_KEY));
-  const [activeProjectId, setActiveProjectId] = useState(() => loadActiveProjectId());
-  const [theme, setTheme] = useState(() => loadTheme());
-  const [userProfile, setUserProfile] = useState(() =>
-    loadFromStorage(PROFILE_KEY, {
-      name: 'Usuário FOUX',
-      avatar: null,
-      bio: '',
-    })
-  );
+
+  /* Inicialização segura e preguiçosa de estado (Lazy State Initialization) */
+  const [projects, setProjects] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Erro ao carregar projetos:", e);
+      return [];
+    }
+  });
+
+  const [folders, setFolders] = useState(() => {
+    try {
+      const saved = localStorage.getItem(FOLDERS_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Erro ao carregar pastas:", e);
+      return [];
+    }
+  });
+
+  const [activities, setActivities] = useState(() => {
+    try {
+      const saved = localStorage.getItem(ACTIVITIES_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Erro ao carregar atividades:", e);
+      return [];
+    }
+  });
+
+  const [activeProjectId, setActiveProjectId] = useState(() => {
+    try {
+      return localStorage.getItem(ACTIVE_KEY) || null;
+    } catch (e) {
+      console.error("Erro ao carregar projeto ativo:", e);
+      return null;
+    }
+  });
+
+  /* Chave de tema isolada e desacoplada */
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem(THEME_KEY) || 'dark';
+    } catch (e) {
+      console.error("Erro ao carregar tema:", e);
+      return 'dark';
+    }
+  });
+
+  const [userProfile, setUserProfile] = useState(() => {
+    try {
+      const saved = localStorage.getItem(PROFILE_KEY);
+      return saved
+        ? JSON.parse(saved)
+        : { name: 'Usuário FOUX', avatar: null, bio: '' };
+    } catch (e) {
+      console.error("Erro ao carregar perfil:", e);
+      return { name: 'Usuário FOUX', avatar: null, bio: '' };
+    }
+  });
+
   const { toasts, showToast } = useToast();
+
+  /* Guardas de carregamento para evitar sobrescrever localStorage no mount inicial */
+  const isProjectsLoadedRef = useRef(false);
+  const isFoldersLoadedRef = useRef(false);
+  const isActivitiesLoadedRef = useRef(false);
+  const isProfileLoadedRef = useRef(false);
 
   /* Track the previous screen for Settings / Profile "back" navigation */
   const [previousScreen, setPreviousScreen] = useState('dashboard');
@@ -113,14 +145,44 @@ function AppContent() {
     setActiveProjectId(null);
   }, []);
 
-  /* Persist to localStorage whenever state changes */
-  useEffect(() => { saveToStorage(STORAGE_KEY, projects); }, [projects]);
-  useEffect(() => { saveToStorage(FOLDERS_KEY, folders); }, [folders]);
-  useEffect(() => { saveToStorage(ACTIVITIES_KEY, activities); }, [activities]);
-  useEffect(() => { saveActiveProjectId(activeProjectId); }, [activeProjectId]);
-  useEffect(() => { saveToStorage(PROFILE_KEY, userProfile); }, [userProfile]);
+  /* Persistência segura no localStorage (evita sobrescrita durante inicialização) */
+  useEffect(() => {
+    if (!isProjectsLoadedRef.current) {
+      isProjectsLoadedRef.current = true;
+      return;
+    }
+    saveToStorage(STORAGE_KEY, projects);
+  }, [projects]);
 
-  /* Apply theme to DOM root */
+  useEffect(() => {
+    if (!isFoldersLoadedRef.current) {
+      isFoldersLoadedRef.current = true;
+      return;
+    }
+    saveToStorage(FOLDERS_KEY, folders);
+  }, [folders]);
+
+  useEffect(() => {
+    if (!isActivitiesLoadedRef.current) {
+      isActivitiesLoadedRef.current = true;
+      return;
+    }
+    saveToStorage(ACTIVITIES_KEY, activities);
+  }, [activities]);
+
+  useEffect(() => {
+    saveActiveProjectId(activeProjectId);
+  }, [activeProjectId]);
+
+  useEffect(() => {
+    if (!isProfileLoadedRef.current) {
+      isProfileLoadedRef.current = true;
+      return;
+    }
+    saveToStorage(PROFILE_KEY, userProfile);
+  }, [userProfile]);
+
+  /* Apply theme to DOM root — Isolado exclusivamente na chave foux_theme */
   useEffect(() => {
     saveTheme(theme);
     document.documentElement.setAttribute('data-theme', theme);
@@ -242,11 +304,33 @@ function AppContent() {
 
   const updateProject = useCallback((projectId, updates) => {
     setProjects((prev) =>
-      prev.map((p) =>
-        p.id === projectId
-          ? { ...p, ...updates, updatedAt: new Date().toISOString() }
-          : p
-      )
+      prev.map((p) => {
+        if (p.id !== projectId) return p;
+
+        // Blindagem contra sobrescrita com HTML vazio / cerca de tags vazias
+        if (updates.htmlContent !== undefined && p.htmlContent) {
+          const newHtml = updates.htmlContent;
+          const isBlank =
+            !newHtml ||
+            typeof newHtml !== 'string' ||
+            newHtml
+              .replace(/<!DOCTYPE[^>]*>/gi, '')
+              .replace(/<\/?(html|head|body)[^>]*>/gi, '')
+              .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+              .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+              .replace(/<base[^>]*>/gi, '')
+              .trim().length === 0;
+
+          if (isBlank) {
+            console.warn('Proteção de integridade FOUX: tentativa de sobrescrever htmlContent com documento vazio bloqueada.');
+            const safeUpdates = { ...updates };
+            delete safeUpdates.htmlContent;
+            return { ...p, ...safeUpdates, updatedAt: new Date().toISOString() };
+          }
+        }
+
+        return { ...p, ...updates, updatedAt: new Date().toISOString() };
+      })
     );
   }, []);
 

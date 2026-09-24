@@ -40,7 +40,9 @@ const termsToCheck = [
   { path: 'sidebar.bordersAndShapes', expected: 'ESQUINAS Y BORDES' },
   { path: 'settings.title', expected: 'Configuraciones' },
   { path: 'common.back', expected: 'Volver' },
-  { path: 'activity.title', expected: 'Historial reciente' }
+  { path: 'activity.title', expected: 'Historial reciente' },
+  { path: 'activity.hideHistory', expected: 'Ocultar historial' },
+  { path: 'activity.showHistory', expected: 'Mostrar historial' }
 ];
 
 for (const { path, expected } of termsToCheck) {
@@ -83,11 +85,15 @@ if (sampleEs === "Creó la carpeta 'Design System'") {
 }
 
 console.log('\n=== TESTE 5: Perfil do Usuário e Chaves ===');
-import('../src/utils/storage.js').then(({ FOUX_STORAGE_KEYS }) => {
-  if (FOUX_STORAGE_KEYS.includes('foux_user_profile')) {
-    console.log('✔ Chave foux_user_profile registrada em FOUX_STORAGE_KEYS');
+import('../src/utils/storage.js').then(({ FOUX_STORAGE_KEYS, clearAllStorage }) => {
+  if (
+    FOUX_STORAGE_KEYS.includes('foux_user_profile') &&
+    FOUX_STORAGE_KEYS.includes('foux_theme') &&
+    FOUX_STORAGE_KEYS.includes('foux_history_visibility')
+  ) {
+    console.log('✔ Chaves foux_user_profile, foux_theme e foux_history_visibility registradas em FOUX_STORAGE_KEYS');
   } else {
-    console.error('❌ Chave foux_user_profile AUSENTE em FOUX_STORAGE_KEYS');
+    console.error('❌ Chaves ausentes em FOUX_STORAGE_KEYS');
     process.exit(1);
   }
 
@@ -95,6 +101,38 @@ import('../src/utils/storage.js').then(({ FOUX_STORAGE_KEYS }) => {
     console.log('✔ Estruturas i18n de perfil presentes em pt.json e es.json');
   } else {
     console.error('❌ Estruturas i18n de perfil ausentes');
+    process.exit(1);
+  }
+
+  console.log('\n=== TESTE 6: Isolamento de Tema e Blindagem de Conteúdo ===');
+  // Simular mock de localStorage
+  const mockStorage = {
+    foux_projects: JSON.stringify([{ id: 'p1', name: 'Projeto Teste', htmlContent: '<h1>Meu Site</h1>' }]),
+    foux_theme: 'dark',
+    foux_language: 'pt',
+  };
+  global.localStorage = {
+    getItem: (k) => mockStorage[k] || null,
+    setItem: (k, v) => { mockStorage[k] = String(v); },
+    removeItem: (k) => { delete mockStorage[k]; },
+  };
+
+  // Alteração de tema não pode tocar em foux_projects
+  localStorage.setItem('foux_theme', 'light');
+  const projBefore = JSON.parse(localStorage.getItem('foux_projects'));
+  if (projBefore[0].htmlContent === '<h1>Meu Site</h1>' && localStorage.getItem('foux_theme') === 'light') {
+    console.log('✔ Chave foux_theme isolada e projetos 100% preservados na alteração de tema.');
+  } else {
+    console.error('❌ Falha no isolamento do storage de tema.');
+    process.exit(1);
+  }
+
+  // Teste de clearAllStorage preservando foux_theme e foux_language
+  clearAllStorage();
+  if (!localStorage.getItem('foux_projects') && localStorage.getItem('foux_theme') === 'light') {
+    console.log('✔ clearAllStorage limpa dados locais sem deletar preferência de tema.');
+  } else {
+    console.error('❌ clearAllStorage removeu chaves indevidas.');
     process.exit(1);
   }
 

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { ClipboardList, Clock, FileCode, Trash2, X } from 'lucide-react';
+import { ClipboardList, Clock, FileCode, Trash2, X, Eye, EyeOff } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 const MAX_COLLAPSED = 6;
+const HISTORY_VISIBILITY_KEY = 'foux_history_visibility';
 
 /* ===== EMPTY STATE ===== */
 function ActivityEmptyState({ message }) {
@@ -65,6 +66,32 @@ export default function AtividadeRecente({ activities, onClearActivities, onRemo
   const [expanded, setExpanded] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
 
+  /* 1. Inicialização segura com persistência da preferência do usuário */
+  const [isHistoryVisible, setIsHistoryVisible] = useState(() => {
+    try {
+      const saved = localStorage.getItem(HISTORY_VISIBILITY_KEY);
+      if (saved !== null) {
+        return saved === 'true';
+      }
+    } catch (e) {
+      console.error('Erro ao ler foux_history_visibility:', e);
+    }
+    return true; // Resumo padrão visível
+  });
+
+  /* Alterna a visibilidade e persiste no localStorage de forma síncrona */
+  const toggleHistoryVisibility = () => {
+    setIsHistoryVisible((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(HISTORY_VISIBILITY_KEY, String(next));
+      } catch (e) {
+        console.error('Erro ao persistir foux_history_visibility:', e);
+      }
+      return next;
+    });
+  };
+
   const hasMore = activities.length > MAX_COLLAPSED;
   const visibleActivities = expanded ? activities : activities.slice(0, MAX_COLLAPSED);
 
@@ -79,15 +106,20 @@ export default function AtividadeRecente({ activities, onClearActivities, onRemo
   };
 
   return (
-    <section className="activity-section" id="activity-section">
+    <section
+      className={`activity-section ${!isHistoryVisible ? 'activity-section--collapsed' : ''}`}
+      id="activity-section"
+    >
       <div className="activity-header">
         <div className="activity-header__left">
           <ClipboardList className="activity-header__icon" />
           <h2 className="activity-header__title">{t('activity.title')}</h2>
         </div>
         <div className="activity-header__right">
-          {activities.length > 0 && onClearActivities && (
+          {/* Botões secundários: ocultos quando o histórico está recolhido */}
+          {isHistoryVisible && activities.length > 0 && onClearActivities && (
             <button
+              type="button"
               className={`activity-header__clear ${confirmClear ? 'activity-header__clear--confirm' : ''}`}
               onClick={handleClearAll}
               title={confirmClear ? t('activity.confirmClear') : t('activity.clear')}
@@ -96,37 +128,57 @@ export default function AtividadeRecente({ activities, onClearActivities, onRemo
               <span>{confirmClear ? t('activity.confirmClear') : t('activity.clear')}</span>
             </button>
           )}
-          {hasMore && (
-            <a
+
+          {isHistoryVisible && hasMore && (
+            <button
+              type="button"
               className="activity-header__link"
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                setExpanded((prev) => !prev);
-              }}
+              onClick={() => setExpanded((prev) => !prev)}
             >
               {expanded ? t('activity.viewSummary') : t('activity.viewFullHistory')}
-            </a>
+            </button>
           )}
+
+          {/* Controle de alternância: Ocultar / Mostrar Histórico */}
+          <button
+            type="button"
+            className={`activity-header__toggle ${!isHistoryVisible ? 'activity-header__toggle--collapsed' : ''}`}
+            onClick={toggleHistoryVisibility}
+            title={isHistoryVisible ? t('activity.hideHistory') : t('activity.showHistory')}
+            aria-expanded={isHistoryVisible}
+            aria-controls="activity-content"
+          >
+            {isHistoryVisible ? <EyeOff size={13} /> : <Eye size={13} />}
+            <span>{isHistoryVisible ? t('activity.hideHistory') : t('activity.showHistory')}</span>
+          </button>
         </div>
       </div>
 
-      {activities.length > 0 ? (
-        <div className={`activity-list ${expanded ? 'activity-list--expanded' : ''}`}>
-          {visibleActivities.map((item) => (
-            <ActivityItem
-              key={item.id}
-              activity={item}
-              onRemove={onRemoveActivity}
-              timeAgo={timeAgo}
-              formatActivity={formatActivity}
-              projectTagLabel={t('activity.projectTag')}
-            />
-          ))}
+      {/* Corpo com transição suave de altura e opacidade */}
+      <div
+        id="activity-content"
+        className={`activity-body ${isHistoryVisible ? 'activity-body--visible' : 'activity-body--hidden'}`}
+        aria-hidden={!isHistoryVisible}
+      >
+        <div className="activity-body__inner">
+          {activities.length > 0 ? (
+            <div className={`activity-list ${expanded ? 'activity-list--expanded' : ''}`}>
+              {visibleActivities.map((item) => (
+                <ActivityItem
+                  key={item.id}
+                  activity={item}
+                  onRemove={onRemoveActivity}
+                  timeAgo={timeAgo}
+                  formatActivity={formatActivity}
+                  projectTagLabel={t('activity.projectTag')}
+                />
+              ))}
+            </div>
+          ) : (
+            <ActivityEmptyState message={t('activity.empty')} />
+          )}
         </div>
-      ) : (
-        <ActivityEmptyState message={t('activity.empty')} />
-      )}
+      </div>
     </section>
   );
 }

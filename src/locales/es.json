@@ -23,9 +23,9 @@
     "themeTitle": "Tema de la Interfaz",
     "themeSelectLabel": "Selecciona el tema",
     "themes": {
-      "dark": "Predeterminado FOUX (Dark / Cyber)",
-      "light": "Predeterminado Light (Alto Contraste)",
-      "solarized": "Osaka Solarized Pro"
+      "dark": "Dark (Predeterminado)",
+      "light": "Light",
+      "solarized": "Solarized Waves"
     },
     "languageTitle": "Idioma",
     "languageSelectLabel": "Selecciona el idioma",
@@ -145,6 +145,8 @@
     "confirmClear": "Confirmar limpieza",
     "viewSummary": "Ver resumen",
     "viewFullHistory": "Ver historial completo",
+    "hideHistory": "Ocultar historial",
+    "showHistory": "Mostrar historial",
     "removeActivity": "Eliminar actividad",
     "projectTag": "proyecto"
   },

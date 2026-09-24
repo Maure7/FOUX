@@ -243,7 +243,17 @@ export default function Editor({
   const iframeRef = useRef(null);
 
   const [initialHtml, setInitialHtml] = useState(() => project.htmlContent);
-  const hasLoadedRef = useRef(!!project.htmlContent);
+  const [hasLoaded, setHasLoaded] = useState(() => !!project.htmlContent);
+  const [prevProjectId, setPrevProjectId] = useState(project.id);
+  const [prevProjectHtml, setPrevProjectHtml] = useState(project.htmlContent);
+
+  // Sincroniza initialHtml caso o projeto ativo ou seu conteúdo mude externamente
+  if (project.id !== prevProjectId || (project.htmlContent && project.htmlContent !== prevProjectHtml && !hasLoaded)) {
+    setPrevProjectId(project.id);
+    setPrevProjectHtml(project.htmlContent);
+    setInitialHtml(project.htmlContent);
+    setHasLoaded(!!project.htmlContent);
+  }
 
   /* ---- Iframe Inspector Hook ---- */
   const {
@@ -276,35 +286,23 @@ export default function Editor({
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       const html = serializeDocument();
-      if (html) {
+      // Salva apenas se houver documento válido e o projeto já tiver arquivo carregado
+      if (html && hasLoaded) {
         onUpdateProjectRef.current({ htmlContent: html });
       }
     }, 800);
-  }, [serializeDocument]);
+  }, [serializeDocument, hasLoaded]);
 
   const handleStyleChange = useCallback(() => {
     debouncedSave();
   }, [debouncedSave]);
 
+  // Cleanup limpo: cancela timers pendentes sem ler do iframe em processo de desmontagem
   useEffect(() => {
-    const iframe = iframeRef.current;
     return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      if (iframe?.contentDocument) {
-        try {
-          const doc = iframe.contentDocument;
-          const els = doc.querySelectorAll('[data-foux-selected],[data-foux-hovered]');
-          els.forEach((el) => {
-            el.style.outline = '';
-            el.style.outlineOffset = '';
-            el.removeAttribute('data-foux-selected');
-            el.removeAttribute('data-foux-hovered');
-          });
-          const html = `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
-          onUpdateProjectRef.current({ htmlContent: html });
-        } catch {
-          // iframe may already be detached
-        }
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
       }
     };
   }, []);
@@ -321,7 +319,7 @@ export default function Editor({
     reader.onload = (e) => {
       const content = e.target.result;
       setInitialHtml(content);
-      hasLoadedRef.current = true;
+      setHasLoaded(true);
       onUpdateProjectRef.current({
         htmlFileName: file.name,
         htmlContent: content,
@@ -348,28 +346,39 @@ export default function Editor({
     }
   }, [onRenameProject]);
 
-  const handleOpenConfig = useCallback(() => {
+  // Salva de forma segura antes de navegar
+  const flushCurrentDocument = useCallback(() => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
     const html = serializeDocument();
-    if (html) {
+    if (html && hasLoaded) {
       onUpdateProjectRef.current({ htmlContent: html });
     }
+  }, [serializeDocument, hasLoaded]);
+
+  const handleOpenConfig = useCallback(() => {
+    flushCurrentDocument();
     onNavigate('settings');
-  }, [serializeDocument, onNavigate]);
+  }, [flushCurrentDocument, onNavigate]);
 
   const handleOpenProfile = useCallback(() => {
-    const html = serializeDocument();
-    if (html) {
-      onUpdateProjectRef.current({ htmlContent: html });
-    }
+    flushCurrentDocument();
     onNavigate('profile');
-  }, [serializeDocument, onNavigate]);
+  }, [flushCurrentDocument, onNavigate]);
+
+  const handleBackToDashboard = useCallback(() => {
+    flushCurrentDocument();
+    onNavigate('dashboard');
+  }, [flushCurrentDocument, onNavigate]);
 
   return (
     <div className="editor-shell">
       <EditorHeader
         project={project}
         onRename={handleRename}
-        onNavigate={() => onNavigate('dashboard')}
+        onNavigate={handleBackToDashboard}
         onAction={handleToolbarAction}
         onNewFile={handleNewFile}
         onOpenConfig={handleOpenConfig}

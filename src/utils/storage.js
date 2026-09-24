@@ -11,6 +11,7 @@ export const FOUX_STORAGE_KEYS = [
   'foux_theme',
   'foux_language',
   'foux_user_profile',
+  'foux_history_visibility',
 ];
 
 /**
@@ -19,17 +20,18 @@ export const FOUX_STORAGE_KEYS = [
  * @returns {number} Quantidade total de bytes consumidos.
  */
 export function calculateStorageUsage() {
-  if (typeof window === 'undefined' || !window.localStorage) {
+  const storage = typeof window !== 'undefined' ? window.localStorage : (typeof globalThis !== 'undefined' ? globalThis.localStorage : null);
+  if (!storage) {
     return 0;
   }
 
   let totalBytes = 0;
 
   try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
+    for (let i = 0; i < storage.length; i++) {
+      const key = storage.key(i);
       if (key !== null) {
-        const value = localStorage.getItem(key) || '';
+        const value = storage.getItem(key) || '';
         // Medição precisa em bytes utilizando a API Blob padrão
         totalBytes += new Blob([key, value]).size;
       }
@@ -38,10 +40,10 @@ export function calculateStorageUsage() {
     console.warn('Erro ao calcular uso do localStorage:', error);
     // Fallback caso a API Blob falhe: estimativa UTF-16 (2 bytes por caractere)
     try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
+      for (let i = 0; i < storage.length; i++) {
+        const key = storage.key(i);
         if (key !== null) {
-          const value = localStorage.getItem(key) || '';
+          const value = storage.getItem(key) || '';
           totalBytes += (key.length + value.length) * 2;
         }
       }
@@ -78,19 +80,22 @@ export function formatBytes(bytes) {
  * Garante que chaves legadas e chaves do app sejam removidas com segurança.
  */
 export function clearAllStorage() {
-  if (typeof window === 'undefined' || !window.localStorage) {
+  const storage = typeof window !== 'undefined' ? window.localStorage : (typeof globalThis !== 'undefined' ? globalThis.localStorage : null);
+  if (!storage) {
     return;
   }
 
   try {
-    // Limpeza completa do localStorage
-    localStorage.clear();
+    // Limpeza de chaves de dados do app (preserva preferências essenciais como tema, idioma e perfil)
+    const DATA_KEYS = ['foux_projects', 'foux_active_project', 'foux_folders', 'foux_activities'];
+    DATA_KEYS.forEach((key) => {
+      try {
+        storage.removeItem(key);
+      } catch {
+        // Ignora erros pontuais
+      }
+    });
   } catch (error) {
-    console.warn('Erro ao executar localStorage.clear(), tentando remoção por chave:', error);
-    try {
-      FOUX_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
-    } catch {
-      // Falha silenciosa
-    }
+    console.warn('Erro ao limpar dados locais do FOUX:', error);
   }
 }

@@ -144,7 +144,7 @@ export default function Profile({
 
           <div className="profile-hero-info">
             <h2 className="profile-hero-name">{name || t('profile.defaultName')}</h2>
-            <span className="profile-hero-tag">FOUX Designer & Creator</span>
+            <span className="profile-hero-tag">ADMIN</span>
           </div>
         </section>
 
