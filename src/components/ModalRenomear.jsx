@@ -1,14 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Pencil } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function ModalRenomear({ isOpen, onClose, onRename, currentName }) {
+  const { t } = useLanguage();
   const [name, setName] = useState('');
   const inputRef = useRef(null);
 
-  /* Reset when modal opens */
+  const [prevOpen, setPrevOpen] = useState(isOpen);
+
+  if (isOpen && !prevOpen) {
+    setPrevOpen(true);
+    setName(currentName || '');
+  } else if (!isOpen && prevOpen) {
+    setPrevOpen(false);
+  }
+
+  /* Auto-focus input when modal opens */
   useEffect(() => {
     if (isOpen) {
-      setName(currentName || '');
       setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
@@ -16,7 +26,7 @@ export default function ModalRenomear({ isOpen, onClose, onRename, currentName }
         }
       }, 50);
     }
-  }, [isOpen, currentName]);
+  }, [isOpen]);
 
   /* Close on Escape */
   useEffect(() => {
@@ -58,7 +68,7 @@ export default function ModalRenomear({ isOpen, onClose, onRename, currentName }
         aria-labelledby="modal-rename-title"
       >
         {/* Close */}
-        <button className="modal-close" onClick={onClose} aria-label="Fechar">
+        <button className="modal-close" onClick={onClose} aria-label={t('common.close')}>
           <X size={18} />
         </button>
 
@@ -66,22 +76,22 @@ export default function ModalRenomear({ isOpen, onClose, onRename, currentName }
         <div className="modal-header">
           <div className="modal-rename__header-row">
             <Pencil size={18} className="modal-rename__icon" />
-            <h2 className="modal-title" id="modal-rename-title">Renomear</h2>
+            <h2 className="modal-title" id="modal-rename-title">{t('modals.rename.title')}</h2>
           </div>
-          <p className="modal-subtitle">Digite o novo nome para este item</p>
+          <p className="modal-subtitle">{t('modals.rename.subtitle')}</p>
         </div>
 
         {/* Input */}
         <div className="modal-name-field">
           <label className="modal-name-label" htmlFor="modal-rename-input">
-            Novo Nome
+            {t('modals.rename.newNameLabel')}
           </label>
           <input
             ref={inputRef}
             id="modal-rename-input"
             className="modal-name-input"
             type="text"
-            placeholder="Novo nome..."
+            placeholder={currentName}
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => {
@@ -92,9 +102,9 @@ export default function ModalRenomear({ isOpen, onClose, onRename, currentName }
 
         {/* Footer */}
         <div className="modal-footer modal-footer--spread">
-          <button className="modal-cancel-btn" onClick={onClose}>Cancelar</button>
+          <button className="modal-cancel-btn" onClick={onClose}>{t('common.cancel')}</button>
           <button className="modal-create-btn" onClick={handleSubmit}>
-            Renomear
+            {t('modals.rename.renameBtn')}
           </button>
         </div>
       </div>

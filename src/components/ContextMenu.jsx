@@ -9,6 +9,7 @@ import {
   FolderOpen,
   Home,
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function ContextMenu({
   x,
@@ -22,6 +23,7 @@ export default function ContextMenu({
   folders = [],
   currentFolderId = null,
 }) {
+  const { t } = useLanguage();
   const menuRef = useRef(null);
   const subMenuRef = useRef(null);
 
@@ -67,7 +69,7 @@ export default function ContextMenu({
   /* Move-to destinations: all folders except the one the project is already in, plus "Raiz" */
   const moveDestinations = [];
   if (currentFolderId !== null) {
-    moveDestinations.push({ id: null, name: 'Raiz', icon: Home });
+    moveDestinations.push({ id: null, name: t('common.root'), icon: Home });
   }
   folders.forEach((f) => {
     if (f.id !== currentFolderId) {
@@ -80,13 +82,13 @@ export default function ContextMenu({
       {/* Open */}
       <button className="context-menu__item" onClick={() => { onOpen(); onClose(); }}>
         <ExternalLink size={14} />
-        <span>Abrir</span>
+        <span>{t('common.open')}</span>
       </button>
 
       {/* Rename */}
       <button className="context-menu__item" onClick={() => { onRename(); onClose(); }}>
         <Pencil size={14} />
-        <span>Renomear</span>
+        <span>{t('common.rename')}</span>
       </button>
 
       {/* Move to */}
@@ -94,7 +96,7 @@ export default function ContextMenu({
         <div className="context-menu__submenu-wrapper">
           <button className="context-menu__item context-menu__item--submenu">
             <FolderInput size={14} />
-            <span>Mover para</span>
+            <span>{t('common.moveTo')}</span>
             <ChevronRight size={12} className="context-menu__chevron" />
           </button>
           <div className="context-menu__submenu" ref={subMenuRef}>
@@ -120,13 +122,13 @@ export default function ContextMenu({
       {/* Duplicate */}
       <button className="context-menu__item" onClick={() => { onDuplicate(); onClose(); }}>
         <Copy size={14} />
-        <span>Duplicar</span>
+        <span>{t('common.duplicate')}</span>
       </button>
 
       {/* Delete */}
       <button className="context-menu__item context-menu__item--danger" onClick={() => { onDelete(); onClose(); }}>
         <Trash2 size={14} />
-        <span>Excluir</span>
+        <span>{t('common.delete')}</span>
       </button>
     </div>
   );

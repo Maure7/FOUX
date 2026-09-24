@@ -1,8 +1,10 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Dashboard from './pages/Dashboard';
 import Editor from './pages/Editor';
 import Settings from './pages/Settings';
+import Profile from './pages/Profile';
 import { useToast, ToastContainer } from './components/ToastNotification';
+import { LanguageProvider } from './context/LanguageContext';
 
 /* ===== LocalStorage helpers ===== */
 const STORAGE_KEY = 'foux_projects';
@@ -10,6 +12,7 @@ const ACTIVE_KEY = 'foux_active_project';
 const FOLDERS_KEY = 'foux_folders';
 const ACTIVITIES_KEY = 'foux_activities';
 const THEME_KEY = 'foux_theme';
+const PROFILE_KEY = 'foux_user_profile';
 
 function loadFromStorage(key, fallback = []) {
   try {
@@ -21,27 +24,47 @@ function loadFromStorage(key, fallback = []) {
 }
 
 function saveToStorage(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.warn('Erro ao salvar no localStorage:', e);
+  }
 }
 
 function loadActiveProjectId() {
-  return localStorage.getItem(ACTIVE_KEY) || null;
+  try {
+    return localStorage.getItem(ACTIVE_KEY) || null;
+  } catch {
+    return null;
+  }
 }
 
 function saveActiveProjectId(id) {
-  if (id) {
-    localStorage.setItem(ACTIVE_KEY, id);
-  } else {
-    localStorage.removeItem(ACTIVE_KEY);
+  try {
+    if (id) {
+      localStorage.setItem(ACTIVE_KEY, id);
+    } else {
+      localStorage.removeItem(ACTIVE_KEY);
+    }
+  } catch (e) {
+    console.warn('Erro ao salvar projeto ativo:', e);
   }
 }
 
 function loadTheme() {
-  return localStorage.getItem(THEME_KEY) || 'dark';
+  try {
+    return localStorage.getItem(THEME_KEY) || 'dark';
+  } catch {
+    return 'dark';
+  }
 }
 
 function saveTheme(theme) {
-  localStorage.setItem(THEME_KEY, theme);
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+  } catch (e) {
+    console.warn('Erro ao salvar tema:', e);
+  }
 }
 
 /* ===== Unique ID generators ===== */
@@ -50,31 +73,52 @@ function nextId(prefix = 'id') {
   return `${prefix}_${++idCounter}_${Math.random().toString(36).slice(2, 7)}`;
 }
 
-export default function App() {
+function AppContent() {
   const [currentScreen, setCurrentScreen] = useState('dashboard');
   const [projects, setProjects] = useState(() => loadFromStorage(STORAGE_KEY));
   const [folders, setFolders] = useState(() => loadFromStorage(FOLDERS_KEY));
   const [activities, setActivities] = useState(() => loadFromStorage(ACTIVITIES_KEY));
   const [activeProjectId, setActiveProjectId] = useState(() => loadActiveProjectId());
   const [theme, setTheme] = useState(() => loadTheme());
+  const [userProfile, setUserProfile] = useState(() =>
+    loadFromStorage(PROFILE_KEY, {
+      name: 'Usuário FOUX',
+      avatar: null,
+      bio: '',
+    })
+  );
   const { toasts, showToast } = useToast();
 
-  /* Track the previous screen for Settings "back" navigation */
-  const previousScreenRef = useRef('dashboard');
+  /* Track the previous screen for Settings / Profile "back" navigation */
+  const [previousScreen, setPreviousScreen] = useState('dashboard');
 
-  /* Navigate wrapper: tracks previous screen for Settings */
+  /* Navigate wrapper: tracks previous screen for Settings and Profile */
   const navigateTo = useCallback((screen) => {
-    if (screen === 'settings') {
-      previousScreenRef.current = currentScreen;
+    if (screen === 'settings' || screen === 'profile') {
+      setPreviousScreen(currentScreen);
     }
     setCurrentScreen(screen);
   }, [currentScreen]);
+
+  /* Atualização de perfil do usuário */
+  const handleUpdateProfile = useCallback((updates) => {
+    setUserProfile((prev) => ({ ...prev, ...updates }));
+  }, []);
+
+  /* Limpeza suave de dados locais sem crash */
+  const handleClearCache = useCallback(() => {
+    setProjects([]);
+    setFolders([]);
+    setActivities([]);
+    setActiveProjectId(null);
+  }, []);
 
   /* Persist to localStorage whenever state changes */
   useEffect(() => { saveToStorage(STORAGE_KEY, projects); }, [projects]);
   useEffect(() => { saveToStorage(FOLDERS_KEY, folders); }, [folders]);
   useEffect(() => { saveToStorage(ACTIVITIES_KEY, activities); }, [activities]);
   useEffect(() => { saveActiveProjectId(activeProjectId); }, [activeProjectId]);
+  useEffect(() => { saveToStorage(PROFILE_KEY, userProfile); }, [userProfile]);
 
   /* Apply theme to DOM root */
   useEffect(() => {
@@ -295,11 +339,6 @@ export default function App() {
     });
   }, [addActivity]);
 
-  /* Navigate back to dashboard */
-  const goToDashboard = useCallback(() => {
-    setCurrentScreen('dashboard');
-  }, []);
-
   return (
     <>
       {currentScreen === 'editor' && activeProject ? (
@@ -312,13 +351,25 @@ export default function App() {
           addActivity={addActivity}
           currentTheme={theme}
           onThemeChange={handleThemeChange}
+          userProfile={userProfile}
         />
       ) : currentScreen === 'settings' ? (
         <Settings
           onNavigate={navigateTo}
-          previousScreen={previousScreenRef.current}
+          previousScreen={previousScreen}
           currentTheme={theme}
           onThemeChange={handleThemeChange}
+          showToast={showToast}
+          onClearCache={handleClearCache}
+        />
+      ) : currentScreen === 'profile' ? (
+        <Profile
+          onNavigate={navigateTo}
+          previousScreen={previousScreen}
+          totalFolders={folders.length}
+          totalProjects={projects.length}
+          userProfile={userProfile}
+          onUpdateProfile={handleUpdateProfile}
           showToast={showToast}
         />
       ) : (
@@ -326,6 +377,7 @@ export default function App() {
           projects={projects}
           folders={folders}
           activities={activities}
+          userProfile={userProfile}
           onCreateProject={createProject}
           onOpenProject={openProject}
           onUpdateProject={updateProject}
@@ -352,5 +404,13 @@ export default function App() {
       {/* Global toast layer */}
       <ToastContainer toasts={toasts} />
     </>
+  );
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
   );
 }

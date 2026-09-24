@@ -24,10 +24,11 @@ import ModalRenomear from '../components/ModalRenomear';
 import ContextMenu from '../components/ContextMenu';
 import FolderContextMenu from '../components/FolderContextMenu';
 import AtividadeRecente from '../components/AtividadeRecente';
+import { useLanguage } from '../context/LanguageContext';
 import '../styles/Dashboard.css';
 
 /* ===== HEADER ===== */
-function Header({ searchQuery, onSearchChange, onNewFolder, onOpenConfig, onNotImplemented }) {
+function Header({ searchQuery, onSearchChange, onNewFolder, onOpenConfig, onOpenProfile, userProfile, onNotImplemented, t }) {
   return (
     <header className="header" id="header">
       <span className="header__logo">FOUX</span>
@@ -38,7 +39,7 @@ function Header({ searchQuery, onSearchChange, onNewFolder, onOpenConfig, onNotI
           <input
             className="header__search-input"
             type="text"
-            placeholder="Pesquisar projetos..."
+            placeholder={t('dashboard.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
           />
@@ -46,7 +47,7 @@ function Header({ searchQuery, onSearchChange, onNewFolder, onOpenConfig, onNotI
 
         <button
           className="header__icon-btn"
-          aria-label="Configurações"
+          aria-label={t('settings.title')}
           onClick={onOpenConfig}
         >
           <Settings size={17} />
@@ -54,32 +55,38 @@ function Header({ searchQuery, onSearchChange, onNewFolder, onOpenConfig, onNotI
 
         <button
           className="header__new-folder"
-          aria-label="Nova Pasta"
+          aria-label={t('dashboard.newFolder')}
           onClick={onNewFolder}
         >
           <FolderPlus size={15} />
-          <span>Nova Pasta</span>
+          <span>{t('dashboard.newFolder')}</span>
         </button>
 
         <button
           className="header__icon-btn"
-          aria-label="Ajuda"
-          onClick={() => onNotImplemented('Ajuda')}
+          aria-label={t('dashboard.help')}
+          onClick={() => onNotImplemented(t('dashboard.help'))}
         >
           <HelpCircle size={17} />
         </button>
 
         <div
           className="header__avatar-wrapper"
-          onClick={() => onNotImplemented('Perfil de Usuário')}
+          onClick={onOpenProfile}
           role="button"
           tabIndex={0}
+          aria-label={t('profile.title')}
+          title={userProfile?.name || t('profile.title')}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') onNotImplemented('Perfil de Usuário');
+            if (e.key === 'Enter') onOpenProfile();
           }}
         >
           <div className="header__avatar-placeholder">
-            <User size={16} />
+            {userProfile?.avatar ? (
+              <img src={userProfile.avatar} alt="Avatar" className="header__avatar-img" />
+            ) : (
+              <User size={16} />
+            )}
           </div>
           <span className="header__avatar-status" />
         </div>
@@ -89,7 +96,7 @@ function Header({ searchQuery, onSearchChange, onNewFolder, onOpenConfig, onNotI
 }
 
 /* ===== NEW PROJECT CARD ===== */
-function NewProjectCard({ onClick, viewMode }) {
+function NewProjectCard({ onClick, viewMode, t }) {
   return (
     <div
       className={`project-card project-card--new ${viewMode === 'list' ? 'project-card--list-new' : ''}`}
@@ -102,22 +109,18 @@ function NewProjectCard({ onClick, viewMode }) {
       <div className="new-project__icon">
         <Plus size={viewMode === 'list' ? 16 : 22} />
       </div>
-      <span className="new-project__title">Novo Projeto</span>
+      <span className="new-project__title">{t('dashboard.newProject')}</span>
       {viewMode !== 'list' && (
-        <span className="new-project__subtitle">Começar do zero</span>
+        <span className="new-project__subtitle">{t('dashboard.startFromScratch')}</span>
       )}
     </div>
   );
 }
 
 /* ===== FOLDER CARD ===== */
-function FolderCard({ folder, onClick, viewMode, onContextMenu, fileCount }) {
-  const dateLabel = new Date(folder.createdAt).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'short',
-  });
-
-  const fileCountLabel = fileCount === 1 ? '1 arquivo' : `${fileCount} arquivos`;
+function FolderCard({ folder, onClick, viewMode, onContextMenu, fileCount, t, formatDate }) {
+  const dateLabel = formatDate(folder.createdAt);
+  const fileCountLabel = fileCount === 1 ? t('dashboard.oneFile') : t('dashboard.filesCount', { count: fileCount });
 
   if (viewMode === 'list') {
     return (
@@ -153,7 +156,7 @@ function FolderCard({ folder, onClick, viewMode, onContextMenu, fileCount }) {
       <div className="project-card__info">
         <span className="project-card__name">{folder.name}</span>
         <span className="project-card__file-count">{fileCountLabel}</span>
-        <span className="project-card__date">Criada {dateLabel}</span>
+        <span className="project-card__date">{t('dashboard.createdDate', { date: dateLabel })}</span>
       </div>
     </div>
   );
@@ -168,11 +171,10 @@ function ProjectCard({
   selectionMode,
   isSelected,
   onToggleSelect,
+  t,
+  formatDate,
 }) {
-  const dateLabel = new Date(project.updatedAt).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: 'short',
-  });
+  const dateLabel = formatDate(project.updatedAt);
 
   const handleClick = () => {
     if (selectionMode) {
@@ -199,12 +201,12 @@ function ProjectCard({
         )}
         <FileCode size={18} className="list-item__icon" />
         <span className="list-item__name">{project.name}</span>
-        <span className="list-item__date">Editado {dateLabel}</span>
+        <span className="list-item__date">{t('dashboard.editedDate', { date: dateLabel })}</span>
         {!selectionMode && (
           <button
             className="list-item__options"
             onClick={(e) => { e.stopPropagation(); onContextMenu(e); }}
-            aria-label="Opções"
+            aria-label={t('common.options')}
           >
             <MoreHorizontal size={16} />
           </button>
@@ -236,43 +238,43 @@ function ProjectCard({
       </div>
       <div className="project-card__info">
         <span className="project-card__name">{project.name}</span>
-        <span className="project-card__date">Editado {dateLabel}</span>
+        <span className="project-card__date">{t('dashboard.editedDate', { date: dateLabel })}</span>
       </div>
     </div>
   );
 }
 
 /* ===== EMPTY STATES ===== */
-function ProjectsEmptyState() {
+function ProjectsEmptyState({ t }) {
   return (
     <div className="empty-state">
       <Inbox className="empty-state__icon" />
       <p className="empty-state__text">
-        Nenhum projeto recente encontrado.
+        {t('dashboard.emptyRecentTitle')}
       </p>
       <p className="empty-state__hint">
-        Crie seu primeiro projeto clicando ao lado.
+        {t('dashboard.emptyRecentHint')}
       </p>
     </div>
   );
 }
 
-function FolderEmptyState({ onAddContent }) {
+function FolderEmptyState({ onAddContent, t }) {
   return (
     <div className="folder-empty-state" onClick={onAddContent} role="button" tabIndex={0}>
       <FolderOpen className="folder-empty-state__icon" />
-      <span className="folder-empty-state__text">Pasta vazia, adicionar conteúdo</span>
-      <span className="folder-empty-state__hint">Clique para selecionar projetos</span>
+      <span className="folder-empty-state__text">{t('dashboard.emptyFolderTitle')}</span>
+      <span className="folder-empty-state__hint">{t('dashboard.emptyFolderHint')}</span>
     </div>
   );
 }
 
-function SearchEmptyState() {
+function SearchEmptyState({ t }) {
   return (
     <div className="empty-state">
       <SearchX className="empty-state__icon" />
       <p className="empty-state__text">
-        Nenhum item encontrado para sua pesquisa
+        {t('dashboard.emptySearchTitle')}
       </p>
     </div>
   );
@@ -283,9 +285,9 @@ export default function Dashboard({
   projects,
   folders,
   activities,
+  userProfile = {},
   onCreateProject,
   onOpenProject,
-  onUpdateProject,
   onRenameProject,
   onDeleteProject,
   onDuplicateProject,
@@ -295,14 +297,12 @@ export default function Dashboard({
   onToggleFolderFavorite,
   onRenameFolder,
   onChangeFolderColor,
-  onToggleProjectFavorite,
   onNavigate,
   showToast,
-  currentTheme,
-  onThemeChange,
   onClearActivities,
   onRemoveActivity,
 }) {
+  const { t, formatDate } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
@@ -321,16 +321,16 @@ export default function Dashboard({
   const [folderContextMenu, setFolderContextMenu] = useState(null);
 
   /* Confirmation modal state */
-  const [confirmModal, setConfirmModal] = useState({ isOpen: false, projectId: null, projectName: '' });
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, projectId: null, projectName: '', isFolder: false });
 
   /* Rename modal state */
   const [renameModal, setRenameModal] = useState({ isOpen: false, targetId: null, currentName: '', isFolder: false });
 
   const handleNotImplemented = useCallback(
     (featureName) => {
-      showToast(`"${featureName}" ainda não foi implementado.`);
+      showToast(t('common.notImplemented', { feature: featureName }));
     },
-    [showToast]
+    [showToast, t]
   );
 
   /* Current folder object */
@@ -351,12 +351,7 @@ export default function Dashboard({
     return counts;
   }, [projects, folders]);
 
-  /* Filtered and SORTED items — RIGID PRIORITY ORDER:
-     1. Folders favoritos
-     2. Folders normais
-     3. Projetos favoritos
-     4. Projetos normais
-  */
+  /* Filtered and sorted items */
   const { sortedFolders, sortedProjects } = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
@@ -409,8 +404,8 @@ export default function Dashboard({
   }, [onCreateProject, currentFolderId]);
 
   const handleOpenTutorial = useCallback(() => {
-    showToast('Esta funcionalidade ainda não foi implementada.');
-  }, [showToast]);
+    showToast(t('common.featureComingSoon'));
+  }, [showToast, t]);
 
   /* Folder navigation */
   const enterFolder = useCallback((folderId) => {
@@ -454,12 +449,13 @@ export default function Dashboard({
       onMoveProject(pid, selectionTargetFolderId);
     });
     const count = selectedProjectIds.size;
-    showToast(`${count} ${count === 1 ? 'projeto movido' : 'projetos movidos'} com sucesso.`);
+    const entity = count === 1 ? t('dashboard.projectMovedSingular') : t('dashboard.projectMovedPlural');
+    showToast(t('dashboard.movedSuccess', { count, entity }));
     setSelectionMode(false);
     setCurrentFolderId(selectionTargetFolderId);
     setSelectionTargetFolderId(null);
     setSelectedProjectIds(new Set());
-  }, [selectedProjectIds, selectionTargetFolderId, onMoveProject, showToast]);
+  }, [selectedProjectIds, selectionTargetFolderId, onMoveProject, showToast, t]);
 
   /* Project context menu */
   const handleContextMenu = useCallback((e, project) => {
@@ -491,10 +487,10 @@ export default function Dashboard({
 
   /* Section title */
   const sectionTitle = selectionMode
-    ? 'Selecione projetos para mover'
+    ? t('dashboard.selectionTitle')
     : currentFolder
       ? currentFolder.name
-      : 'Bem-vindo de volta!';
+      : t('dashboard.welcome');
 
   const hasItems = sortedProjects.length > 0 || sortedFolders.length > 0;
   const isSearching = searchQuery.trim().length > 0;
@@ -508,7 +504,10 @@ export default function Dashboard({
         onSearchChange={setSearchQuery}
         onNewFolder={() => setIsFolderModalOpen(true)}
         onOpenConfig={() => onNavigate('settings')}
+        onOpenProfile={() => onNavigate('profile')}
+        userProfile={userProfile}
         onNotImplemented={handleNotImplemented}
+        t={t}
       />
 
       <main className="main-content" id="main-content">
@@ -519,10 +518,10 @@ export default function Dashboard({
               <button
                 className="section-header__back"
                 onClick={selectionMode ? cancelSelectionMode : goToRoot}
-                aria-label="Voltar"
+                aria-label={t('common.back')}
               >
                 <ArrowLeft size={16} />
-                <span>Voltar</span>
+                <span>{t('common.back')}</span>
               </button>
             )}
             <h1 className="section-header__title">{sectionTitle}</h1>
@@ -534,14 +533,14 @@ export default function Dashboard({
                 onClick={() => setViewMode('grid')}
               >
                 <Grid3X3 size={13} />
-                Grade
+                {t('dashboard.viewGrid')}
               </button>
               <button
                 className={`view-toggle__btn ${viewMode === 'list' ? 'view-toggle__btn--active' : 'view-toggle__btn--inactive'}`}
                 onClick={() => setViewMode('list')}
               >
                 <List size={13} />
-                Lista
+                {t('dashboard.viewList')}
               </button>
             </div>
           )}
@@ -550,11 +549,11 @@ export default function Dashboard({
         {/* Projects area */}
         <div className="projects-area">
           {isFolderEmpty ? (
-            <FolderEmptyState onAddContent={() => startSelectionMode(currentFolderId)} />
+            <FolderEmptyState onAddContent={() => startSelectionMode(currentFolderId)} t={t} />
           ) : (
             <div className={viewMode === 'list' ? 'projects-list' : 'projects-grid'} id="projects-grid">
               {!selectionMode && !isInsideFolder && (
-                <NewProjectCard onClick={handleOpenModal} viewMode={viewMode} />
+                <NewProjectCard onClick={handleOpenModal} viewMode={viewMode} t={t} />
               )}
 
               {/* Folders (sorted: fav first) */}
@@ -566,6 +565,8 @@ export default function Dashboard({
                   viewMode={viewMode}
                   fileCount={folderFileCounts[folder.id] || 0}
                   onContextMenu={(e) => handleFolderContextMenu(e, folder)}
+                  t={t}
+                  formatDate={formatDate}
                 />
               ))}
 
@@ -580,11 +581,13 @@ export default function Dashboard({
                   selectionMode={selectionMode}
                   isSelected={selectedProjectIds.has(p.id)}
                   onToggleSelect={toggleProjectSelection}
+                  t={t}
+                  formatDate={formatDate}
                 />
               ))}
 
-              {!hasItems && !selectionMode && !isInsideFolder && <ProjectsEmptyState />}
-              {isSearching && !hasItems && <SearchEmptyState />}
+              {!hasItems && !selectionMode && !isInsideFolder && <ProjectsEmptyState t={t} />}
+              {isSearching && !hasItems && <SearchEmptyState t={t} />}
             </div>
           )}
         </div>
@@ -593,18 +596,20 @@ export default function Dashboard({
         {selectionMode && (
           <div className="selection-bar">
             <span className="selection-bar__count">
-              {selectedProjectIds.size} {selectedProjectIds.size === 1 ? 'projeto selecionado' : 'projetos selecionados'}
+              {selectedProjectIds.size === 1
+                ? t('dashboard.selectionCount', { count: 1 })
+                : t('dashboard.selectionCountPlural', { count: selectedProjectIds.size })}
             </span>
             <div className="selection-bar__actions">
               <button className="selection-bar__cancel" onClick={cancelSelectionMode}>
-                Cancelar
+                {t('common.cancel')}
               </button>
               <button
                 className="selection-bar__confirm"
                 onClick={confirmSelection}
                 disabled={selectedProjectIds.size === 0}
               >
-                Confirmar e Mover
+                {t('dashboard.confirmAndMove')}
               </button>
             </div>
           </div>
@@ -627,13 +632,13 @@ export default function Dashboard({
         </span>
         <nav className="footer__links">
           <a className="footer__link" href="#" onClick={(e) => e.preventDefault()}>
-            TERMOS
+            {t('dashboard.terms')}
           </a>
           <a className="footer__link" href="#" onClick={(e) => e.preventDefault()}>
-            PRIVACIDADE
+            {t('dashboard.privacy')}
           </a>
           <a className="footer__link" href="#" onClick={(e) => e.preventDefault()}>
-            SUPORTE
+            {t('dashboard.support')}
           </a>
         </nav>
       </footer>
@@ -672,7 +677,7 @@ export default function Dashboard({
           onMoveTo={(targetFolderId) => {
             onMoveProject(contextMenu.project.id, targetFolderId);
             const targetFolder = folders.find((f) => f.id === targetFolderId);
-            showToast(`Projeto movido para '${targetFolder ? targetFolder.name : 'Raiz'}'.`);
+            showToast(t('dashboard.movedToFolder', { folder: targetFolder ? targetFolder.name : t('common.root') }));
           }}
           onDuplicate={() => onDuplicateProject(contextMenu.project.id)}
           onDelete={() => {
@@ -723,7 +728,7 @@ export default function Dashboard({
       {/* Confirmation Modal */}
       <ModalConfirm
         isOpen={confirmModal.isOpen}
-        onClose={() => setConfirmModal({ isOpen: false, projectId: null, projectName: '' })}
+        onClose={() => setConfirmModal({ isOpen: false, projectId: null, projectName: '', isFolder: false })}
         onConfirm={() => {
           if (confirmModal.isFolder) {
             onDeleteFolder(confirmModal.projectId);
@@ -731,8 +736,10 @@ export default function Dashboard({
             onDeleteProject(confirmModal.projectId);
           }
         }}
-        title={confirmModal.isFolder ? 'Excluir pasta' : 'Excluir projeto'}
-        message={`Tem certeza que deseja excluir "${confirmModal.projectName}"? ${confirmModal.isFolder ? 'Os projetos dentro dela serão movidos para a raiz.' : 'Esta ação não pode ser desfeita.'}`}
+        title={confirmModal.isFolder ? t('dashboard.deleteFolderTitle') : t('dashboard.deleteProjectTitle')}
+        message={confirmModal.isFolder ? t('dashboard.deleteFolderConfirm', { name: confirmModal.projectName }) : t('dashboard.deleteProjectConfirm', { name: confirmModal.projectName })}
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
       />
 
       {/* Rename Modal (projects + folders) */}

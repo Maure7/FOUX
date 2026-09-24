@@ -7,19 +7,20 @@ import {
   StarOff,
   ChevronRight,
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 /* ===================================================================
    FolderContextMenu — Menu de contexto para pastas com opções:
-   Excluir, Renomear, Mudar Cor, Favoritar/Desfavoritar
+   Excluir, Renomear, Mudar Cor (paleta visual em grid 3x2), Favoritar/Desfavoritar
    =================================================================== */
 
-const COLOR_PALETTE = [
-  { name: 'Dourado', value: '#e59843' },
-  { name: 'Roxo', value: '#8b31d9' },
-  { name: 'Azul', value: '#3b82f6' },
-  { name: 'Verde', value: '#22c55e' },
-  { name: 'Vermelho', value: '#ef4444' },
-  { name: 'Rosa', value: '#ec4899' },
+const COLOR_KEYS = [
+  { key: 'gold', value: '#e59843' },
+  { key: 'purple', value: '#8b31d9' },
+  { key: 'blue', value: '#3b82f6' },
+  { key: 'green', value: '#22c55e' },
+  { key: 'red', value: '#ef4444' },
+  { key: 'pink', value: '#ec4899' },
 ];
 
 export default function FolderContextMenu({
@@ -32,6 +33,7 @@ export default function FolderContextMenu({
   onChangeColor,
   onToggleFavorite,
 }) {
+  const { t } = useLanguage();
   const menuRef = useRef(null);
   const [showColors, setShowColors] = useState(false);
 
@@ -81,7 +83,7 @@ export default function FolderContextMenu({
         onClick={() => { onToggleFavorite(); onClose(); }}
       >
         {isFavorite ? <StarOff size={14} /> : <Star size={14} />}
-        <span>{isFavorite ? 'Remover dos favoritos' : 'Favoritar'}</span>
+        <span>{isFavorite ? t('common.unfavorite') : t('common.favorite')}</span>
       </button>
 
       {/* Renomear */}
@@ -90,34 +92,41 @@ export default function FolderContextMenu({
         onClick={() => { onRename(); onClose(); }}
       >
         <Pencil size={14} />
-        <span>Renomear</span>
+        <span>{t('common.rename')}</span>
       </button>
 
-      {/* Mudar Cor */}
-      <div className="context-menu__submenu-wrapper">
+      {/* Mudar Cor (Submenu moderno com paleta em grid 3x2) */}
+      <div
+        className="context-menu__submenu-wrapper"
+        onMouseEnter={() => setShowColors(true)}
+        onMouseLeave={() => setShowColors(false)}
+      >
         <button
           className="context-menu__item context-menu__item--submenu"
-          onClick={() => setShowColors(!showColors)}
+          onClick={() => setShowColors((prev) => !prev)}
         >
           <Palette size={14} />
-          <span>Mudar Cor</span>
+          <span>{t('common.changeColor')}</span>
           <ChevronRight size={12} className="context-menu__chevron" />
         </button>
         {showColors && (
           <div className="context-menu__submenu context-menu__submenu--colors">
-            {COLOR_PALETTE.map((c) => (
-              <button
-                key={c.value}
-                className="context-menu__color-item"
-                onClick={() => { onChangeColor(c.value); onClose(); }}
-              >
-                <div
-                  className="context-menu__color-swatch"
-                  style={{ backgroundColor: c.value }}
-                />
-                <span>{c.name}</span>
-              </button>
-            ))}
+            <div className="context-menu__color-grid">
+              {COLOR_KEYS.map((c) => {
+                const isSelected = folder?.borderColor === c.value;
+                return (
+                  <button
+                    key={c.value}
+                    type="button"
+                    className={`context-menu__color-swatch ${isSelected ? 'context-menu__color-swatch--active' : ''}`}
+                    style={{ backgroundColor: c.value }}
+                    onClick={() => { onChangeColor(c.value); onClose(); }}
+                    title={t(`modals.colors.${c.key}`)}
+                    aria-label={t(`modals.colors.${c.key}`)}
+                  />
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
@@ -130,7 +139,7 @@ export default function FolderContextMenu({
         onClick={() => { onDelete(); onClose(); }}
       >
         <Trash2 size={14} />
-        <span>Excluir</span>
+        <span>{t('common.delete')}</span>
       </button>
     </div>
   );

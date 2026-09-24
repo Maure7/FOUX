@@ -1,15 +1,22 @@
 import { useEffect } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function ModalConfirm({
   isOpen,
   onClose,
   onConfirm,
-  title = 'Confirmar exclusão',
-  message = 'Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.',
-  confirmLabel = 'Excluir',
-  cancelLabel = 'Cancelar',
+  title,
+  message,
+  confirmLabel,
+  cancelLabel,
 }) {
+  const { t } = useLanguage();
+
+  const finalTitle = title || t('common.confirm');
+  const finalConfirmLabel = confirmLabel || t('common.delete');
+  const finalCancelLabel = cancelLabel || t('common.cancel');
+
   /* Close on Escape */
   useEffect(() => {
     if (!isOpen) return;
@@ -42,7 +49,7 @@ export default function ModalConfirm({
         aria-labelledby="modal-confirm-title"
       >
         {/* Close */}
-        <button className="modal-close" onClick={onClose} aria-label="Fechar">
+        <button className="modal-close" onClick={onClose} aria-label={t('common.close')}>
           <X size={18} />
         </button>
 
@@ -52,19 +59,19 @@ export default function ModalConfirm({
         </div>
 
         {/* Content */}
-        <h2 className="modal-title" id="modal-confirm-title">{title}</h2>
-        <p className="modal-confirm__message">{message}</p>
+        <h2 className="modal-title" id="modal-confirm-title">{finalTitle}</h2>
+        {message && <p className="modal-confirm__message">{message}</p>}
 
         {/* Actions */}
         <div className="modal-footer modal-footer--spread">
           <button className="modal-cancel-btn" onClick={onClose}>
-            {cancelLabel}
+            {finalCancelLabel}
           </button>
           <button
             className="modal-confirm__delete-btn"
             onClick={() => { onConfirm(); onClose(); }}
           >
-            {confirmLabel}
+            {finalConfirmLabel}
           </button>
         </div>
       </div>

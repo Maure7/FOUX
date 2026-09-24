@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, FileUp, BookOpen } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function ModalNovoProjeto({
   isOpen,
@@ -7,12 +8,17 @@ export default function ModalNovoProjeto({
   onImportHTML,
   onOpenTutorial,
 }) {
+  const { t } = useLanguage();
   const [projectName, setProjectName] = useState('');
 
-  // Reset name when modal opens
-  useEffect(() => {
-    if (isOpen) setProjectName('');
-  }, [isOpen]);
+  const [prevOpen, setPrevOpen] = useState(isOpen);
+
+  if (isOpen && !prevOpen) {
+    setPrevOpen(true);
+    setProjectName('');
+  } else if (!isOpen && prevOpen) {
+    setPrevOpen(false);
+  }
 
   // Close on Escape key
   useEffect(() => {
@@ -36,7 +42,7 @@ export default function ModalNovoProjeto({
 
   if (!isOpen) return null;
 
-  const finalName = projectName.trim() || 'Projeto sem título';
+  const finalName = projectName.trim() || t('editor.untitledProject');
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -51,7 +57,7 @@ export default function ModalNovoProjeto({
         <button
           className="modal-close"
           onClick={onClose}
-          aria-label="Fechar modal"
+          aria-label={t('common.close')}
         >
           <X size={18} />
         </button>
@@ -59,23 +65,23 @@ export default function ModalNovoProjeto({
         {/* Header */}
         <div className="modal-header">
           <h2 className="modal-title" id="modal-title">
-            Criar Novo Projeto
+            {t('modals.newProject.title')}
           </h2>
           <p className="modal-subtitle">
-            Nomeie seu projeto e escolha como iniciar
+            {t('modals.newProject.subtitle')}
           </p>
         </div>
 
         {/* Project name input */}
         <div className="modal-name-field">
           <label className="modal-name-label" htmlFor="modal-project-name">
-            Nome do Projeto
+            {t('modals.newProject.projectNameLabel')}
           </label>
           <input
             id="modal-project-name"
             className="modal-name-input"
             type="text"
-            placeholder="Projeto sem título"
+            placeholder={t('editor.untitledProject')}
             value={projectName}
             onChange={(e) => setProjectName(e.target.value)}
             onKeyDown={(e) => {
@@ -95,9 +101,11 @@ export default function ModalNovoProjeto({
               <FileUp size={24} />
             </div>
             <div className="modal-action-btn__text">
-              <span className="modal-action-btn__title">Importar HTML</span>
+              <span className="modal-action-btn__title">
+                {t('modals.newProject.importHtmlTitle')}
+              </span>
               <span className="modal-action-btn__desc">
-                Carregue um arquivo HTML existente para editar
+                {t('modals.newProject.importHtmlDesc')}
               </span>
             </div>
           </button>
@@ -110,9 +118,11 @@ export default function ModalNovoProjeto({
               <BookOpen size={24} />
             </div>
             <div className="modal-action-btn__text">
-              <span className="modal-action-btn__title">Abrir Tutorial</span>
+              <span className="modal-action-btn__title">
+                {t('modals.newProject.openTutorialTitle')}
+              </span>
               <span className="modal-action-btn__desc">
-                Aprenda com um guia passo a passo interativo
+                {t('modals.newProject.openTutorialDesc')}
               </span>
             </div>
           </button>
@@ -121,7 +131,7 @@ export default function ModalNovoProjeto({
         {/* Footer */}
         <div className="modal-footer">
           <button className="modal-cancel-btn" onClick={onClose}>
-            Cancelar
+            {t('common.cancel')}
           </button>
         </div>
       </div>

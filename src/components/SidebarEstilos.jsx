@@ -17,13 +17,11 @@ import {
   Palette,
   Zap,
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 /* ===================================================================
    SidebarEstilos — Painel lateral reativo de estilização visual.
-   Adapta controles conforme a tag do elemento selecionado.
-   Inclui slider de opacidade (alpha) nos color pickers.
-   Inclui sliders bidirecionais com input numérico.
-   Inclui aba Eventos com controles de :hover.
+   Totalmente internacionalizado (PT-BR / ES Latino-americano).
    =================================================================== */
 
 /* Tags de texto que exibem controles de tipografia */
@@ -37,7 +35,7 @@ const TEXT_TAGS = new Set([
 ]);
 
 const SAFE_FONTS = [
-  { label: 'Padrão do navegador', value: '' },
+  { key: 'defaultBrowserFont', labelPt: 'Padrão do navegador', labelEs: 'Predeterminada del navegador', value: '' },
   { label: 'Arial (Sans-serif)', value: 'Arial, Helvetica, sans-serif' },
   { label: 'Georgia (Serif)', value: 'Georgia, "Times New Roman", serif' },
   { label: 'Courier New (Monospace)', value: '"Courier New", Courier, monospace' },
@@ -134,7 +132,7 @@ function SliderControl({ label, unit, value, min, max, step, disabled, onChange 
 }
 
 /* ===== COLOR CONTROL WITH ALPHA SLIDER ===== */
-function ColorControl({ label, hexValue, alphaValue, disabled, onColorChange, onAlphaChange }) {
+function ColorControl({ label, hexValue, alphaValue, disabled, onColorChange, onAlphaChange, opacityLabel }) {
   const displayAlpha = Math.round((alphaValue ?? 1) * 100);
 
   return (
@@ -158,7 +156,7 @@ function ColorControl({ label, hexValue, alphaValue, disabled, onColorChange, on
       </div>
       {/* Slider de Opacidade com input numérico bidirecional */}
       <div className="sidebar-opacity-row">
-        <span className="sidebar-opacity-row__label">Opacidade:</span>
+        <span className="sidebar-opacity-row__label">{opacityLabel || 'Opacidade:'}</span>
         <input
           type="number"
           className="sidebar-inline-number sidebar-inline-number--small"
@@ -197,12 +195,10 @@ export default function SidebarEstilos({
   getElementsWithId,
   selectElementById,
   onStyleChange,
-  /* Hover events — from useIframeInspector */
   assignHoverClass,
-  getHoverClass,
   injectHoverStyles,
-  iframeRef,
 }) {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('estilos');
   const [customFonts, setCustomFonts] = useState([]);
   const [idElements, setIdElements] = useState([]);
@@ -221,7 +217,14 @@ export default function SidebarEstilos({
   const [hoverScale, setHoverScale] = useState(1.0);
   const [hoverScaleEnabled, setHoverScaleEnabled] = useState(false);
   const [hoverShadowEnabled, setHoverShadowEnabled] = useState(false);
-  const [hoverShadowIntensity, setHoverShadowIntensity] = useState(50);
+  const [hoverShadowX, setHoverShadowX] = useState(0);
+  const [hoverShadowY, setHoverShadowY] = useState(8);
+  const [hoverShadowBlur, setHoverShadowBlur] = useState(20);
+  const [hoverShadowOpacity, setHoverShadowOpacity] = useState(35);
+
+  /* Shadow pad drag ref */
+  const shadowPadRef = useRef(null);
+  const isDraggingShadowRef = useRef(false);
 
   const hasSelection = !!selectedElement;
   const disabled = isLocked || !hasSelection;
@@ -229,23 +232,30 @@ export default function SidebarEstilos({
   const isTextElement = selectedTagName ? TEXT_TAGS.has(selectedTagName) : false;
 
   /* Sync alpha when selection changes */
-  useEffect(() => {
+  const [prevComputedStyles, setPrevComputedStyles] = useState(computedStyles);
+  if (computedStyles !== prevComputedStyles) {
+    setPrevComputedStyles(computedStyles);
     if (computedStyles) {
       setAlphaColor(extractAlpha(computedStyles._rawColor));
       setAlphaBg(extractAlpha(computedStyles._rawBg));
       setAlphaBorder(extractAlpha(computedStyles._rawBorderColor));
     }
-  }, [computedStyles]);
+  }
 
   /* Reset hover states when selection changes */
-  useEffect(() => {
+  const [prevSelectedElement, setPrevSelectedElement] = useState(selectedElement);
+  if (selectedElement !== prevSelectedElement) {
+    setPrevSelectedElement(selectedElement);
     setHoverBgEnabled(false);
     setHoverTextEnabled(false);
     setHoverScaleEnabled(false);
     setHoverShadowEnabled(false);
     setHoverScale(1.0);
-    setHoverShadowIntensity(50);
-  }, [selectedElement]);
+    setHoverShadowX(0);
+    setHoverShadowY(8);
+    setHoverShadowBlur(20);
+    setHoverShadowOpacity(35);
+  }
 
   /* Helper: ler valor com fallback */
   const val = useCallback(
@@ -263,11 +273,13 @@ export default function SidebarEstilos({
   );
 
   /* Carregar lista de IDs quando a aba Layout é ativada */
-  useEffect(() => {
+  const [prevLayoutTab, setPrevLayoutTab] = useState(activeTab);
+  if (activeTab !== prevLayoutTab) {
+    setPrevLayoutTab(activeTab);
     if (activeTab === 'layout' && getElementsWithId) {
       setIdElements(getElementsWithId());
     }
-  }, [activeTab, getElementsWithId]);
+  }
 
   /* Handler: importar fonte local */
   const handleFontImport = useCallback((e) => {
@@ -345,11 +357,10 @@ export default function SidebarEstilos({
     if (hoverTextEnabled) rules.push(`color: ${hoverTextColor} !important`);
     if (hoverScaleEnabled) rules.push(`transform: scale(${hoverScale}) !important`);
     if (hoverShadowEnabled) {
-      const opacity = (hoverShadowIntensity / 100).toFixed(2);
-      rules.push(`box-shadow: 0 8px 20px rgba(0, 0, 0, ${opacity}) !important`);
+      const opacity = (hoverShadowOpacity / 100).toFixed(2);
+      rules.push(`box-shadow: ${hoverShadowX}px ${hoverShadowY}px ${hoverShadowBlur}px rgba(0, 0, 0, ${opacity}) !important`);
     }
 
-    // Always add transition for smooth hover
     rules.push('transition: all 0.25s ease !important');
 
     if (rules.length > 1) {
@@ -357,14 +368,19 @@ export default function SidebarEstilos({
     }
 
     if (onStyleChange) onStyleChange();
-  }, [selectedElement, assignHoverClass, injectHoverStyles, hoverBgEnabled, hoverBgColor, hoverTextEnabled, hoverTextColor, hoverScaleEnabled, hoverScale, hoverShadowEnabled, hoverShadowIntensity, onStyleChange]);
+  }, [selectedElement, assignHoverClass, injectHoverStyles, hoverBgEnabled, hoverBgColor, hoverTextEnabled, hoverTextColor, hoverScaleEnabled, hoverScale, hoverShadowEnabled, hoverShadowX, hoverShadowY, hoverShadowBlur, hoverShadowOpacity, onStyleChange]);
 
-  // Auto-inject hover CSS whenever hover states change
   useEffect(() => {
     if (activeTab === 'eventos' && hasSelection) {
       buildAndInjectHoverCSS();
     }
   }, [activeTab, hasSelection, buildAndInjectHoverCSS]);
+
+  const tabsConfig = [
+    { id: 'estilos', label: t('sidebar.tabStyles') },
+    { id: 'layout', label: t('sidebar.tabLayout') },
+    { id: 'eventos', label: t('sidebar.tabEvents') },
+  ];
 
   return (
     <aside className={`editor-sidebar ${isLocked ? 'editor-sidebar--locked' : ''}`}>
@@ -372,20 +388,20 @@ export default function SidebarEstilos({
       {isLocked && (
         <div className="editor-sidebar__locked-overlay">
           <span className="editor-sidebar__locked-text">
-            Esperando o carregamento do HTML
+            {t('sidebar.waitingHtml')}
           </span>
         </div>
       )}
 
       {/* Tabs */}
       <div className="sidebar-tabs">
-        {['Estilos', 'Layout', 'Eventos'].map((tab) => (
+        {tabsConfig.map((tab) => (
           <button
-            key={tab}
-            className={`sidebar-tab ${activeTab === tab.toLowerCase() ? 'sidebar-tab--active' : ''}`}
-            onClick={() => setActiveTab(tab.toLowerCase())}
+            key={tab.id}
+            className={`sidebar-tab ${activeTab === tab.id ? 'sidebar-tab--active' : ''}`}
+            onClick={() => setActiveTab(tab.id)}
           >
-            {tab}
+            {tab.label}
           </button>
         ))}
       </div>
@@ -399,13 +415,13 @@ export default function SidebarEstilos({
               <span className="foux-editor-element-badge__tag">
                 {formatTagName(selectedTagName)}
               </span>
-              <span className="foux-editor-element-badge__hint">selecionado</span>
+              <span className="foux-editor-element-badge__hint">{t('sidebar.selected')}</span>
             </>
           ) : (
             <>
               <MousePointerClick size={13} className="foux-editor-element-badge__icon foux-editor-element-badge__icon--muted" />
               <span className="foux-editor-element-badge__hint">
-                Clique em um elemento no canvas
+                {t('sidebar.clickElementCanvas')}
               </span>
             </>
           )}
@@ -423,19 +439,19 @@ export default function SidebarEstilos({
                   <Paintbrush size={28} />
                 </div>
                 <span className="foux-editor-empty-state__title">
-                  Selecione um elemento no canvas para editar seus estilos
+                  {t('sidebar.selectElementToEdit')}
                 </span>
                 <span className="foux-editor-empty-state__hint">
-                  Passe o mouse sobre o documento e clique em qualquer elemento
+                  {t('sidebar.hoverDocumentHint')}
                 </span>
               </div>
             )}
 
             {/* ── DIMENSÕES (só para <img>) ── */}
             {isImage && (
-              <CollapsibleSection title="DIMENSÕES" icon={Image}>
+              <CollapsibleSection title={t('sidebar.dimensions')} icon={Image}>
                 <SliderControl
-                  label="Largura"
+                  label={t('sidebar.width')}
                   unit="px"
                   value={val('width', 200)}
                   min={20}
@@ -444,7 +460,7 @@ export default function SidebarEstilos({
                   onChange={(v) => apply('width', `${v}px`)}
                 />
                 <SliderControl
-                  label="Altura"
+                  label={t('sidebar.height')}
                   unit="px"
                   value={val('height', 200)}
                   min={20}
@@ -453,17 +469,17 @@ export default function SidebarEstilos({
                   onChange={(v) => apply('height', `${v}px`)}
                 />
                 <div className="sidebar-control">
-                  <span className="sidebar-control__label">Disposição</span>
+                  <span className="sidebar-control__label">{t('sidebar.alignment')}</span>
                   <div className="sidebar-align-group">
-                    <button className="sidebar-align-btn" disabled={disabled} title="Float à esquerda"
+                    <button className="sidebar-align-btn" disabled={disabled} title={t('sidebar.floatLeft')}
                       onClick={() => { apply('display', 'inline'); apply('float', 'left'); apply('margin', '0 12px 12px 0'); }}>
                       <AlignLeft size={14} />
                     </button>
-                    <button className="sidebar-align-btn" disabled={disabled} title="Centralizar"
+                    <button className="sidebar-align-btn" disabled={disabled} title={t('sidebar.center')}
                       onClick={() => { apply('display', 'block'); apply('float', 'none'); apply('margin', '0 auto'); }}>
                       <AlignCenter size={14} />
                     </button>
-                    <button className="sidebar-align-btn" disabled={disabled} title="Float à direita"
+                    <button className="sidebar-align-btn" disabled={disabled} title={t('sidebar.floatRight')}
                       onClick={() => { apply('display', 'inline'); apply('float', 'right'); apply('margin', '0 0 12px 12px'); }}>
                       <AlignRight size={14} />
                     </button>
@@ -474,11 +490,11 @@ export default function SidebarEstilos({
 
             {/* ── TIPOGRAFIA (oculto para <img>) ── */}
             {!isImage && (
-              <CollapsibleSection title="TIPOGRAFIA" icon={Type}>
+              <CollapsibleSection title={t('sidebar.typography')} icon={Type}>
                 {/* Font Family */}
                 {isTextElement && (
                   <div className="sidebar-control">
-                    <span className="sidebar-control__label">Família da Fonte</span>
+                    <span className="sidebar-control__label">{t('sidebar.fontFamily')}</span>
                     <select
                       className="sidebar-select"
                       value={selectedFontValue}
@@ -489,11 +505,14 @@ export default function SidebarEstilos({
                         }
                       }}
                     >
-                      {SAFE_FONTS.map((f) => (
-                        <option key={f.label} value={f.value}>{f.label}</option>
-                      ))}
+                      {SAFE_FONTS.map((f) => {
+                        const fontLabel = f.key ? t(`sidebar.${f.key}`) : f.label;
+                        return (
+                          <option key={f.value || 'default'} value={f.value}>{fontLabel}</option>
+                        );
+                      })}
                       {customFonts.length > 0 && (
-                        <optgroup label="Fontes importadas">
+                        <optgroup label={t('sidebar.importedFonts')}>
                           {customFonts.map((f) => (
                             <option key={f.label} value={f.value}>{f.label}</option>
                           ))}
@@ -506,7 +525,7 @@ export default function SidebarEstilos({
                       onClick={() => fontInputRef.current?.click()}
                     >
                       <Upload size={12} />
-                      <span>Importar fonte local</span>
+                      <span>{t('sidebar.importLocalFont')}</span>
                     </button>
                     <input
                       ref={fontInputRef}
@@ -520,7 +539,7 @@ export default function SidebarEstilos({
 
                 {/* Font Size — Bidirectional */}
                 <SliderControl
-                  label="Tamanho da Fonte"
+                  label={t('sidebar.fontSize')}
                   unit="px"
                   value={val('fontSize', 16)}
                   min={8}
@@ -531,7 +550,7 @@ export default function SidebarEstilos({
 
                 {/* Alignment */}
                 <div className="sidebar-control">
-                  <span className="sidebar-control__label">Alinhamento</span>
+                  <span className="sidebar-control__label">{t('sidebar.textAlignment')}</span>
                   <div className="sidebar-align-group">
                     {[
                       { value: 'left', Icon: AlignLeft },
@@ -553,20 +572,21 @@ export default function SidebarEstilos({
 
                 {/* Text Color with Alpha */}
                 <ColorControl
-                  label="Cor do Texto"
+                  label={t('sidebar.textColor')}
                   hexValue={val('color', '#000000')}
                   alphaValue={alphaColor}
                   disabled={disabled}
                   onColorChange={handleTextColorChange}
                   onAlphaChange={handleTextAlphaChange}
+                  opacityLabel={t('sidebar.opacity')}
                 />
               </CollapsibleSection>
             )}
 
             {/* ── BORDAS E FORMAS ── */}
-            <CollapsibleSection title="BORDAS E FORMAS" icon={Square}>
+            <CollapsibleSection title={t('sidebar.bordersAndShapes')} icon={Square}>
               <SliderControl
-                label="Arredondamento (Radius)"
+                label={t('sidebar.borderRadius')}
                 unit="px"
                 value={val('borderRadius', 0)}
                 min={0}
@@ -576,7 +596,7 @@ export default function SidebarEstilos({
               />
 
               <SliderControl
-                label="Espessura da Borda"
+                label={t('sidebar.borderWidth')}
                 unit="px"
                 value={val('borderWidth', 0)}
                 min={0}
@@ -590,20 +610,21 @@ export default function SidebarEstilos({
 
               {/* Border Color with Alpha */}
               <ColorControl
-                label="Cor da Borda"
+                label={t('sidebar.borderColor')}
                 hexValue={val('borderColor', '#CBD5E1')}
                 alphaValue={alphaBorder}
                 disabled={disabled}
                 onColorChange={handleBorderColorChange}
                 onAlphaChange={handleBorderAlphaChange}
+                opacityLabel={t('sidebar.opacity')}
               />
             </CollapsibleSection>
 
             {/* ── ESPAÇAMENTO E FUNDO ── */}
-            <CollapsibleSection title="ESPAÇAMENTO E FUNDO" icon={Maximize}>
+            <CollapsibleSection title={t('sidebar.spacingAndBackground')} icon={Maximize}>
               <div className="sidebar-control sidebar-control--row">
                 <div className="sidebar-control__half">
-                  <span className="sidebar-control__label">Padding (px)</span>
+                  <span className="sidebar-control__label">{t('sidebar.padding')}</span>
                   <input
                     type="number"
                     className="sidebar-number-input"
@@ -614,7 +635,7 @@ export default function SidebarEstilos({
                   />
                 </div>
                 <div className="sidebar-control__half">
-                  <span className="sidebar-control__label">Margin (px)</span>
+                  <span className="sidebar-control__label">{t('sidebar.margin')}</span>
                   <input
                     type="number"
                     className="sidebar-number-input"
@@ -628,12 +649,13 @@ export default function SidebarEstilos({
 
               {/* Background Color with Alpha */}
               <ColorControl
-                label="Cor de Fundo"
+                label={t('sidebar.backgroundColor')}
                 hexValue={val('backgroundColor', '#ffffff')}
                 alphaValue={alphaBg}
                 disabled={disabled}
                 onColorChange={handleBgColorChange}
                 onAlphaChange={handleBgAlphaChange}
+                opacityLabel={t('sidebar.opacity')}
               />
             </CollapsibleSection>
           </>
@@ -642,12 +664,12 @@ export default function SidebarEstilos({
         {/* ═══════════════ ABA LAYOUT ═══════════════ */}
         {activeTab === 'layout' && (
           <>
-            <CollapsibleSection title="ELEMENTOS POR ID" icon={Layers} defaultOpen={true}>
+            <CollapsibleSection title={t('sidebar.elementsById')} icon={Layers} defaultOpen={true}>
               {idElements.length === 0 ? (
                 <div className="foux-editor-empty-state foux-editor-empty-state--compact">
                   <Layers size={22} className="foux-editor-empty-state__icon-inline" />
                   <span className="foux-editor-empty-state__hint">
-                    Nenhum elemento com ID encontrado no documento
+                    {t('sidebar.noElementsWithId')}
                   </span>
                 </div>
               ) : (
@@ -672,22 +694,24 @@ export default function SidebarEstilos({
             </CollapsibleSection>
 
             {hasSelection && (
-              <CollapsibleSection title="CORES" icon={Palette} defaultOpen={true}>
+              <CollapsibleSection title={t('sidebar.colors')} icon={Palette} defaultOpen={true}>
                 <ColorControl
-                  label="Cor de Fundo"
+                  label={t('sidebar.backgroundColor')}
                   hexValue={val('backgroundColor', '#ffffff')}
                   alphaValue={alphaBg}
                   disabled={false}
                   onColorChange={handleBgColorChange}
                   onAlphaChange={handleBgAlphaChange}
+                  opacityLabel={t('sidebar.opacity')}
                 />
                 <ColorControl
-                  label="Cor do Texto / Destaque"
+                  label={t('sidebar.textHighlightColor')}
                   hexValue={val('color', '#000000')}
                   alphaValue={alphaColor}
                   disabled={false}
                   onColorChange={handleTextColorChange}
                   onAlphaChange={handleTextAlphaChange}
+                  opacityLabel={t('sidebar.opacity')}
                 />
               </CollapsibleSection>
             )}
@@ -703,15 +727,15 @@ export default function SidebarEstilos({
                   <Zap size={28} />
                 </div>
                 <span className="foux-editor-empty-state__title">
-                  Selecione um elemento para configurar eventos hover
+                  {t('sidebar.hoverSelectElement')}
                 </span>
                 <span className="foux-editor-empty-state__hint">
-                  Clique em um elemento no canvas para começar
+                  {t('sidebar.hoverClickCanvas')}
                 </span>
               </div>
             ) : (
               <>
-                <CollapsibleSection title="HOVER — MUDAR COR" icon={Palette} defaultOpen={true}>
+                <CollapsibleSection title={t('sidebar.eventsHover')} icon={Palette} defaultOpen={true}>
                   {/* Background Color on Hover */}
                   <div className="sidebar-control">
                     <label className="sidebar-toggle-row">
@@ -721,7 +745,7 @@ export default function SidebarEstilos({
                         checked={hoverBgEnabled}
                         onChange={(e) => setHoverBgEnabled(e.target.checked)}
                       />
-                      <span className="sidebar-control__label">Cor de Fundo no Hover</span>
+                      <span className="sidebar-control__label">{t('sidebar.hoverBgColor')}</span>
                     </label>
                     {hoverBgEnabled && (
                       <div className="sidebar-color-input">
@@ -750,7 +774,7 @@ export default function SidebarEstilos({
                         checked={hoverTextEnabled}
                         onChange={(e) => setHoverTextEnabled(e.target.checked)}
                       />
-                      <span className="sidebar-control__label">Cor do Texto no Hover</span>
+                      <span className="sidebar-control__label">{t('sidebar.hoverTextColor')}</span>
                     </label>
                     {hoverTextEnabled && (
                       <div className="sidebar-color-input">
@@ -771,7 +795,7 @@ export default function SidebarEstilos({
                   </div>
                 </CollapsibleSection>
 
-                <CollapsibleSection title="HOVER — ESCALA" icon={Maximize} defaultOpen={true}>
+                <CollapsibleSection title={t('sidebar.hoverScaleSection')} icon={Maximize} defaultOpen={true}>
                   <div className="sidebar-control">
                     <label className="sidebar-toggle-row">
                       <input
@@ -780,11 +804,11 @@ export default function SidebarEstilos({
                         checked={hoverScaleEnabled}
                         onChange={(e) => setHoverScaleEnabled(e.target.checked)}
                       />
-                      <span className="sidebar-control__label">Ativar Escala no Hover</span>
+                      <span className="sidebar-control__label">{t('sidebar.hoverScaleToggle')}</span>
                     </label>
                     {hoverScaleEnabled && (
                       <SliderControl
-                        label="Escala"
+                        label={t('sidebar.scale')}
                         unit=""
                         value={hoverScale}
                         min={0.8}
@@ -797,7 +821,7 @@ export default function SidebarEstilos({
                   </div>
                 </CollapsibleSection>
 
-                <CollapsibleSection title="HOVER — SOMBRA" icon={Square} defaultOpen={true}>
+                <CollapsibleSection title={t('sidebar.hoverShadowSection')} icon={Square} defaultOpen={true}>
                   <div className="sidebar-control">
                     <label className="sidebar-toggle-row">
                       <input
@@ -806,18 +830,129 @@ export default function SidebarEstilos({
                         checked={hoverShadowEnabled}
                         onChange={(e) => setHoverShadowEnabled(e.target.checked)}
                       />
-                      <span className="sidebar-control__label">Sombra Externa no Hover</span>
+                      <span className="sidebar-control__label">{t('sidebar.hoverShadowToggle')}</span>
                     </label>
                     {hoverShadowEnabled && (
-                      <SliderControl
-                        label="Intensidade"
-                        unit="%"
-                        value={hoverShadowIntensity}
-                        min={10}
-                        max={100}
-                        disabled={false}
-                        onChange={(v) => setHoverShadowIntensity(v)}
-                      />
+                      <>
+                        {/* ── Shadow Direction Pad (2D Joystick) ── */}
+                        <div className="shadow-pad-wrapper">
+                          <div className="shadow-pad-label">{t('sidebar.shadowDirection')}</div>
+                          <div
+                            className="shadow-pad"
+                            ref={shadowPadRef}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              isDraggingShadowRef.current = true;
+                              const rect = shadowPadRef.current.getBoundingClientRect();
+                              const PAD_RADIUS = rect.width / 2;
+                              const MAX_OFFSET = 30;
+                              const cx = rect.left + PAD_RADIUS;
+                              const cy = rect.top + PAD_RADIUS;
+
+                              const updateFromMouse = (clientX, clientY) => {
+                                let dx = clientX - cx;
+                                let dy = clientY - cy;
+                                const dist = Math.sqrt(dx * dx + dy * dy);
+                                if (dist > PAD_RADIUS) {
+                                  dx = (dx / dist) * PAD_RADIUS;
+                                  dy = (dy / dist) * PAD_RADIUS;
+                                }
+                                const newX = Math.round((dx / PAD_RADIUS) * MAX_OFFSET);
+                                const newY = Math.round((dy / PAD_RADIUS) * MAX_OFFSET);
+                                setHoverShadowX(newX);
+                                setHoverShadowY(newY);
+                              };
+
+                              updateFromMouse(e.clientX, e.clientY);
+
+                              const onMove = (ev) => {
+                                if (!isDraggingShadowRef.current) return;
+                                updateFromMouse(ev.clientX, ev.clientY);
+                              };
+                              const onUp = () => {
+                                isDraggingShadowRef.current = false;
+                                document.removeEventListener('mousemove', onMove);
+                                document.removeEventListener('mouseup', onUp);
+                              };
+                              document.addEventListener('mousemove', onMove);
+                              document.addEventListener('mouseup', onUp);
+                            }}
+                          >
+                            {/* Crosshair lines */}
+                            <div className="shadow-pad__crosshair-h" />
+                            <div className="shadow-pad__crosshair-v" />
+                            {/* Draggable handle */}
+                            <div
+                              className="shadow-pad__handle"
+                              style={{
+                                left: `calc(50% + ${(hoverShadowX / 30) * 50}%)`,
+                                top: `calc(50% + ${(hoverShadowY / 30) * 50}%)`,
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* ── X / Y Numeric Inputs (bidirectional) ── */}
+                        <div className="shadow-offset-row">
+                          <div className="shadow-offset-field">
+                            <span className="shadow-offset-field__label">X</span>
+                            <input
+                              type="number"
+                              className="sidebar-inline-number"
+                              value={hoverShadowX}
+                              min={-30}
+                              max={30}
+                              onChange={(e) => {
+                                const v = parseInt(e.target.value, 10);
+                                if (Number.isFinite(v)) setHoverShadowX(Math.max(-30, Math.min(30, v)));
+                              }}
+                            />
+                            <span className="sidebar-control__unit">px</span>
+                          </div>
+                          <div className="shadow-offset-field">
+                            <span className="shadow-offset-field__label">Y</span>
+                            <input
+                              type="number"
+                              className="sidebar-inline-number"
+                              value={hoverShadowY}
+                              min={-30}
+                              max={30}
+                              onChange={(e) => {
+                                const v = parseInt(e.target.value, 10);
+                                if (Number.isFinite(v)) setHoverShadowY(Math.max(-30, Math.min(30, v)));
+                              }}
+                            />
+                            <span className="sidebar-control__unit">px</span>
+                          </div>
+                        </div>
+
+                        {/* ── Blur ── */}
+                        <SliderControl
+                          label={t('sidebar.shadowBlur')}
+                          unit="px"
+                          value={hoverShadowBlur}
+                          min={0}
+                          max={60}
+                          disabled={false}
+                          onChange={(v) => setHoverShadowBlur(v)}
+                        />
+
+                        {/* ── Opacity ── */}
+                        <SliderControl
+                          label={t('sidebar.shadowOpacity')}
+                          unit="%"
+                          value={hoverShadowOpacity}
+                          min={5}
+                          max={100}
+                          disabled={false}
+                          onChange={(v) => setHoverShadowOpacity(v)}
+                        />
+
+                        {/* ── Live preview string ── */}
+                        <div className="shadow-preview-string">
+                          <code>{`${hoverShadowX}px ${hoverShadowY}px ${hoverShadowBlur}px rgba(0,0,0,${(hoverShadowOpacity/100).toFixed(2)})`}</code>
+                        </div>
+                      </>
                     )}
                   </div>
                 </CollapsibleSection>

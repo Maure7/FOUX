@@ -7,9 +7,11 @@ import {
   Settings,
   HelpCircle,
   Upload,
+  User,
 } from 'lucide-react';
 import useIframeInspector from '../hooks/useIframeInspector';
 import SidebarEstilos from '../components/SidebarEstilos';
+import { useLanguage } from '../context/LanguageContext';
 import '../styles/Dashboard.css';
 
 /* ===== HTML SANITIZER — neutralize navigation inside srcDoc ===== */
@@ -25,12 +27,16 @@ function neutralizeHtml(html) {
 }
 
 /* ===== EDITABLE PROJECT NAME ===== */
-function EditableProjectName({ name, onRename }) {
+function EditableProjectName({ name, onRename, t }) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(name);
+  const [prevName, setPrevName] = useState(name);
   const inputRef = useRef(null);
 
-  useEffect(() => { setDraft(name); }, [name]);
+  if (name !== prevName) {
+    setPrevName(name);
+    setDraft(name);
+  }
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -41,7 +47,7 @@ function EditableProjectName({ name, onRename }) {
 
   const commit = () => {
     const trimmed = draft.trim();
-    onRename(trimmed || 'Projeto sem título');
+    onRename(trimmed || t('editor.untitledProject'));
     setIsEditing(false);
   };
 
@@ -69,7 +75,7 @@ function EditableProjectName({ name, onRename }) {
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter') setIsEditing(true); }}
-      title="Clique para renomear"
+      title={t('editor.clickToRename')}
     >
       {name}
     </span>
@@ -77,17 +83,17 @@ function EditableProjectName({ name, onRename }) {
 }
 
 /* ===== EDITOR HEADER ===== */
-function EditorHeader({ project, onRename, onNavigate, onAction, onNewFile, onOpenConfig }) {
+function EditorHeader({ project, onRename, onNavigate, onAction, onNewFile, onOpenConfig, onOpenProfile, userProfile, t }) {
   return (
     <header className="editor-header">
       <div className="editor-header__left">
         <button
           className="editor-header__back"
           onClick={onNavigate}
-          aria-label="Voltar ao Dashboard"
+          aria-label={t('editor.backToDashboard')}
         >
           <ArrowLeft size={15} />
-          <span>Voltar</span>
+          <span>{t('editor.backToDashboard')}</span>
         </button>
 
         <span
@@ -104,41 +110,56 @@ function EditorHeader({ project, onRename, onNavigate, onAction, onNewFile, onOp
 
         <button className="editor-toolbar-btn" onClick={onNewFile}>
           <FilePlus size={14} />
-          <span>Novo</span>
+          <span>{t('editor.newFile')}</span>
         </button>
         <button className="editor-toolbar-btn" onClick={() => onAction('Salvar Como')}>
           <Save size={14} />
-          <span>Salvar Como</span>
+          <span>{t('editor.saveAs')}</span>
         </button>
         <button className="editor-toolbar-btn" onClick={() => onAction('Importar CSS')}>
           <FileCode size={14} />
-          <span>Importar CSS</span>
+          <span>{t('editor.importCSS')}</span>
         </button>
 
         <div className="editor-header__separator" />
 
-        <EditableProjectName name={project.name} onRename={onRename} />
+        <EditableProjectName name={project.name} onRename={onRename} t={t} />
       </div>
 
       <div className="editor-header__right">
-        <button className="editor-header__icon-btn" onClick={onOpenConfig} aria-label="Configurações">
+        <button className="editor-header__icon-btn" onClick={onOpenConfig} aria-label={t('settings.title')}>
           <Settings size={16} />
         </button>
-        <button className="editor-header__icon-btn" onClick={() => onAction('Ajuda')} aria-label="Ajuda">
+        <button className="editor-header__icon-btn" onClick={() => onAction('Ajuda')} aria-label={t('dashboard.help')}>
           <HelpCircle size={16} />
         </button>
+        <div
+          className="header__avatar-wrapper"
+          onClick={onOpenProfile}
+          role="button"
+          tabIndex={0}
+          aria-label={t('profile.title')}
+          title={userProfile?.name || t('profile.title')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') onOpenProfile();
+          }}
+        >
+          <div className="header__avatar-placeholder">
+            {userProfile?.avatar ? (
+              <img src={userProfile.avatar} alt="Avatar" className="header__avatar-img" />
+            ) : (
+              <User size={15} />
+            )}
+          </div>
+          <span className="header__avatar-status" />
+        </div>
       </div>
     </header>
   );
 }
 
-/* ===== DROPZONE / CANVAS =====
-   FIX CRÍTICO: O iframe usa initialHtml (ref estável) como srcDoc.
-   Mudanças subsequentes de estilo NÃO alteram srcDoc — elas mutam
-   diretamente os nós do DOM dentro do contentDocument.
-   Assim o iframe nunca é remontado durante a edição.
-   ============================================================= */
-function EditorCanvas({ initialHtml, onFileSelect, iframeRef, onIframeLoad }) {
+/* ===== DROPZONE / CANVAS ===== */
+function EditorCanvas({ initialHtml, onFileSelect, iframeRef, onIframeLoad, t }) {
   const fileInputRef = useRef(null);
 
   const safeHtml = useMemo(
@@ -190,10 +211,10 @@ function EditorCanvas({ initialHtml, onFileSelect, iframeRef, onIframeLoad }) {
             <Upload size={36} />
           </div>
           <span className="editor-dropzone__title">
-            Clique aqui para importar seu arquivo HTML
+            {t('editor.dropzoneTitle')}
           </span>
           <span className="editor-dropzone__hint">
-            ou arraste e solte o arquivo nesta área
+            {t('editor.dropzoneHint')}
           </span>
           <input
             ref={fileInputRef}
@@ -215,19 +236,12 @@ export default function Editor({
   onRenameProject,
   onNavigate,
   showToast,
-  addActivity,
-  currentTheme,
-  onThemeChange,
+  userProfile = {},
 }) {
+  const { t } = useLanguage();
   const newFileInputRef = useRef(null);
   const iframeRef = useRef(null);
 
-  /*
-   * FIX CRÍTICO: initialHtmlRef armazena o HTML que será usado APENAS
-   * para o primeiro srcDoc do iframe. Uma vez carregado, o iframe
-   * permanece estável — as edições mutam o DOM diretamente.
-   * O auto-save serializa o DOM vivo e persiste sem re-montar o iframe.
-   */
   const [initialHtml, setInitialHtml] = useState(() => project.htmlContent);
   const hasLoadedRef = useRef(!!project.htmlContent);
 
@@ -237,31 +251,26 @@ export default function Editor({
     selectedTagName,
     computedStyles,
     applyStyle,
-    clearSelection,
     serializeDocument,
     injectFont,
     getElementsWithId,
     selectElementById,
     setupIframeListeners,
     assignHoverClass,
-    getHoverClass,
     injectHoverStyles,
   } = useIframeInspector(iframeRef);
 
-  /* ---- FIX #1: Editabilidade imediata no primeiro upload ----
-     Quando o iframe termina de carregar (incluindo o primeiro upload),
-     reinicializa os listeners de inspeção imediatamente. */
   const handleIframeLoad = useCallback(() => {
     setupIframeListeners();
   }, [setupIframeListeners]);
 
-  /* ---- Debounced auto-save ----
-     Serializa o DOM vivo do iframe e persiste no projeto.
-     IMPORTANTE: onUpdateProject é chamado com um wrapper que NÃO
-     re-seta initialHtml, assim o iframe nunca é remontado. */
+  /* ---- Debounced auto-save ---- */
   const saveTimerRef = useRef(null);
   const onUpdateProjectRef = useRef(onUpdateProject);
-  onUpdateProjectRef.current = onUpdateProject;
+
+  useEffect(() => {
+    onUpdateProjectRef.current = onUpdateProject;
+  }, [onUpdateProject]);
 
   const debouncedSave = useCallback(() => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -273,16 +282,14 @@ export default function Editor({
     }, 800);
   }, [serializeDocument]);
 
-  /* Callback para SidebarEstilos: notifica que um estilo mudou */
   const handleStyleChange = useCallback(() => {
     debouncedSave();
   }, [debouncedSave]);
 
-  /* Auto-save ao desmontar (sair do editor) */
   useEffect(() => {
+    const iframe = iframeRef.current;
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      const iframe = iframeRef.current;
       if (iframe?.contentDocument) {
         try {
           const doc = iframe.contentDocument;
@@ -303,13 +310,12 @@ export default function Editor({
   }, []);
 
   const handleToolbarAction = useCallback(
-    (actionName) => {
-      showToast('Função ainda não implementada');
+    () => {
+      showToast(t('common.featureComingSoon'));
     },
-    [showToast]
+    [showToast, t]
   );
 
-  /* Importar novo HTML — este É o caso onde devemos atualizar o srcDoc */
   const handleFileSelect = useCallback((file) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -342,14 +348,20 @@ export default function Editor({
     }
   }, [onRenameProject]);
 
-  /* Navegar para Configurações como tela */
   const handleOpenConfig = useCallback(() => {
-    // Salvar antes de navegar
     const html = serializeDocument();
     if (html) {
       onUpdateProjectRef.current({ htmlContent: html });
     }
     onNavigate('settings');
+  }, [serializeDocument, onNavigate]);
+
+  const handleOpenProfile = useCallback(() => {
+    const html = serializeDocument();
+    if (html) {
+      onUpdateProjectRef.current({ htmlContent: html });
+    }
+    onNavigate('profile');
   }, [serializeDocument, onNavigate]);
 
   return (
@@ -361,6 +373,9 @@ export default function Editor({
         onAction={handleToolbarAction}
         onNewFile={handleNewFile}
         onOpenConfig={handleOpenConfig}
+        onOpenProfile={handleOpenProfile}
+        userProfile={userProfile}
+        t={t}
       />
 
       <input
@@ -377,6 +392,7 @@ export default function Editor({
           onFileSelect={handleFileSelect}
           iframeRef={iframeRef}
           onIframeLoad={handleIframeLoad}
+          t={t}
         />
         <SidebarEstilos
           isLocked={!initialHtml}
@@ -389,9 +405,7 @@ export default function Editor({
           selectElementById={selectElementById}
           onStyleChange={handleStyleChange}
           assignHoverClass={assignHoverClass}
-          getHoverClass={getHoverClass}
           injectHoverStyles={injectHoverStyles}
-          iframeRef={iframeRef}
         />
       </div>
     </div>

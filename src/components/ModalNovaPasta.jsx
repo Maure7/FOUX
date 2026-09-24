@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { X, Folder } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 const COLOR_PALETTE = [
   '#e59843', // gold
@@ -13,16 +14,19 @@ const COLOR_PALETTE = [
 ];
 
 export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFolders }) {
+  const { t } = useLanguage();
   const [folderName, setFolderName] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLOR_PALETTE[0]);
 
-  /* Reset state when modal opens */
-  useEffect(() => {
-    if (isOpen) {
-      setFolderName('');
-      setSelectedColor(COLOR_PALETTE[0]);
-    }
-  }, [isOpen]);
+  const [prevOpen, setPrevOpen] = useState(isOpen);
+
+  if (isOpen && !prevOpen) {
+    setPrevOpen(true);
+    setFolderName('');
+    setSelectedColor(COLOR_PALETTE[0]);
+  } else if (!isOpen && prevOpen) {
+    setPrevOpen(false);
+  }
 
   /* Close on Escape */
   useEffect(() => {
@@ -46,8 +50,9 @@ export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFold
 
   /* Generate fallback name */
   const fallbackName = useMemo(() => {
-    if (!existingFolders) return 'Pasta nova (1)';
-    const pattern = /^Pasta nova \((\d+)\)$/;
+    const prefix = t('modals.newFolder.defaultNamePrefix');
+    if (!existingFolders) return `${prefix} (1)`;
+    const pattern = new RegExp(`^${prefix} \\((\\d+)\\)$`);
     let maxNum = 0;
     existingFolders.forEach((f) => {
       const match = f.name.match(pattern);
@@ -55,11 +60,10 @@ export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFold
         maxNum = Math.max(maxNum, parseInt(match[1], 10));
       }
     });
-    // Also count plain "Pasta nova" entries
-    const hasPlain = existingFolders.some((f) => f.name === 'Pasta nova');
+    const hasPlain = existingFolders.some((f) => f.name === prefix);
     const nextNum = hasPlain ? Math.max(maxNum + 1, 2) : maxNum + 1;
-    return `Pasta nova (${nextNum})`;
-  }, [existingFolders]);
+    return `${prefix} (${nextNum})`;
+  }, [existingFolders, t]);
 
   const handleCreate = () => {
     const finalName = folderName.trim() || fallbackName;
@@ -79,14 +83,14 @@ export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFold
         aria-labelledby="modal-folder-title"
       >
         {/* Close */}
-        <button className="modal-close" onClick={onClose} aria-label="Fechar modal">
+        <button className="modal-close" onClick={onClose} aria-label={t('common.close')}>
           <X size={18} />
         </button>
 
         {/* Header */}
         <div className="modal-header">
-          <h2 className="modal-title" id="modal-folder-title">Nova Pasta</h2>
-          <p className="modal-subtitle">Escolha um nome e uma cor de contorno</p>
+          <h2 className="modal-title" id="modal-folder-title">{t('modals.newFolder.title')}</h2>
+          <p className="modal-subtitle">{t('modals.newFolder.subtitle')}</p>
         </div>
 
         {/* Preview */}
@@ -104,7 +108,7 @@ export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFold
         {/* Name input */}
         <div className="modal-name-field">
           <label className="modal-name-label" htmlFor="modal-folder-name">
-            Nome da Pasta
+            {t('modals.newFolder.folderNameLabel')}
           </label>
           <input
             id="modal-folder-name"
@@ -122,7 +126,7 @@ export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFold
 
         {/* Color picker */}
         <div className="modal-folder-colors">
-          <span className="modal-name-label">Cor do Contorno</span>
+          <span className="modal-name-label">{t('modals.newFolder.borderColorLabel')}</span>
           <div className="color-picker-grid">
             {COLOR_PALETTE.map((color) => (
               <button
@@ -138,9 +142,9 @@ export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFold
 
         {/* Footer */}
         <div className="modal-footer modal-footer--spread">
-          <button className="modal-cancel-btn" onClick={onClose}>Cancelar</button>
+          <button className="modal-cancel-btn" onClick={onClose}>{t('common.cancel')}</button>
           <button className="modal-create-btn" onClick={handleCreate}>
-            Criar Pasta
+            {t('modals.newFolder.createFolderBtn')}
           </button>
         </div>
       </div>
