@@ -25,7 +25,8 @@
     "themes": {
       "dark": "Dark (Padrão)",
       "light": "Light",
-      "solarized": "Solarized Waves"
+      "solarized": "Solarized Waves",
+      "liquid-glass": "Liquid Glass"
     },
     "languageTitle": "Idioma",
     "languageSelectLabel": "Selecione o idioma",
@@ -40,7 +41,10 @@
     "clearConfirmTitle": "Limpar cache e dados locais",
     "clearConfirmMessage": "Tem certeza que deseja redefinir os dados locais? Todos os projetos salvos, pastas e preferências serão apagados permanentemente.",
     "clearConfirmBtn": "Limpar tudo",
-    "clearSuccessToast": "Cache limpo com sucesso!"
+    "clearSuccessToast": "Cache limpo com sucesso!",
+    "tutorialTitle": "Tutorial",
+    "tutorialTipsLabel": "Exibir balões de ajuda do tutorial",
+    "tutorialTipsHint": "Se desativado, os balões de dica nunca aparecerão em projetos de tutorial"
   },
   "dashboard": {
     "searchPlaceholder": "Pesquisar projetos...",
@@ -85,7 +89,11 @@
     "untitledProject": "Projeto sem título",
     "clickToRename": "Clique para renomear",
     "dropzoneTitle": "Clique aqui para importar seu arquivo HTML",
-    "dropzoneHint": "ou arraste e solte o arquivo nesta área"
+    "dropzoneHint": "ou arraste e solte o arquivo nesta área",
+    "undo": "Desfazer",
+    "redo": "Refazer",
+    "hideTutorialTips": "Ocultar dicas do tutorial",
+    "showTutorialTips": "Mostrar dicas do tutorial"
   },
   "sidebar": {
     "tabStyles": "Estilos",
@@ -136,7 +144,18 @@
     "hoverShadowToggle": "Sombra Externa no Hover",
     "shadowDirection": "Direção da Sombra",
     "shadowBlur": "Desfoque (Blur)",
-    "shadowOpacity": "Opacidade da Sombra"
+    "shadowOpacity": "Opacidade da Sombra",
+    "gradient": "Gradiente",
+    "gradientAngle": "Ângulo",
+    "gradientColorStart": "Cor Inicial",
+    "gradientColorEnd": "Cor Final"
+  },
+  "tutorial": {
+    "tipTypography": "Use este painel para alterar fonte, tamanho, cor e alinhamento do texto selecionado.",
+    "tipBorders": "Configure bordas, arredondamento e formas dos elementos aqui.",
+    "tipSpacing": "Ajuste padding, margin e a cor de fundo de qualquer elemento.",
+    "tipEvents": "Na aba Eventos, defina efeitos de hover: cor, escala e sombra.",
+    "tipLayout": "A aba Layout lista elementos por ID e permite seleção rápida."
   },
   "activity": {
     "title": "Atividade Recente",

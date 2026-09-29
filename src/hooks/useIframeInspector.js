@@ -42,7 +42,7 @@ const SELECT_OFFSET = '1px';
 const ATTR_HOVERED = 'data-foux-hovered';
 const ATTR_SELECTED = 'data-foux-selected';
 
-const HOVER_STYLE_ID = 'foux-dynamic-events';
+const HOVER_STYLE_ID = 'foux-user-hover-rules';
 const HOVER_CLASS_PREFIX = 'foux-hover-target-';
 
 /**
@@ -122,7 +122,14 @@ export default function useIframeInspector(iframeRef) {
   const applyStyle = useCallback((cssProperty, value) => {
     const el = selectedRef.current;
     if (!el) return;
-    el.style[cssProperty] = value;
+
+    if (cssProperty === 'borderRadius') {
+      const valStr = typeof value === 'number' ? `${value}px` : String(value);
+      el.style.setProperty('border-radius', valStr, 'important');
+      el.style.setProperty('overflow', 'hidden', 'important');
+    } else {
+      el.style[cssProperty] = value;
+    }
 
     const iframe = iframeRef.current;
     if (iframe?.contentWindow) {
@@ -251,19 +258,26 @@ export default function useIframeInspector(iframeRef) {
   }, [iframeRef, clearHover, clearSelectionOutline]);
 
   /* ============================================================
-     HOVER STYLES — Aba Eventos (Injeção Dinâmica)
+     HOVER STYLES — Aba Eventos (Injeção e Persistência Definitiva)
+     Centralizado em <style id="foux-user-hover-rules"> no <head>
      ============================================================ */
 
-  /** Atribui uma classe hover única ao elemento, se ainda não tiver */
+  /** Atribui uma classe hover única e data-foux-id ao elemento, se ainda não tiver */
   const assignHoverClass = useCallback((element) => {
     if (!element) return null;
-    // Verifica se já tem uma classe foux-hover-target
-    const existing = Array.from(element.classList).find((c) => c.startsWith(HOVER_CLASS_PREFIX));
-    if (existing) return existing;
-    // Gerar classe única
-    const cls = `${HOVER_CLASS_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    element.classList.add(cls);
-    return cls;
+    let targetClass = Array.from(element.classList).find((c) => c.startsWith(HOVER_CLASS_PREFIX));
+    let fouxId = element.getAttribute('data-foux-id');
+
+    if (!fouxId) {
+      fouxId = element.id || `foux_${Math.random().toString(36).slice(2, 8)}`;
+      element.setAttribute('data-foux-id', fouxId);
+    }
+
+    if (!targetClass) {
+      targetClass = `${HOVER_CLASS_PREFIX}${fouxId}`;
+      element.classList.add(targetClass);
+    }
+    return targetClass;
   }, []);
 
   /** Obtém a classe hover existente de um elemento */
@@ -272,7 +286,7 @@ export default function useIframeInspector(iframeRef) {
     return Array.from(element.classList).find((c) => c.startsWith(HOVER_CLASS_PREFIX)) || null;
   }, []);
 
-  /** Injeta/atualiza regras de :hover no <style> dinâmico dentro do iframe */
+  /** Injeta/atualiza regras de :hover diretamente no textContent de <style id="foux-user-hover-rules"> */
   const injectHoverStyles = useCallback((selector, cssText) => {
     const iframe = iframeRef.current;
     if (!iframe?.contentDocument) return;
@@ -282,31 +296,78 @@ export default function useIframeInspector(iframeRef) {
     if (!styleEl) {
       styleEl = doc.createElement('style');
       styleEl.id = HOVER_STYLE_ID;
-      doc.head.appendChild(styleEl);
-    }
-
-    // Parsear regras existentes e atualizar/adicionar para o seletor
-    const sheet = styleEl.sheet;
-    if (!sheet) {
-      // Fallback: sobrescrever textContent
-      styleEl.textContent = `${selector}:hover { ${cssText} }`;
-      return;
-    }
-
-    // Procurar regra existente para este seletor
-    const hoverSelector = `${selector}:hover`;
-    let found = false;
-    for (let i = 0; i < sheet.cssRules.length; i++) {
-      if (sheet.cssRules[i].selectorText === hoverSelector) {
-        sheet.deleteRule(i);
-        sheet.insertRule(`${hoverSelector} { ${cssText} }`, i);
-        found = true;
-        break;
+      if (doc.head) {
+        doc.head.appendChild(styleEl);
+      } else if (doc.documentElement) {
+        doc.documentElement.appendChild(styleEl);
       }
     }
-    if (!found) {
-      sheet.insertRule(`${hoverSelector} { ${cssText} }`, sheet.cssRules.length);
+
+    // Parsear regras existentes do textContent
+    const currentContent = styleEl.textContent || '';
+    const ruleMap = new Map();
+
+    const ruleRegex = /([^{]+)\{([^}]+)\}/g;
+    let match;
+    while ((match = ruleRegex.exec(currentContent)) !== null) {
+      const sel = match[1].trim();
+      const decls = match[2].trim();
+      if (sel && decls) {
+        ruleMap.set(sel, decls);
+      }
     }
+
+    const hoverSelector = selector.includes(':hover') ? selector.trim() : `${selector.trim()}:hover`;
+
+    if (cssText && cssText.trim()) {
+      ruleMap.set(hoverSelector, cssText.trim());
+    } else {
+      ruleMap.delete(hoverSelector);
+    }
+
+    // Reconstruir regras em texto puro serializável
+    const lines = [];
+    ruleMap.forEach((decls, sel) => {
+      const formatted = decls
+        .split(';')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .join(';\n  ');
+      lines.push(`${sel} {\n  ${formatted};\n}`);
+    });
+
+    styleEl.textContent = lines.length > 0 ? `\n/* FOUX User Hover Rules */\n${lines.join('\n\n')}\n` : '';
+  }, [iframeRef]);
+
+  /** Obtém regras de hover ativas para um elemento a partir de <style id="foux-user-hover-rules"> */
+  const getHoverRules = useCallback((element) => {
+    if (!element) return null;
+    const iframe = iframeRef.current;
+    if (!iframe?.contentDocument) return null;
+    const doc = iframe.contentDocument;
+
+    const styleEl = doc.getElementById(HOVER_STYLE_ID);
+    if (!styleEl || !styleEl.textContent) return null;
+
+    const cls = Array.from(element.classList).find((c) => c.startsWith(HOVER_CLASS_PREFIX));
+    const fouxId = element.getAttribute('data-foux-id') || element.id;
+
+    const possibleSelectors = [
+      cls ? `.${cls}:hover` : null,
+      fouxId ? `[data-foux-id="${fouxId}"]:hover` : null,
+      fouxId ? `#${fouxId}:hover` : null,
+    ].filter(Boolean);
+
+    const ruleRegex = /([^{]+)\{([^}]+)\}/g;
+    let match;
+    while ((match = ruleRegex.exec(styleEl.textContent)) !== null) {
+      const sel = match[1].trim();
+      const decls = match[2].trim();
+      if (possibleSelectors.includes(sel)) {
+        return decls;
+      }
+    }
+    return null;
   }, [iframeRef]);
 
   /* ------ Função de setup dos listeners (extraída para reuso) ------ */
@@ -446,5 +507,6 @@ export default function useIframeInspector(iframeRef) {
     assignHoverClass,
     getHoverClass,
     injectHoverStyles,
+    getHoverRules,
   };
 }

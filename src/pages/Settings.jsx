@@ -15,6 +15,7 @@ const THEMES = [
   { id: 'dark' },
   { id: 'light' },
   { id: 'solarized' },
+  { id: 'liquid-glass' },
 ];
 
 export default function Settings({
@@ -24,6 +25,8 @@ export default function Settings({
   onThemeChange,
   showToast,
   onClearCache,
+  globalTutorialTips = true,
+  onGlobalTutorialTipsChange,
 }) {
   const { language, setLanguage, t } = useLanguage();
   // Calcula o tamanho real consumido em bytes no carregamento da tela
@@ -123,6 +126,31 @@ export default function Settings({
               <option value="pt">{t('settings.languages.pt')}</option>
               <option value="es">{t('settings.languages.es')}</option>
             </select>
+          </div>
+        </section>
+
+        <div className="settings-divider" />
+
+        {/* ── TUTORIAL ── */}
+        <section className="settings-section">
+          <h2 className="settings-section__title">{t('settings.tutorialTitle')}</h2>
+          <div className="settings-row">
+            <div className="settings-row__info">
+              <span className="settings-row__label">{t('settings.tutorialTipsLabel')}</span>
+              <span className="settings-row__hint">{t('settings.tutorialTipsHint')}</span>
+            </div>
+            <label className="settings-switch">
+              <input
+                type="checkbox"
+                checked={globalTutorialTips}
+                onChange={(e) => {
+                  if (onGlobalTutorialTipsChange) {
+                    onGlobalTutorialTipsChange(e.target.checked);
+                  }
+                }}
+              />
+              <span className="settings-switch__slider" />
+            </label>
           </div>
         </section>
 

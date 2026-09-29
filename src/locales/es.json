@@ -24,8 +24,9 @@
     "themeSelectLabel": "Selecciona el tema",
     "themes": {
       "dark": "Dark (Predeterminado)",
-      "light": "Light",
-      "solarized": "Solarized Waves"
+      "light": "Light Minimal SaaS (Blanco y Negro)",
+      "solarized": "Solarized Waves",
+      "liquid-glass": "Liquid Glass UI (iOS 27)"
     },
     "languageTitle": "Idioma",
     "languageSelectLabel": "Selecciona el idioma",
@@ -40,7 +41,10 @@
     "clearConfirmTitle": "Limpiar caché y datos locales",
     "clearConfirmMessage": "¿Estás seguro de que deseas restablecer los datos locales? Todos los proyectos guardados, carpetas y preferencias se borrarán permanentemente.",
     "clearConfirmBtn": "Limpiar todo",
-    "clearSuccessToast": "¡Caché limpiada con éxito!"
+    "clearSuccessToast": "¡Caché limpiada con éxito!",
+    "tutorialTitle": "Tutorial",
+    "tutorialTipsLabel": "Mostrar globos de ayuda del tutorial",
+    "tutorialTipsHint": "Si está desactivado, los globos de ayuda nunca aparecerán en proyectos de tutorial"
   },
   "dashboard": {
     "searchPlaceholder": "Buscar proyectos...",
@@ -85,7 +89,11 @@
     "untitledProject": "Proyecto sin título",
     "clickToRename": "Haz clic para renombrar",
     "dropzoneTitle": "Haz clic aquí para importar tu archivo HTML",
-    "dropzoneHint": "o arrastra y suelta el archivo en esta área"
+    "dropzoneHint": "o arrastra y suelta el archivo en esta área",
+    "undo": "Deshacer",
+    "redo": "Rehacer",
+    "hideTutorialTips": "Ocultar consejos del tutorial",
+    "showTutorialTips": "Mostrar consejos del tutorial"
   },
   "sidebar": {
     "tabStyles": "Estilos",
@@ -136,7 +144,18 @@
     "hoverShadowToggle": "Sombra externa en hover",
     "shadowDirection": "Dirección de la sombra",
     "shadowBlur": "Desenfoque (Blur)",
-    "shadowOpacity": "Opacidad de la sombra"
+    "shadowOpacity": "Opacidad de la sombra",
+    "gradient": "Gradiente",
+    "gradientAngle": "Ángulo",
+    "gradientColorStart": "Color Inicial",
+    "gradientColorEnd": "Color Final"
+  },
+  "tutorial": {
+    "tipTypography": "Usa este panel para cambiar fuente, tamaño, color y alineación del texto seleccionado.",
+    "tipBorders": "Configura bordes, redondeo y formas de los elementos aquí.",
+    "tipSpacing": "Ajusta padding, margin y el color de fondo de cualquier elemento.",
+    "tipEvents": "En la pestaña Eventos, define efectos de hover: color, escala y sombra.",
+    "tipLayout": "La pestaña Layout lista elementos por ID y permite selección rápida."
   },
   "activity": {
     "title": "Historial reciente",

@@ -5,6 +5,7 @@ import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import { useToast, ToastContainer } from './components/ToastNotification';
 import { LanguageProvider } from './context/LanguageContext';
+import { TUTORIAL_PROJECT_NAME, TUTORIAL_HTML } from './utils/tutorialTemplate';
 
 /* ===== LocalStorage helpers ===== */
 const STORAGE_KEY = 'foux_projects';
@@ -13,6 +14,7 @@ const FOLDERS_KEY = 'foux_folders';
 const ACTIVITIES_KEY = 'foux_activities';
 const THEME_KEY = 'foux_theme';
 const PROFILE_KEY = 'foux_user_profile';
+const GLOBAL_TUTORIAL_TIPS_KEY = 'foux_global_tutorial_tips';
 
 function saveToStorage(key, value) {
   try {
@@ -113,6 +115,16 @@ function AppContent() {
     }
   });
 
+  /* Configuração global: exibir balões de tutorial */
+  const [globalTutorialTips, setGlobalTutorialTips] = useState(() => {
+    try {
+      const saved = localStorage.getItem(GLOBAL_TUTORIAL_TIPS_KEY);
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch (e) {
+      return true;
+    }
+  });
+
   const { toasts, showToast } = useToast();
 
   /* Guardas de carregamento para evitar sobrescrever localStorage no mount inicial */
@@ -182,6 +194,15 @@ function AppContent() {
     saveToStorage(PROFILE_KEY, userProfile);
   }, [userProfile]);
 
+  /* Persistir globalTutorialTips no localStorage */
+  useEffect(() => {
+    try {
+      localStorage.setItem(GLOBAL_TUTORIAL_TIPS_KEY, JSON.stringify(globalTutorialTips));
+    } catch (e) {
+      console.warn('Erro ao salvar config tutorial:', e);
+    }
+  }, [globalTutorialTips]);
+
   /* Apply theme to DOM root — Isolado exclusivamente na chave foux_theme */
   useEffect(() => {
     saveTheme(theme);
@@ -212,6 +233,11 @@ function AppContent() {
   /* ===== Theme ===== */
   const handleThemeChange = useCallback((newTheme) => {
     setTheme(newTheme);
+  }, []);
+
+  /* ===== Global Tutorial Tips Toggle ===== */
+  const handleGlobalTutorialTipsChange = useCallback((enabled) => {
+    setGlobalTutorialTips(enabled);
   }, []);
 
   /* ===== Folders ===== */
@@ -284,6 +310,7 @@ function AppContent() {
       favorite: false,
       htmlFileName: null,
       htmlContent: null,
+      showTutorialTips: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -291,6 +318,26 @@ function AppContent() {
     setActiveProjectId(id);
     setCurrentScreen('editor');
     addActivity(`Abriu '${newProject.name}'`);
+  }, [addActivity]);
+
+  /* ===== Tutorial Project Creator ===== */
+  const createTutorialProject = useCallback(() => {
+    const id = nextId('proj');
+    const newProject = {
+      id,
+      name: TUTORIAL_PROJECT_NAME,
+      folderId: null,
+      favorite: false,
+      htmlFileName: 'tutorial.html',
+      htmlContent: TUTORIAL_HTML,
+      showTutorialTips: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setProjects((prev) => [newProject, ...prev]);
+    setActiveProjectId(id);
+    setCurrentScreen('editor');
+    addActivity(`Abriu o Tutorial FOUX`);
   }, [addActivity]);
 
   const openProject = useCallback((projectId) => {
@@ -436,6 +483,7 @@ function AppContent() {
           currentTheme={theme}
           onThemeChange={handleThemeChange}
           userProfile={userProfile}
+          globalTutorialTips={globalTutorialTips}
         />
       ) : currentScreen === 'settings' ? (
         <Settings
@@ -445,6 +493,8 @@ function AppContent() {
           onThemeChange={handleThemeChange}
           showToast={showToast}
           onClearCache={handleClearCache}
+          globalTutorialTips={globalTutorialTips}
+          onGlobalTutorialTipsChange={handleGlobalTutorialTipsChange}
         />
       ) : currentScreen === 'profile' ? (
         <Profile
@@ -482,6 +532,7 @@ function AppContent() {
           onThemeChange={handleThemeChange}
           onClearActivities={clearActivities}
           onRemoveActivity={removeActivity}
+          onCreateTutorialProject={createTutorialProject}
         />
       )}
 

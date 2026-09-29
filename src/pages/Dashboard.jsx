@@ -301,6 +301,7 @@ export default function Dashboard({
   showToast,
   onClearActivities,
   onRemoveActivity,
+  onCreateTutorialProject,
 }) {
   const { t, formatDate } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
@@ -404,8 +405,9 @@ export default function Dashboard({
   }, [onCreateProject, currentFolderId]);
 
   const handleOpenTutorial = useCallback(() => {
-    showToast(t('common.featureComingSoon'));
-  }, [showToast, t]);
+    setIsModalOpen(false);
+    if (onCreateTutorialProject) onCreateTutorialProject();
+  }, [onCreateTutorialProject]);
 
   /* Folder navigation */
   const enterFolder = useCallback((folderId) => {

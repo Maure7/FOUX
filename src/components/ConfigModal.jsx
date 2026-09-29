@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { X, Sun, Moon, Monitor, Globe, Trash2 } from 'lucide-react';
+import { X, Sun, Moon, Monitor, Globe, Trash2, Sparkles } from 'lucide-react';
 
 /* ===================================================================
    ConfigModal — Modal de configurações com seletor de temas,
@@ -10,23 +10,30 @@ const THEMES = [
   {
     id: 'dark',
     name: 'Padrão FOUX',
-    description: 'Grafite profundo com acentos dourados',
+    description: 'Dark mode pra editar e descansar a visão',
     icon: Moon,
     colors: ['#17141c', '#211d28', '#d4903f', '#e5a45c'],
   },
   {
     id: 'light',
     name: 'Padrão Light',
-    description: 'Tons suaves com detalhes em lilás',
+    description: 'Modo de alto contraste para telas mais escuras',
     icon: Sun,
-    colors: ['#f5f0eb', '#ffffff', '#8b6fc0', '#a78bdb'],
+    colors: ['#ffffff', '#0a0a0a', '#f4f4f5', '#27272a'],
   },
   {
     id: 'solarized',
     name: 'Osaka Solarized Pro',
-    description: 'Paleta solarized profunda azul/petróleo',
+    description: 'Visual moderno e chill para quem gosta de algo diferente',
     icon: Monitor,
     colors: ['#002b36', '#073642', '#268bd2', '#2aa198'],
+  },
+  {
+    id: 'liquid-glass',
+    name: 'Liquid Glass',
+    description: 'Visual apenas para debug e testes, fora da versão final',
+    icon: Sparkles,
+    colors: ['#070919', '#151638', '#a855f7', '#f59e0b'],
   },
 ];
 

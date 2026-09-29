@@ -8,10 +8,16 @@ import {
   HelpCircle,
   Upload,
   User,
+  Undo2,
+  Redo2,
+  X,
+  Lightbulb,
+  LightbulbOff,
 } from 'lucide-react';
 import useIframeInspector from '../hooks/useIframeInspector';
 import SidebarEstilos from '../components/SidebarEstilos';
 import { useLanguage } from '../context/LanguageContext';
+import { TUTORIAL_PROJECT_NAME } from '../utils/tutorialTemplate';
 import '../styles/Dashboard.css';
 
 /* ===== HTML SANITIZER — neutralize navigation inside srcDoc ===== */
@@ -82,8 +88,13 @@ function EditableProjectName({ name, onRename, t }) {
   );
 }
 
-/* ===== EDITOR HEADER ===== */
-function EditorHeader({ project, onRename, onNavigate, onAction, onNewFile, onOpenConfig, onOpenProfile, userProfile, t }) {
+/* ===== EDITOR HEADER with Undo/Redo and Tutorial Toggle ===== */
+function EditorHeader({
+  project, onRename, onNavigate, onAction, onNewFile,
+  onOpenConfig, onOpenProfile, userProfile, t,
+  canUndo, canRedo, onUndo, onRedo,
+  isTutorialProject, showTipsLocal, onToggleTips,
+}) {
   return (
     <header className="editor-header">
       <div className="editor-header__left">
@@ -124,6 +135,51 @@ function EditorHeader({ project, onRename, onNavigate, onAction, onNewFile, onOp
         <div className="editor-header__separator" />
 
         <EditableProjectName name={project.name} onRename={onRename} t={t} />
+
+        {/* ── Undo / Redo ── */}
+        <div className="editor-header__separator" />
+        <button
+          className="editor-header__icon-btn editor-undo-redo-btn"
+          onClick={onUndo}
+          disabled={!canUndo}
+          aria-label={t('editor.undo')}
+          title={t('editor.undo')}
+          style={!canUndo ? { opacity: 0.4, pointerEvents: 'none' } : undefined}
+        >
+          <Undo2 size={16} />
+        </button>
+        <button
+          className="editor-header__icon-btn editor-undo-redo-btn"
+          onClick={onRedo}
+          disabled={!canRedo}
+          aria-label={t('editor.redo')}
+          title={t('editor.redo')}
+          style={!canRedo ? { opacity: 0.4, pointerEvents: 'none' } : undefined}
+        >
+          <Redo2 size={16} />
+        </button>
+
+        {/* ── Botão de Dicas do Tutorial (exclusivo para TUTORIAL, entre Undo/Redo e Configurações) ── */}
+        {isTutorialProject && (
+          <>
+            <div className="editor-header__separator" />
+            <button
+              className={`editor-header__tutorial-btn ${showTipsLocal ? 'is-active' : ''}`}
+              onClick={onToggleTips}
+              title={showTipsLocal ? t('editor.hideTutorialTips') : t('editor.showTutorialTips')}
+              aria-label={showTipsLocal ? t('editor.hideTutorialTips') : t('editor.showTutorialTips')}
+            >
+              {showTipsLocal ? (
+                <Lightbulb size={14} className="editor-header__tutorial-icon" />
+              ) : (
+                <LightbulbOff size={14} className="editor-header__tutorial-icon" />
+              )}
+              <span className="editor-header__tutorial-text">
+                {showTipsLocal ? t('editor.hideTutorialTips') : t('editor.showTutorialTips')}
+              </span>
+            </button>
+          </>
+        )}
       </div>
 
       <div className="editor-header__right">
@@ -229,6 +285,46 @@ function EditorCanvas({ initialHtml, onFileSelect, iframeRef, onIframeLoad, t })
   );
 }
 
+/* ===== TUTORIAL TIPS BALLOONS ===== */
+const TUTORIAL_TIPS = [
+  { id: 'tipTypography', position: 'top' },
+  { id: 'tipBorders', position: 'mid' },
+  { id: 'tipSpacing', position: 'mid2' },
+  { id: 'tipEvents', position: 'bottom' },
+  { id: 'tipLayout', position: 'bottom2' },
+];
+
+function TutorialTips({ visible, onDismissTip, dismissedTips, t }) {
+  if (!visible) return null;
+
+  const activeTips = TUTORIAL_TIPS.filter((tip) => !dismissedTips.has(tip.id));
+  if (activeTips.length === 0) return null;
+
+  return (
+    <div className="tutorial-tips-container">
+      {activeTips.map((tip, idx) => (
+        <div
+          key={tip.id}
+          className={`tutorial-tip tutorial-tip--${tip.position}`}
+          style={{ animationDelay: `${idx * 0.15}s` }}
+        >
+          <div className="tutorial-tip__content">
+            <Lightbulb size={14} className="tutorial-tip__icon" />
+            <span className="tutorial-tip__text">{t(`tutorial.${tip.id}`)}</span>
+          </div>
+          <button
+            className="tutorial-tip__close"
+            onClick={() => onDismissTip(tip.id)}
+            aria-label={t('common.close')}
+          >
+            <X size={12} />
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ===== MAIN EDITOR ===== */
 export default function Editor({
   project,
@@ -237,6 +333,7 @@ export default function Editor({
   onNavigate,
   showToast,
   userProfile = {},
+  globalTutorialTips = true,
 }) {
   const { t } = useLanguage();
   const newFileInputRef = useRef(null);
@@ -255,6 +352,103 @@ export default function Editor({
     setHasLoaded(!!project.htmlContent);
   }
 
+  /* ===== UNDO / REDO STACK with Persistent Hover Snapshotting ===== */
+  const [pastStates, setPastStates] = useState([]);
+  const [futureStates, setFutureStates] = useState([]);
+  const isUndoRedoRef = useRef(false);
+  const currentDocSnapshotRef = useRef(null);
+  const isScrubbingRef = useRef(false);
+  const scrubTimerRef = useRef(null);
+
+  // Reset undo/redo when project changes
+  const [prevUndoProjectId, setPrevUndoProjectId] = useState(project.id);
+  if (project.id !== prevUndoProjectId) {
+    setPrevUndoProjectId(project.id);
+    setPastStates([]);
+    setFutureStates([]);
+    currentDocSnapshotRef.current = null;
+  }
+
+  const pushUndoState = useCallback(() => {
+    if (isUndoRedoRef.current) return;
+    const iframe = iframeRef.current;
+    if (!iframe?.contentDocument) return;
+    const doc = iframe.contentDocument;
+    if (!doc.body || !doc.body.innerHTML.trim()) return;
+
+    // Se não estiver em um gesto contínuo, salva o snapshot anterior
+    if (!isScrubbingRef.current) {
+      const snapToSave = currentDocSnapshotRef.current || doc.documentElement.outerHTML;
+      setPastStates((prev) => [...prev.slice(-50), snapToSave]);
+      setFutureStates([]);
+      isScrubbingRef.current = true;
+    }
+
+    if (scrubTimerRef.current) clearTimeout(scrubTimerRef.current);
+    scrubTimerRef.current = setTimeout(() => {
+      isScrubbingRef.current = false;
+      if (iframeRef.current?.contentDocument?.documentElement) {
+        currentDocSnapshotRef.current = iframeRef.current.contentDocument.documentElement.outerHTML;
+      }
+    }, 350);
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    if (pastStates.length === 0) return;
+    const iframe = iframeRef.current;
+    if (!iframe?.contentDocument) return;
+
+    const currentSnapshot = iframe.contentDocument.documentElement.outerHTML;
+    const previousSnapshot = pastStates[pastStates.length - 1];
+
+    isUndoRedoRef.current = true;
+    setPastStates((prev) => prev.slice(0, -1));
+    setFutureStates((prev) => [currentSnapshot, ...prev]);
+    currentDocSnapshotRef.current = previousSnapshot;
+
+    // Rewrite iframe
+    setInitialHtml(`<!DOCTYPE html>\n${previousSnapshot}`);
+    setTimeout(() => { isUndoRedoRef.current = false; }, 300);
+  }, [pastStates]);
+
+  const handleRedo = useCallback(() => {
+    if (futureStates.length === 0) return;
+    const iframe = iframeRef.current;
+    if (!iframe?.contentDocument) return;
+
+    const currentSnapshot = iframe.contentDocument.documentElement.outerHTML;
+    const nextSnapshot = futureStates[0];
+
+    isUndoRedoRef.current = true;
+    setFutureStates((prev) => prev.slice(1));
+    setPastStates((prev) => [...prev, currentSnapshot]);
+    currentDocSnapshotRef.current = nextSnapshot;
+
+    // Rewrite iframe
+    setInitialHtml(`<!DOCTYPE html>\n${nextSnapshot}`);
+    setTimeout(() => { isUndoRedoRef.current = false; }, 300);
+  }, [futureStates]);
+
+  // Keyboard shortcuts: Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
+        e.preventDefault();
+        handleRedo();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handleUndo, handleRedo]);
+
   /* ---- Iframe Inspector Hook ---- */
   const {
     selectedElement,
@@ -268,10 +462,14 @@ export default function Editor({
     setupIframeListeners,
     assignHoverClass,
     injectHoverStyles,
+    getHoverRules,
   } = useIframeInspector(iframeRef);
 
   const handleIframeLoad = useCallback(() => {
     setupIframeListeners();
+    if (iframeRef.current?.contentDocument?.documentElement) {
+      currentDocSnapshotRef.current = iframeRef.current.contentDocument.documentElement.outerHTML;
+    }
   }, [setupIframeListeners]);
 
   /* ---- Debounced auto-save ---- */
@@ -294,8 +492,9 @@ export default function Editor({
   }, [serializeDocument, hasLoaded]);
 
   const handleStyleChange = useCallback(() => {
+    pushUndoState();
     debouncedSave();
-  }, [debouncedSave]);
+  }, [debouncedSave, pushUndoState]);
 
   // Cleanup limpo: cancela timers pendentes sem ler do iframe em processo de desmontagem
   useEffect(() => {
@@ -373,6 +572,74 @@ export default function Editor({
     onNavigate('dashboard');
   }, [flushCurrentDocument, onNavigate]);
 
+  /* ===== Tutorial Tips State ===== */
+  const isTutorialProject = project.name === TUTORIAL_PROJECT_NAME;
+  const showTipsLocal = project.showTutorialTips !== false;
+  const shouldShowTips = isTutorialProject && globalTutorialTips && showTipsLocal && hasLoaded;
+
+  const [dismissedTips, setDismissedTips] = useState(new Set());
+  const handleDismissTip = useCallback((tipId) => {
+    setDismissedTips((prev) => new Set([...prev, tipId]));
+  }, []);
+
+  const toggleLocalTips = useCallback(() => {
+    const next = !showTipsLocal;
+    onUpdateProjectRef.current({ showTutorialTips: next });
+  }, [showTipsLocal]);
+
+  /* ===== RESIZABLE SIDEBAR ===== */
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    try {
+      const saved = localStorage.getItem('foux_sidebar_width');
+      const parsed = parseInt(saved, 10);
+      if (Number.isFinite(parsed) && parsed >= 300 && parsed <= 700) {
+        return parsed;
+      }
+    } catch {}
+    return 340;
+  });
+  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+  const isResizingSidebarRef = useRef(false);
+  const startXRef = useRef(0);
+  const startWidthRef = useRef(340);
+
+  const handleResizeStart = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isResizingSidebarRef.current = true;
+    startXRef.current = e.clientX;
+    startWidthRef.current = sidebarWidth;
+    setIsResizingSidebar(true);
+
+    const handleMouseMove = (moveEvent) => {
+      if (!isResizingSidebarRef.current) return;
+      const delta = startXRef.current - moveEvent.clientX;
+      const proposedWidth = startWidthRef.current + delta;
+      const minW = 300;
+      const maxW = Math.min(600, Math.floor(window.innerWidth * 0.45));
+      const clamped = Math.max(minW, Math.min(maxW, proposedWidth));
+      setSidebarWidth(clamped);
+    };
+
+    const handleMouseUp = () => {
+      if (isResizingSidebarRef.current) {
+        isResizingSidebarRef.current = false;
+        setIsResizingSidebar(false);
+        setSidebarWidth((finalW) => {
+          try {
+            localStorage.setItem('foux_sidebar_width', String(finalW));
+          } catch {}
+          return finalW;
+        });
+      }
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  }, [sidebarWidth]);
+
   return (
     <div className="editor-shell">
       <EditorHeader
@@ -385,6 +652,13 @@ export default function Editor({
         onOpenProfile={handleOpenProfile}
         userProfile={userProfile}
         t={t}
+        canUndo={pastStates.length > 0}
+        canRedo={futureStates.length > 0}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        isTutorialProject={isTutorialProject}
+        showTipsLocal={showTipsLocal}
+        onToggleTips={toggleLocalTips}
       />
 
       <input
@@ -395,7 +669,7 @@ export default function Editor({
         onChange={handleNewFileChange}
       />
 
-      <div className="editor-layout">
+      <div className={`editor-layout ${isResizingSidebar ? 'is-resizing' : ''}`}>
         <EditorCanvas
           initialHtml={initialHtml}
           onFileSelect={handleFileSelect}
@@ -403,6 +677,18 @@ export default function Editor({
           onIframeLoad={handleIframeLoad}
           t={t}
         />
+
+        {/* Overlay transparente para evitar que o iframe capture mousemove durante o redimensionamento */}
+        {isResizingSidebar && <div className="editor-resize-glass-overlay" />}
+
+        {/* Tutorial Tips overlay — positioned over sidebar area */}
+        <TutorialTips
+          visible={shouldShowTips}
+          onDismissTip={handleDismissTip}
+          dismissedTips={dismissedTips}
+          t={t}
+        />
+
         <SidebarEstilos
           isLocked={!initialHtml}
           selectedElement={selectedElement}
@@ -415,6 +701,10 @@ export default function Editor({
           onStyleChange={handleStyleChange}
           assignHoverClass={assignHoverClass}
           injectHoverStyles={injectHoverStyles}
+          getHoverRules={getHoverRules}
+          width={sidebarWidth}
+          isResizing={isResizingSidebar}
+          onResizeStart={handleResizeStart}
         />
       </div>
     </div>
