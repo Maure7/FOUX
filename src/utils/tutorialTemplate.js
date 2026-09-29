@@ -57,20 +57,41 @@ export const TUTORIAL_HTML = `<!DOCTYPE html>
     .box-demo {
       background-color: #fff;
       border: 2px solid #ddd;
-      border-radius: 10px;
+      border-radius: 16px;
       padding: 24px;
       margin-bottom: 12px;
       text-align: center;
       font-size: 0.9rem;
       color: #666;
+      overflow: hidden;
+      box-sizing: border-box;
+      transition: all 0.2s ease;
     }
+
+    /* ── BOX-UNICA (Isolamento, Alta Especificidade e Arredondamento Design System) ── */
+    #box-unica,
+    .box-demo#box-unica,
+    #secao-caixas #box-unica,
+    #secao-caixas .box-demo#box-unica {
+      border-radius: 16px !important;
+      overflow: hidden !important;
+      box-sizing: border-box !important;
+      position: relative;
+    }
+
     .box-row {
       display: flex;
       gap: 16px;
       margin-bottom: 12px;
       flex-wrap: wrap;
     }
-    .box-row .box-demo { flex: 1; min-width: 140px; }
+    .box-row .box-demo {
+      flex: 1;
+      min-width: 140px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
 
     .btn-demo {
       display: inline-block;

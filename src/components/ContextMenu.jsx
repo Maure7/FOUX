@@ -8,6 +8,8 @@ import {
   ChevronRight,
   FolderOpen,
   Home,
+  Pin,
+  PinOff,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -20,6 +22,8 @@ export default function ContextMenu({
   onMoveTo,
   onDuplicate,
   onDelete,
+  onToggleFavorite,
+  isFavorite = false,
   folders = [],
   currentFolderId = null,
 }) {
@@ -84,6 +88,14 @@ export default function ContextMenu({
         <ExternalLink size={14} />
         <span>{t('common.open')}</span>
       </button>
+
+      {/* Fixar / Desafixar Favorito */}
+      {onToggleFavorite && (
+        <button className="context-menu__item" onClick={() => { onToggleFavorite(); onClose(); }}>
+          {isFavorite ? <PinOff size={14} /> : <Pin size={14} />}
+          <span>{isFavorite ? (t('common.unpin') || t('common.unfavorite')) : (t('common.pin') || t('common.favorite'))}</span>
+        </button>
+      )}
 
       {/* Rename */}
       <button className="context-menu__item" onClick={() => { onRename(); onClose(); }}>

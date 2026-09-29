@@ -3,8 +3,8 @@ import {
   Trash2,
   Pencil,
   Palette,
-  Star,
-  StarOff,
+  Pin,
+  PinOff,
   ChevronRight,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -73,7 +73,7 @@ export default function FolderContextMenu({
     style.top = `${y}px`;
   }
 
-  const isFavorite = folder?.favorite;
+  const isFavorite = !!(folder?.favorite || folder?.isFavorite);
 
   return (
     <div className="context-menu" ref={menuRef} style={style}>
@@ -82,8 +82,8 @@ export default function FolderContextMenu({
         className="context-menu__item"
         onClick={() => { onToggleFavorite(); onClose(); }}
       >
-        {isFavorite ? <StarOff size={14} /> : <Star size={14} />}
-        <span>{isFavorite ? t('common.unfavorite') : t('common.favorite')}</span>
+        {isFavorite ? <PinOff size={14} /> : <Pin size={14} />}
+        <span>{isFavorite ? (t('common.unpin') || t('common.unfavorite')) : (t('common.pin') || t('common.favorite'))}</span>
       </button>
 
       {/* Renomear */}

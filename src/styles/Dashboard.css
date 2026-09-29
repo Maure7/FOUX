@@ -7345,4 +7345,256 @@ body {
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.65), 0 0 22px rgba(168, 85, 247, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
   color: #f8fafc !important;
 }
+
+/* ── 13. Box-Única Component Consistency (Design System: rounded-2xl / 16px) ── */
+.box-unica,
+#box-unica,
+.box-demo#box-unica {
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+/* ===================================================================
+   14. PINNED / FAVORITE ITEMS (Cards em Grade e Linhas em Lista)
+   Diferenciação visual de destaque, badge de PIN e elevação/glow
+   =================================================================== */
+
+/* --- Card PIN Badge (Canto Superior Direito) --- */
+.card-pin-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(229, 152, 67, 0.16);
+  border: 1px solid rgba(229, 152, 67, 0.45);
+  color: var(--accent-gold, #e59843);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  pointer-events: none;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+
+.card-pin-icon {
+  transform: rotate(35deg);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+}
+
+.project-card:hover .card-pin-badge {
+  transform: scale(1.1) translateY(-1px) rotate(5deg);
+  box-shadow: 0 4px 14px rgba(229, 152, 67, 0.35);
+}
+
+/* --- Project & Folder Cards Pinned (Modo Grade / Grid View) --- */
+.project-card--pinned {
+  position: relative !important;
+  border: 1.5px solid rgba(229, 152, 67, 0.45) !important;
+  box-shadow:
+    0 4px 16px rgba(229, 152, 67, 0.14),
+    0 2px 6px rgba(0, 0, 0, 0.18) !important;
+  background: linear-gradient(
+    145deg,
+    rgba(229, 152, 67, 0.07) 0%,
+    var(--bg-card) 65%
+  ) !important;
+}
+
+.project-card--pinned:hover {
+  border-color: var(--accent-gold, #e59843) !important;
+  box-shadow:
+    0 8px 26px rgba(229, 152, 67, 0.24),
+    0 3px 10px rgba(0, 0, 0, 0.22) !important;
+  transform: translateY(-3px) !important;
+}
+
+/* --- List View Item Pinned (Modo Lista / List View) --- */
+.list-item--pinned {
+  border-left: 3px solid var(--accent-gold, #e59843) !important;
+  background: linear-gradient(
+    90deg,
+    rgba(229, 152, 67, 0.08) 0%,
+    var(--bg-card) 100%
+  ) !important;
+  box-shadow: 0 2px 8px rgba(229, 152, 67, 0.06) !important;
+}
+
+.list-item--pinned:hover {
+  background: linear-gradient(
+    90deg,
+    rgba(229, 152, 67, 0.15) 0%,
+    var(--bg-card-hover) 100%
+  ) !important;
+  border-color: rgba(229, 152, 67, 0.45) !important;
+  border-left-color: var(--accent-gold, #e59843) !important;
+}
+
+.list-item__name-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.list-item__pin-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(229, 152, 67, 0.15);
+  border: 1px solid rgba(229, 152, 67, 0.4);
+  color: var(--accent-gold, #e59843);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.list-item__pin-icon {
+  transform: rotate(35deg);
+}
+
+.list-item:hover .list-item__pin-badge {
+  transform: scale(1.1);
+}
+
+/* ===================================================================
+   TEMA: LIGHT MODE — PINNED ITEMS
+   =================================================================== */
+[data-theme="light"] .card-pin-badge {
+  background: #fff8f0 !important;
+  border: 1px solid rgba(229, 152, 67, 0.55) !important;
+  color: #d97706 !important;
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.15) !important;
+}
+
+[data-theme="light"] .project-card--pinned {
+  border: 1.5px solid rgba(229, 152, 67, 0.45) !important;
+  background: linear-gradient(145deg, #fffcf8 0%, #ffffff 55%) !important;
+  box-shadow:
+    0 4px 16px rgba(229, 152, 67, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .project-card--pinned:hover {
+  border-color: #d97706 !important;
+  box-shadow:
+    0 10px 25px rgba(229, 152, 67, 0.2),
+    0 2px 6px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .list-item--pinned {
+  border-left: 3px solid #d97706 !important;
+  background: linear-gradient(90deg, #fff8f0 0%, #ffffff 100%) !important;
+  box-shadow: 0 1px 4px rgba(217, 119, 6, 0.08) !important;
+}
+
+[data-theme="light"] .list-item--pinned:hover {
+  background: linear-gradient(90deg, #fef3c7 0%, #ffffff 100%) !important;
+  border-color: #d97706 !important;
+}
+
+[data-theme="light"] .list-item__pin-badge {
+  background: #fff8f0 !important;
+  border-color: rgba(229, 152, 67, 0.45) !important;
+  color: #d97706 !important;
+}
+
+/* ===================================================================
+   TEMA: SOLARIZED WAVES — PINNED ITEMS
+   =================================================================== */
+[data-theme="solarized"] .card-pin-badge {
+  background: rgba(203, 75, 22, 0.22) !important;
+  border: 1px solid rgba(203, 75, 22, 0.5) !important;
+  color: #cb4b16 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="solarized"] .project-card--pinned {
+  border: 1.5px solid rgba(203, 75, 22, 0.45) !important;
+  background: linear-gradient(145deg, rgba(203, 75, 22, 0.12) 0%, #073642 60%) !important;
+  box-shadow:
+    0 4px 16px rgba(203, 75, 22, 0.18),
+    0 2px 6px rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-theme="solarized"] .project-card--pinned:hover {
+  border-color: #cb4b16 !important;
+  box-shadow:
+    0 8px 24px rgba(203, 75, 22, 0.28),
+    0 2px 8px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme="solarized"] .list-item--pinned {
+  border-left: 3px solid #cb4b16 !important;
+  background: linear-gradient(90deg, rgba(203, 75, 22, 0.14) 0%, #073642 100%) !important;
+}
+
+[data-theme="solarized"] .list-item--pinned:hover {
+  background: linear-gradient(90deg, rgba(203, 75, 22, 0.22) 0%, #0c4352 100%) !important;
+  border-color: rgba(203, 75, 22, 0.6) !important;
+  border-left-color: #cb4b16 !important;
+}
+
+[data-theme="solarized"] .list-item__pin-badge {
+  background: rgba(203, 75, 22, 0.2) !important;
+  border-color: rgba(203, 75, 22, 0.5) !important;
+  color: #cb4b16 !important;
+}
+
+/* ===================================================================
+   TEMA: LIQUID GLASS UI — PINNED ITEMS
+   =================================================================== */
+[data-theme="liquid-glass"] .card-pin-badge {
+  background: rgba(251, 191, 36, 0.25) !important;
+  border: 1px solid rgba(251, 191, 36, 0.6) !important;
+  color: #fbbf24 !important;
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.35) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+[data-theme="liquid-glass"] .project-card--pinned {
+  border: 1.5px solid rgba(251, 191, 36, 0.55) !important;
+  background: linear-gradient(145deg, rgba(251, 191, 36, 0.14) 0%, rgba(14, 16, 44, 0.75) 60%) !important;
+  box-shadow:
+    0 8px 24px rgba(251, 191, 36, 0.16),
+    0 0 16px rgba(251, 191, 36, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+[data-theme="liquid-glass"] .project-card--pinned:hover {
+  border-color: #fbbf24 !important;
+  box-shadow:
+    0 12px 32px rgba(251, 191, 36, 0.25),
+    0 0 24px rgba(251, 191, 36, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+}
+
+[data-theme="liquid-glass"] .list-item--pinned {
+  border-left: 3px solid #fbbf24 !important;
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.16) 0%, rgba(14, 16, 44, 0.65) 100%) !important;
+  box-shadow: 0 4px 14px rgba(251, 191, 36, 0.12) !important;
+}
+
+[data-theme="liquid-glass"] .list-item--pinned:hover {
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.24) 0%, rgba(14, 16, 44, 0.85) 100%) !important;
+  border-color: rgba(251, 191, 36, 0.6) !important;
+  border-left-color: #fbbf24 !important;
+}
+
+[data-theme="liquid-glass"] .list-item__pin-badge {
+  background: rgba(251, 191, 36, 0.25) !important;
+  border-color: rgba(251, 191, 36, 0.6) !important;
+  color: #fbbf24 !important;
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.3) !important;
+}
+
+
 

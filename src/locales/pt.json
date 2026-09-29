@@ -14,6 +14,8 @@
     "root": "Raiz",
     "favorite": "Favoritar",
     "unfavorite": "Remover dos favoritos",
+    "pin": "Fixar nos favoritos",
+    "unpin": "Desafixar dos favoritos",
     "changeColor": "Mudar Cor",
     "notImplemented": "\"{feature}\" ainda não foi implementado.",
     "featureComingSoon": "Função ainda não implementada"

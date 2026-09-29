@@ -259,16 +259,16 @@ function AppContent() {
     setFolders((prev) => {
       const folder = prev.find((f) => f.id === folderId);
       if (!folder) return prev;
-      const newFav = !folder.favorite;
+      const newFav = !(folder.favorite || folder.isFavorite);
       setTimeout(() => {
         addActivity(
           newFav
-            ? `Marcou pasta '${folder.name}' como favorita`
-            : `Removeu pasta '${folder.name}' dos favoritos`
+            ? `Fixou a pasta '${folder.name}' nos favoritos`
+            : `Desafixou a pasta '${folder.name}' dos favoritos`
         );
       }, 0);
       return prev.map((f) =>
-        f.id === folderId ? { ...f, favorite: newFav } : f
+        f.id === folderId ? { ...f, favorite: newFav, isFavorite: newFav } : f
       );
     });
   }, [addActivity]);
@@ -441,16 +441,16 @@ function AppContent() {
     setProjects((prev) => {
       const proj = prev.find((p) => p.id === projectId);
       if (!proj) return prev;
-      const newFav = !proj.favorite;
+      const newFav = !(proj.favorite || proj.isFavorite);
       setTimeout(() => {
         addActivity(
           newFav
-            ? `Marcou '${proj.name}' como favorito`
-            : `Removeu '${proj.name}' dos favoritos`
+            ? `Fixou '${proj.name}' nos favoritos`
+            : `Desafixou '${proj.name}' dos favoritos`
         );
       }, 0);
       return prev.map((p) =>
-        p.id === projectId ? { ...p, favorite: newFav } : p
+        p.id === projectId ? { ...p, favorite: newFav, isFavorite: newFav } : p
       );
     });
   }, [addActivity]);

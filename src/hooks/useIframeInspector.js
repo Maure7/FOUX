@@ -392,6 +392,21 @@ export default function useIframeInspector(iframeRef) {
     setSelectedTagName(null);
     setComputedStyles(null);
 
+    // Blindagem de renderização para o componente #box-unica no tutorial (Design System: rounded-2xl / 16px)
+    try {
+      const boxUnica = doc.getElementById('box-unica');
+      if (boxUnica) {
+        boxUnica.style.setProperty('overflow', 'hidden', 'important');
+        boxUnica.style.setProperty('box-sizing', 'border-box', 'important');
+        const computed = win.getComputedStyle(boxUnica);
+        if (!computed.borderRadius || computed.borderRadius === '0px' || computed.borderRadius === '10px') {
+          boxUnica.style.setProperty('border-radius', '16px', 'important');
+        }
+      }
+    } catch {
+      // safe fallback
+    }
+
     function onMouseOver(e) {
       const target = e.target;
       if (!target || target === doc.documentElement) return;

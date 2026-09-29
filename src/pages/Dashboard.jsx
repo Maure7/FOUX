@@ -16,6 +16,7 @@ import {
   List,
   FolderOpen,
   SearchX,
+  Pin,
 } from 'lucide-react';
 import ModalNovoProjeto from '../components/ModalNovoProjeto';
 import ModalNovaPasta from '../components/ModalNovaPasta';
@@ -119,13 +120,14 @@ function NewProjectCard({ onClick, viewMode, t }) {
 
 /* ===== FOLDER CARD ===== */
 function FolderCard({ folder, onClick, viewMode, onContextMenu, fileCount, t, formatDate }) {
+  const isFavorite = !!(folder.favorite || folder.isFavorite);
   const dateLabel = formatDate(folder.createdAt);
   const fileCountLabel = fileCount === 1 ? t('dashboard.oneFile') : t('dashboard.filesCount', { count: fileCount });
 
   if (viewMode === 'list') {
     return (
       <div
-        className="list-item list-item--folder"
+        className={`list-item list-item--folder ${isFavorite ? 'list-item--pinned' : ''}`}
         onClick={() => onClick(folder.id)}
         onContextMenu={onContextMenu}
         role="button"
@@ -133,7 +135,14 @@ function FolderCard({ folder, onClick, viewMode, onContextMenu, fileCount, t, fo
         onKeyDown={(e) => { if (e.key === 'Enter') onClick(folder.id); }}
       >
         <Folder size={18} className="list-item__icon" style={{ color: folder.borderColor }} />
-        <span className="list-item__name">{folder.name}</span>
+        <div className="list-item__name-wrapper">
+          <span className="list-item__name">{folder.name}</span>
+          {isFavorite && (
+            <span className="list-item__pin-badge" title={t('common.pin') || t('common.favorite')}>
+              <Pin size={12} className="list-item__pin-icon" />
+            </span>
+          )}
+        </div>
         <span className="list-item__file-count">{fileCountLabel}</span>
         <span className="list-item__date">{dateLabel}</span>
       </div>
@@ -142,7 +151,7 @@ function FolderCard({ folder, onClick, viewMode, onContextMenu, fileCount, t, fo
 
   return (
     <div
-      className="project-card project-card--folder"
+      className={`project-card project-card--folder ${isFavorite ? 'project-card--pinned' : ''}`}
       style={{ '--folder-border-color': folder.borderColor }}
       onClick={() => onClick(folder.id)}
       onContextMenu={onContextMenu}
@@ -150,6 +159,11 @@ function FolderCard({ folder, onClick, viewMode, onContextMenu, fileCount, t, fo
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter') onClick(folder.id); }}
     >
+      {isFavorite && (
+        <div className="card-pin-badge" title={t('common.pin') || t('common.favorite')}>
+          <Pin size={13} className="card-pin-icon" />
+        </div>
+      )}
       <div className="project-card__preview project-card__preview--folder">
         <Folder size={28} style={{ color: folder.borderColor }} />
       </div>
@@ -174,6 +188,7 @@ function ProjectCard({
   t,
   formatDate,
 }) {
+  const isFavorite = !!(project.favorite || project.isFavorite);
   const dateLabel = formatDate(project.updatedAt);
 
   const handleClick = () => {
@@ -187,7 +202,7 @@ function ProjectCard({
   if (viewMode === 'list') {
     return (
       <div
-        className={`list-item ${selectionMode ? 'list-item--selectable' : ''} ${isSelected ? 'list-item--selected' : ''}`}
+        className={`list-item ${selectionMode ? 'list-item--selectable' : ''} ${isSelected ? 'list-item--selected' : ''} ${isFavorite ? 'list-item--pinned' : ''}`}
         onClick={handleClick}
         onContextMenu={selectionMode ? undefined : onContextMenu}
         role="button"
@@ -200,7 +215,14 @@ function ProjectCard({
           </div>
         )}
         <FileCode size={18} className="list-item__icon" />
-        <span className="list-item__name">{project.name}</span>
+        <div className="list-item__name-wrapper">
+          <span className="list-item__name">{project.name}</span>
+          {isFavorite && (
+            <span className="list-item__pin-badge" title={t('common.pin') || t('common.favorite')}>
+              <Pin size={12} className="list-item__pin-icon" />
+            </span>
+          )}
+        </div>
         <span className="list-item__date">{t('dashboard.editedDate', { date: dateLabel })}</span>
         {!selectionMode && (
           <button
@@ -217,13 +239,18 @@ function ProjectCard({
 
   return (
     <div
-      className={`project-card project-card--saved ${selectionMode ? 'project-card--selectable' : ''} ${isSelected ? 'project-card--selected' : ''}`}
+      className={`project-card project-card--saved ${selectionMode ? 'project-card--selectable' : ''} ${isSelected ? 'project-card--selected' : ''} ${isFavorite ? 'project-card--pinned' : ''}`}
       onClick={handleClick}
       onContextMenu={selectionMode ? undefined : onContextMenu}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter') handleClick(); }}
     >
+      {isFavorite && (
+        <div className="card-pin-badge" title={t('common.pin') || t('common.favorite')}>
+          <Pin size={13} className="card-pin-icon" />
+        </div>
+      )}
       {selectionMode && (
         <div className={`selection-checkbox selection-checkbox--card ${isSelected ? 'selection-checkbox--checked' : ''}`}>
           {isSelected && <CheckSquare size={18} />}
@@ -297,6 +324,7 @@ export default function Dashboard({
   onToggleFolderFavorite,
   onRenameFolder,
   onChangeFolderColor,
+  onToggleProjectFavorite,
   onNavigate,
   showToast,
   onClearActivities,
@@ -379,17 +407,21 @@ export default function Dashboard({
       );
     }
 
-    // Sort: favoritos primeiro
-    const sf = visibleFolders.sort((a, b) => {
-      if (a.favorite && !b.favorite) return -1;
-      if (!a.favorite && b.favorite) return 1;
-      return 0;
+    // Sort: favoritos primeiro, depois data mais recente
+    const sf = [...visibleFolders].sort((a, b) => {
+      const aFav = !!(a.favorite || a.isFavorite);
+      const bFav = !!(b.favorite || b.isFavorite);
+      if (aFav && !bFav) return -1;
+      if (!aFav && bFav) return 1;
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
     });
 
-    const sp = visibleProjects.sort((a, b) => {
-      if (a.favorite && !b.favorite) return -1;
-      if (!a.favorite && b.favorite) return 1;
-      return 0;
+    const sp = [...visibleProjects].sort((a, b) => {
+      const aFav = !!(a.favorite || a.isFavorite);
+      const bFav = !!(b.favorite || b.isFavorite);
+      if (aFav && !bFav) return -1;
+      if (!aFav && bFav) return 1;
+      return new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0);
     });
 
     return { sortedFolders: sf, sortedProjects: sp };
@@ -690,6 +722,8 @@ export default function Dashboard({
               isFolder: false,
             });
           }}
+          onToggleFavorite={onToggleProjectFavorite ? () => onToggleProjectFavorite(contextMenu.project.id) : undefined}
+          isFavorite={!!(contextMenu.project.favorite || contextMenu.project.isFavorite)}
           folders={folders}
           currentFolderId={contextMenu.project.folderId}
         />
