@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ClipboardList, Clock, FileCode, Trash2, X, Eye, EyeOff } from 'lucide-react';
+import { ClipboardList, Clock, FileCode, Folder, Trash2, X, Eye, EyeOff } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 const MAX_COLLAPSED = 6;
@@ -20,7 +20,7 @@ function ActivityEmptyState({ message }) {
 }
 
 /* ===== ACTIVITY ITEM ===== */
-function ActivityItem({ activity, onRemove, timeAgo, formatActivity, projectTagLabel }) {
+function ActivityItem({ activity, onRemove, timeAgo, formatActivity, t }) {
   const [timeLabel, setTimeLabel] = useState(() => timeAgo(activity.timestamp));
 
   // Auto-refresh the relative timestamp every 30s
@@ -31,18 +31,21 @@ function ActivityItem({ activity, onRemove, timeAgo, formatActivity, projectTagL
     return () => clearInterval(interval);
   }, [activity.timestamp, timeAgo]);
 
-  const translatedText = formatActivity ? formatActivity(activity.text) : activity.text;
+  const translatedText = formatActivity ? formatActivity(activity) : (activity.text || activity.actionKey || '');
+  const isFolder = activity.type === 'folder' || (activity.actionKey && activity.actionKey.includes('folder'));
+  const tagLabel = isFolder ? t('activity.folderTag') : t('activity.projectTag');
+  const IconComponent = isFolder ? Folder : FileCode;
 
   return (
     <div className="activity-item">
-      <div className="activity-item__icon-wrapper">
-        <FileCode className="activity-item__icon" />
+      <div className={`activity-item__icon-wrapper ${isFolder ? 'activity-item__icon-wrapper--folder' : ''}`}>
+        <IconComponent className="activity-item__icon" />
       </div>
       <div className="activity-item__content">
         <span className="activity-item__text">{translatedText}</span>
         <span className="activity-item__time">{timeLabel}</span>
       </div>
-      <span className="activity-item__tag">{projectTagLabel}</span>
+      <span className={`activity-item__tag ${isFolder ? 'activity-item__tag--folder' : ''}`}>{tagLabel}</span>
       {onRemove && (
         <button
           className="activity-item__delete"
@@ -50,8 +53,8 @@ function ActivityItem({ activity, onRemove, timeAgo, formatActivity, projectTagL
             e.stopPropagation();
             onRemove(activity.id);
           }}
-          aria-label="Remover atividade"
-          title="Remover"
+          aria-label={t('activity.removeActivity')}
+          title={t('activity.removeActivity')}
         >
           <X size={14} />
         </button>
@@ -170,7 +173,7 @@ export default function AtividadeRecente({ activities, onClearActivities, onRemo
                   onRemove={onRemoveActivity}
                   timeAgo={timeAgo}
                   formatActivity={formatActivity}
-                  projectTagLabel={t('activity.projectTag')}
+                  t={t}
                 />
               ))}
             </div>

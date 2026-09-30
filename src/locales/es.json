@@ -26,9 +26,9 @@
     "themeSelectLabel": "Selecciona el tema",
     "themes": {
       "dark": "Dark (Predeterminado)",
-      "light": "Light Minimal SaaS (Blanco y Negro)",
+      "light": "Light",
       "solarized": "Solarized Waves",
-      "liquid-glass": "Liquid Glass UI (iOS 27)"
+      "liquid-glass": "Liquid Glass"
     },
     "languageTitle": "Idioma",
     "languageSelectLabel": "Selecciona el idioma",
@@ -169,7 +169,21 @@
     "hideHistory": "Ocultar historial",
     "showHistory": "Mostrar historial",
     "removeActivity": "Eliminar actividad",
-    "projectTag": "proyecto"
+    "projectTag": "proyecto",
+    "folderTag": "carpeta",
+    "open_project": "Abrió '{name}'",
+    "open_tutorial": "Abrió el Tutorial FOUX",
+    "pin_project": "Fijó '{name}' en favoritos",
+    "unpin_project": "Desfijó '{name}' de favoritos",
+    "rename_project": "Cambió el nombre de '{oldName}' a '{newName}'",
+    "delete_project": "Eliminó '{name}'",
+    "duplicate_project": "Duplicó '{name}'",
+    "create_folder": "Creó la carpeta '{name}'",
+    "pin_folder": "Fijó la carpeta '{name}' en favoritos",
+    "unpin_folder": "Desfijó la carpeta '{name}' de favoritos",
+    "rename_folder": "Renombró la carpeta de '{oldName}' a '{newName}'",
+    "change_folder_color": "Cambió el color de la carpeta '{name}'",
+    "delete_folder": "Eliminó la carpeta '{name}'"
   },
   "modals": {
     "newProject": {

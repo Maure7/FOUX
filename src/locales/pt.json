@@ -169,7 +169,21 @@
     "hideHistory": "Ocultar histórico",
     "showHistory": "Mostrar histórico",
     "removeActivity": "Remover atividade",
-    "projectTag": "projeto"
+    "projectTag": "projeto",
+    "folderTag": "pasta",
+    "open_project": "Abriu '{name}'",
+    "open_tutorial": "Abriu o Tutorial FOUX",
+    "pin_project": "Fixou '{name}' nos favoritos",
+    "unpin_project": "Desafixou '{name}' dos favoritos",
+    "rename_project": "Mudou o nome de '{oldName}' para '{newName}'",
+    "delete_project": "Excluiu '{name}'",
+    "duplicate_project": "Duplicou '{name}'",
+    "create_folder": "Criou a pasta '{name}'",
+    "pin_folder": "Fixou a pasta '{name}' nos favoritos",
+    "unpin_folder": "Desafixou a pasta '{name}' dos favoritos",
+    "rename_folder": "Renomeou a pasta de '{oldName}' para '{newName}'",
+    "change_folder_color": "Alterou a cor da pasta '{name}'",
+    "delete_folder": "Excluiu a pasta '{name}'"
   },
   "modals": {
     "newProject": {

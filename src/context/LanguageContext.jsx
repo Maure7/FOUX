@@ -2,7 +2,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import ptTranslations from '../locales/pt.json';
 import esTranslations from '../locales/es.json';
-import { translateActivityText } from '../utils/activityI18n';
+import { formatActivityMessage } from '../utils/activityI18n';
 
 const LANGUAGE_STORAGE_KEY = 'foux_language';
 const DEFAULT_LANGUAGE = 'pt';
@@ -129,11 +129,11 @@ export function LanguageProvider({ children }) {
   }, [language]);
 
   /**
-   * Formata texto de atividade de acordo com o idioma corrente
+   * Formata texto/objeto de atividade dinamicamente de acordo com o idioma corrente
    */
-  const formatActivity = useCallback((text) => {
-    return translateActivityText(text, language);
-  }, [language]);
+  const formatActivity = useCallback((activityOrText) => {
+    return formatActivityMessage(activityOrText, t, language);
+  }, [t, language]);
 
   const value = useMemo(() => ({
     language,

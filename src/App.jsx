@@ -6,6 +6,7 @@ import Profile from './pages/Profile';
 import { useToast, ToastContainer } from './components/ToastNotification';
 import { LanguageProvider } from './context/LanguageContext';
 import { TUTORIAL_PROJECT_NAME, TUTORIAL_HTML } from './utils/tutorialTemplate';
+import { migrateLegacyActivity } from './utils/activityI18n';
 
 /* ===== LocalStorage helpers ===== */
 const STORAGE_KEY = 'foux_projects';
@@ -77,7 +78,10 @@ function AppContent() {
   const [activities, setActivities] = useState(() => {
     try {
       const saved = localStorage.getItem(ACTIVITIES_KEY);
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map(migrateLegacyActivity).filter(Boolean);
     } catch (e) {
       console.error("Erro ao carregar atividades:", e);
       return [];
@@ -120,7 +124,7 @@ function AppContent() {
     try {
       const saved = localStorage.getItem(GLOBAL_TUTORIAL_TIPS_KEY);
       return saved !== null ? JSON.parse(saved) : true;
-    } catch (e) {
+    } catch {
       return true;
     }
   });
@@ -213,13 +217,40 @@ function AppContent() {
   const activeProject = projects.find((p) => p.id === activeProjectId) || null;
 
   /* ===== Activity ===== */
-  const addActivity = useCallback((text) => {
-    const newActivity = {
-      id: nextId('act'),
-      text,
-      timestamp: new Date().toISOString(),
-    };
-    setActivities((prev) => [newActivity, ...prev]);
+  const addActivity = useCallback((actionOrConfig, params = {}, type = 'project') => {
+    let activityRecord;
+    if (actionOrConfig && typeof actionOrConfig === 'object') {
+      const actKey = actionOrConfig.actionKey || null;
+      activityRecord = {
+        id: actionOrConfig.id || nextId('act'),
+        actionKey: actKey,
+        params: actionOrConfig.params || {},
+        type: actionOrConfig.type || (actKey && actKey.includes('folder') ? 'folder' : 'project'),
+        timestamp: typeof actionOrConfig.timestamp === 'number'
+          ? actionOrConfig.timestamp
+          : (actionOrConfig.timestamp ? new Date(actionOrConfig.timestamp).getTime() : Date.now()),
+      };
+    } else if (typeof actionOrConfig === 'string') {
+      if (actionOrConfig.startsWith('activity.')) {
+        activityRecord = {
+          id: nextId('act'),
+          actionKey: actionOrConfig,
+          params: params || {},
+          type: type || (actionOrConfig.includes('folder') ? 'folder' : 'project'),
+          timestamp: Date.now(),
+        };
+      } else {
+        activityRecord = migrateLegacyActivity({
+          id: nextId('act'),
+          text: actionOrConfig,
+          timestamp: Date.now(),
+        });
+      }
+    }
+
+    if (activityRecord) {
+      setActivities((prev) => [activityRecord, ...prev]);
+    }
   }, []);
 
   const clearActivities = useCallback(() => {
@@ -251,7 +282,11 @@ function AppContent() {
       createdAt: new Date().toISOString(),
     };
     setFolders((prev) => [newFolder, ...prev]);
-    addActivity(`Criou a pasta '${name}'`);
+    addActivity({
+      actionKey: 'activity.create_folder',
+      params: { name },
+      type: 'folder',
+    });
     return id;
   }, [addActivity]);
 
@@ -261,11 +296,11 @@ function AppContent() {
       if (!folder) return prev;
       const newFav = !(folder.favorite || folder.isFavorite);
       setTimeout(() => {
-        addActivity(
-          newFav
-            ? `Fixou a pasta '${folder.name}' nos favoritos`
-            : `Desafixou a pasta '${folder.name}' dos favoritos`
-        );
+        addActivity({
+          actionKey: newFav ? 'activity.pin_folder' : 'activity.unpin_folder',
+          params: { name: folder.name },
+          type: 'folder',
+        });
       }, 0);
       return prev.map((f) =>
         f.id === folderId ? { ...f, favorite: newFav, isFavorite: newFav } : f
@@ -279,7 +314,11 @@ function AppContent() {
       if (!folder) return prev;
       const oldName = folder.name;
       setTimeout(() => {
-        addActivity(`Renomeou a pasta de '${oldName}' para '${newName}'`);
+        addActivity({
+          actionKey: 'activity.rename_folder',
+          params: { oldName, newName },
+          type: 'folder',
+        });
       }, 0);
       return prev.map((f) =>
         f.id === folderId ? { ...f, name: newName } : f
@@ -292,7 +331,11 @@ function AppContent() {
       const folder = prev.find((f) => f.id === folderId);
       if (!folder) return prev;
       setTimeout(() => {
-        addActivity(`Alterou a cor da pasta '${folder.name}'`);
+        addActivity({
+          actionKey: 'activity.change_folder_color',
+          params: { name: folder.name },
+          type: 'folder',
+        });
       }, 0);
       return prev.map((f) =>
         f.id === folderId ? { ...f, borderColor: newColor } : f
@@ -317,7 +360,11 @@ function AppContent() {
     setProjects((prev) => [newProject, ...prev]);
     setActiveProjectId(id);
     setCurrentScreen('editor');
-    addActivity(`Abriu '${newProject.name}'`);
+    addActivity({
+      actionKey: 'activity.open_project',
+      params: { name: newProject.name },
+      type: 'project',
+    });
   }, [addActivity]);
 
   /* ===== Tutorial Project Creator ===== */
@@ -337,7 +384,11 @@ function AppContent() {
     setProjects((prev) => [newProject, ...prev]);
     setActiveProjectId(id);
     setCurrentScreen('editor');
-    addActivity(`Abriu o Tutorial FOUX`);
+    addActivity({
+      actionKey: 'activity.open_tutorial',
+      params: {},
+      type: 'project',
+    });
   }, [addActivity]);
 
   const openProject = useCallback((projectId) => {
@@ -345,7 +396,11 @@ function AppContent() {
     setCurrentScreen('editor');
     const proj = projects.find((p) => p.id === projectId);
     if (proj) {
-      addActivity(`Abriu '${proj.name}'`);
+      addActivity({
+        actionKey: 'activity.open_project',
+        params: { name: proj.name },
+        type: 'project',
+      });
     }
   }, [projects, addActivity]);
 
@@ -392,7 +447,11 @@ function AppContent() {
           : p
       );
       setTimeout(() => {
-        addActivity(`Mudou o nome de '${oldName}' para '${newName}'`);
+        addActivity({
+          actionKey: 'activity.rename_project',
+          params: { oldName, newName },
+          type: 'project',
+        });
       }, 0);
       return updated;
     });
@@ -402,7 +461,11 @@ function AppContent() {
     setProjects((prev) => {
       const proj = prev.find((p) => p.id === projectId);
       if (proj) {
-        setTimeout(() => addActivity(`Excluiu '${proj.name}'`), 0);
+        setTimeout(() => addActivity({
+          actionKey: 'activity.delete_project',
+          params: { name: proj.name },
+          type: 'project',
+        }), 0);
       }
       return prev.filter((p) => p.id !== projectId);
     });
@@ -422,7 +485,11 @@ function AppContent() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      setTimeout(() => addActivity(`Duplicou '${original.name}'`), 0);
+      setTimeout(() => addActivity({
+        actionKey: 'activity.duplicate_project',
+        params: { name: original.name },
+        type: 'project',
+      }), 0);
       return [clone, ...prev];
     });
   }, [addActivity]);
@@ -443,11 +510,11 @@ function AppContent() {
       if (!proj) return prev;
       const newFav = !(proj.favorite || proj.isFavorite);
       setTimeout(() => {
-        addActivity(
-          newFav
-            ? `Fixou '${proj.name}' nos favoritos`
-            : `Desafixou '${proj.name}' dos favoritos`
-        );
+        addActivity({
+          actionKey: newFav ? 'activity.pin_project' : 'activity.unpin_project',
+          params: { name: proj.name },
+          type: 'project',
+        });
       }, 0);
       return prev.map((p) =>
         p.id === projectId ? { ...p, favorite: newFav, isFavorite: newFav } : p
@@ -464,7 +531,11 @@ function AppContent() {
     setFolders((prev) => {
       const folder = prev.find((f) => f.id === folderId);
       if (folder) {
-        setTimeout(() => addActivity(`Excluiu a pasta '${folder.name}'`), 0);
+        setTimeout(() => addActivity({
+          actionKey: 'activity.delete_folder',
+          params: { name: folder.name },
+          type: 'folder',
+        }), 0);
       }
       return prev.filter((f) => f.id !== folderId);
     });
