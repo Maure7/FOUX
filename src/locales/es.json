@@ -83,11 +83,46 @@
     "privacy": "PRIVACIDAD",
     "support": "SOPORTE"
   },
+  "faq": {
+    "title": "Preguntas frecuentes",
+    "subtitle": "Respuestas rápidas para empezar a usar FOUX.",
+    "manualHint": "Consulta el manual para conocer todas las funciones del sistema.",
+    "manualButton": "Abrir manual de usuario",
+    "questions": {
+      "q1": {
+        "question": "¿Cómo empiezo un proyecto?",
+        "answer": "En el panel, haz clic en Nuevo Proyecto para empezar desde cero. En el editor, usa el botón Nuevo para importar un archivo HTML desde tu computadora."
+      },
+      "q2": {
+        "question": "¿Cómo edito una página?",
+        "answer": "Abre un proyecto y haz clic en un elemento de la página. Usa las opciones de la barra lateral para ajustar los estilos disponibles."
+      },
+      "q3": {
+        "question": "¿Se guardan los cambios del proyecto?",
+        "answer": "Sí. FOUX guarda los proyectos automáticamente en este navegador. Los datos se almacenan localmente en este dispositivo."
+      },
+      "q4": {
+        "question": "¿Cómo exporto los estilos?",
+        "answer": "En el editor, haz clic en Exportar CSS en la barra superior para descargar los estilos del proyecto en un archivo CSS."
+      },
+      "q5": {
+        "question": "¿Puedo organizar mis proyectos?",
+        "answer": "Sí. En el panel, crea carpetas, mueve proyectos entre ellas y usa la búsqueda para encontrar un proyecto por nombre."
+      },
+      "q6": {
+        "question": "¿Dónde cambio el tema o mis datos de perfil?",
+        "answer": "Usa los botones de configuración y perfil en la barra superior para cambiar el tema de la interfaz o actualizar tu perfil."
+      }
+    }
+  },
   "editor": {
     "backToDashboard": "Volver",
     "newFile": "Nuevo",
-    "saveAs": "Guardar como",
-    "importCSS": "Importar CSS",
+    "exportCSS": "Exportar CSS",
+    "exportSuccess": "Descarga del CSS iniciada.",
+    "exportError": "No se pudo exportar el CSS. Inténtalo de nuevo.",
+    "fullscreen": "Expandir página",
+    "fullscreenHint": "Expandir página (Esc para salir)",
     "untitledProject": "Proyecto sin título",
     "clickToRename": "Haz clic para renombrar",
     "dropzoneTitle": "Haz clic aquí para importar tu archivo HTML",

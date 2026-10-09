@@ -83,11 +83,46 @@
     "privacy": "PRIVACIDADE",
     "support": "SUPORTE"
   },
+  "faq": {
+    "title": "Perguntas frequentes",
+    "subtitle": "Respostas rápidas para começar a usar o FOUX.",
+    "manualHint": "Consulte o manual para conhecer todos os recursos do sistema.",
+    "manualButton": "Abrir manual do usuário",
+    "questions": {
+      "q1": {
+        "question": "Como começo um projeto?",
+        "answer": "No painel, clique em Novo Projeto para começar do zero. No editor, use o botão Novo para importar um arquivo HTML do seu computador."
+      },
+      "q2": {
+        "question": "Como edito uma página?",
+        "answer": "Abra um projeto e clique em um elemento da página. Use as opções da barra lateral para ajustar os estilos disponíveis."
+      },
+      "q3": {
+        "question": "As alterações do projeto são salvas?",
+        "answer": "Sim. O FOUX salva os projetos automaticamente neste navegador. Os dados ficam armazenados localmente neste dispositivo."
+      },
+      "q4": {
+        "question": "Como exporto os estilos?",
+        "answer": "No editor, clique em Exportar CSS na barra superior para baixar os estilos do projeto em um arquivo CSS."
+      },
+      "q5": {
+        "question": "Posso organizar meus projetos?",
+        "answer": "Sim. No painel, crie pastas, mova projetos entre elas e use a busca para encontrar um projeto pelo nome."
+      },
+      "q6": {
+        "question": "Onde altero o tema ou meus dados de perfil?",
+        "answer": "Use os botões de configurações e perfil na barra superior para mudar o tema da interface ou atualizar seu perfil."
+      }
+    }
+  },
   "editor": {
     "backToDashboard": "Voltar",
     "newFile": "Novo",
-    "saveAs": "Salvar Como",
-    "importCSS": "Importar CSS",
+    "exportCSS": "Exportar CSS",
+    "exportSuccess": "Download do CSS iniciado.",
+    "exportError": "Não foi possível exportar o CSS. Tente novamente.",
+    "fullscreen": "Expandir página",
+    "fullscreenHint": "Expandir página (Esc para sair)",
     "untitledProject": "Projeto sem título",
     "clickToRename": "Clique para renomear",
     "dropzoneTitle": "Clique aqui para importar seu arquivo HTML",

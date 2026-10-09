@@ -2,8 +2,8 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   ArrowLeft,
   FilePlus,
-  Save,
-  FileCode,
+  Download,
+  Maximize,
   Settings,
   HelpCircle,
   Upload,
@@ -16,8 +16,10 @@ import {
 } from 'lucide-react';
 import useIframeInspector from '../hooks/useIframeInspector';
 import SidebarEstilos from '../components/SidebarEstilos';
+import FaqModal from '../components/FaqModal';
 import { useLanguage } from '../context/LanguageContext';
 import { TUTORIAL_PROJECT_NAME } from '../utils/tutorialTemplate';
+import { downloadCss, generateProjectCss, getCssFileName } from '../utils/exportCss';
 import '../styles/Dashboard.css';
 
 /* ===== HTML SANITIZER — neutralize navigation inside srcDoc ===== */
@@ -90,10 +92,11 @@ function EditableProjectName({ name, onRename, t }) {
 
 /* ===== EDITOR HEADER with Undo/Redo and Tutorial Toggle ===== */
 function EditorHeader({
-  project, onRename, onNavigate, onAction, onNewFile,
+  project, onRename, onNavigate, onOpenFaq, onNewFile,
   onOpenConfig, onOpenProfile, userProfile, t,
   canUndo, canRedo, onUndo, onRedo,
   isTutorialProject, showTipsLocal, onToggleTips,
+  onExportCss, onExpand, hasLoaded, isExporting,
 }) {
   return (
     <header className="editor-header">
@@ -123,13 +126,16 @@ function EditorHeader({
           <FilePlus size={14} />
           <span>{t('editor.newFile')}</span>
         </button>
-        <button className="editor-toolbar-btn" onClick={() => onAction('Salvar Como')}>
-          <Save size={14} />
-          <span>{t('editor.saveAs')}</span>
-        </button>
-        <button className="editor-toolbar-btn" onClick={() => onAction('Importar CSS')}>
-          <FileCode size={14} />
-          <span>{t('editor.importCSS')}</span>
+        <button
+          className="editor-toolbar-btn"
+          onClick={onExportCss}
+          disabled={!hasLoaded || isExporting}
+          title={t('editor.exportCSS')}
+          aria-label={t('editor.exportCSS')}
+          aria-busy={isExporting}
+        >
+          <Download size={14} />
+          <span>{t('editor.exportCSS')}</span>
         </button>
 
         <div className="editor-header__separator" />
@@ -183,10 +189,19 @@ function EditorHeader({
       </div>
 
       <div className="editor-header__right">
+        <button
+          className="editor-header__icon-btn"
+          onClick={onExpand}
+          disabled={!hasLoaded}
+          aria-label={t('editor.fullscreen')}
+          title={t('editor.fullscreenHint')}
+        >
+          <Maximize size={16} />
+        </button>
         <button className="editor-header__icon-btn" onClick={onOpenConfig} aria-label={t('settings.title')}>
           <Settings size={16} />
         </button>
-        <button className="editor-header__icon-btn" onClick={() => onAction('Ajuda')} aria-label={t('dashboard.help')}>
+        <button className="editor-header__icon-btn" onClick={onOpenFaq} aria-label={t('dashboard.help')} title={t('dashboard.help')}>
           <HelpCircle size={16} />
         </button>
         <div
@@ -215,7 +230,7 @@ function EditorHeader({
 }
 
 /* ===== DROPZONE / CANVAS ===== */
-function EditorCanvas({ initialHtml, onFileSelect, iframeRef, onIframeLoad, t }) {
+function EditorCanvas({ initialHtml, onFileSelect, iframeRef, onIframeLoad, canvasRef, isPreview, t }) {
   const fileInputRef = useRef(null);
 
   const safeHtml = useMemo(
@@ -243,7 +258,7 @@ function EditorCanvas({ initialHtml, onFileSelect, iframeRef, onIframeLoad, t })
   };
 
   return (
-    <div className="editor-canvas">
+    <div ref={canvasRef} className={`editor-canvas${isPreview ? ' editor-canvas--expanded' : ''}`}>
       {safeHtml ? (
         <iframe
           ref={iframeRef}
@@ -338,6 +353,11 @@ export default function Editor({
   const { t } = useLanguage();
   const newFileInputRef = useRef(null);
   const iframeRef = useRef(null);
+  const canvasRef = useRef(null);
+  const expandButtonRef = useRef(null);
+  const [isPreview, setIsPreview] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isFaqOpen, setIsFaqOpen] = useState(false);
 
   const [initialHtml, setInitialHtml] = useState(() => project.htmlContent);
   const [hasLoaded, setHasLoaded] = useState(() => !!project.htmlContent);
@@ -366,8 +386,11 @@ export default function Editor({
     setPrevUndoProjectId(project.id);
     setPastStates([]);
     setFutureStates([]);
-    currentDocSnapshotRef.current = null;
   }
+
+  useEffect(() => {
+    currentDocSnapshotRef.current = null;
+  }, [project.id]);
 
   const pushUndoState = useCallback(() => {
     if (isUndoRedoRef.current) return;
@@ -463,7 +486,74 @@ export default function Editor({
     assignHoverClass,
     injectHoverStyles,
     getHoverRules,
+    setPreviewMode,
   } = useIframeInspector(iframeRef);
+
+  const handleExpand = useCallback((event) => {
+    if (!iframeRef.current?.contentDocument?.body || !hasLoaded) return;
+    expandButtonRef.current = event.currentTarget;
+    setPreviewMode(true);
+    setIsPreview(true);
+    // The fixed canvas also provides a fallback when native fullscreen is unavailable.
+    const request = canvasRef.current?.requestFullscreen?.();
+    request?.catch(() => {});
+    iframeRef.current.focus();
+  }, [hasLoaded, setPreviewMode]);
+
+  useEffect(() => {
+    if (!isPreview) return;
+    const canvas = canvasRef.current;
+    const iframe = iframeRef.current;
+    let iframeDoc;
+    const finishPreview = () => {
+      setPreviewMode(false);
+      setIsPreview(false);
+      expandButtonRef.current?.focus();
+    };
+    const onKeyDown = (event) => {
+      if (event.key !== 'Escape') return;
+      if (document.fullscreenElement === canvas) {
+        document.exitFullscreen().catch(() => {});
+      } else {
+        finishPreview();
+      }
+    };
+    const onFullscreenChange = () => {
+      if (document.fullscreenElement !== canvas) finishPreview();
+    };
+    const bindIframeKeys = () => {
+      iframeDoc?.removeEventListener('keydown', onKeyDown);
+      iframeDoc = iframe?.contentDocument;
+      iframeDoc?.addEventListener('keydown', onKeyDown);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    iframe?.addEventListener('load', bindIframeKeys);
+    bindIframeKeys();
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
+      iframe?.removeEventListener('load', bindIframeKeys);
+      iframeDoc?.removeEventListener('keydown', onKeyDown);
+      setPreviewMode(false);
+      if (document.fullscreenElement === canvas) document.exitFullscreen().catch(() => {});
+    };
+  }, [isPreview, setPreviewMode]);
+
+  const handleExportCss = useCallback(async () => {
+    const doc = iframeRef.current?.contentDocument;
+    if (!hasLoaded || !doc?.body || isExporting) return;
+    setIsExporting(true);
+    try {
+      const css = await generateProjectCss(doc);
+      downloadCss(css, getCssFileName(project.name));
+      showToast(t('editor.exportSuccess'));
+    } catch {
+      showToast(t('editor.exportError'));
+    } finally {
+      setIsExporting(false);
+    }
+  }, [hasLoaded, isExporting, project.name, showToast, t]);
 
   const handleIframeLoad = useCallback(() => {
     setupIframeListeners();
@@ -505,13 +595,6 @@ export default function Editor({
       }
     };
   }, []);
-
-  const handleToolbarAction = useCallback(
-    () => {
-      showToast(t('common.featureComingSoon'));
-    },
-    [showToast, t]
-  );
 
   const handleFileSelect = useCallback((file) => {
     const reader = new FileReader();
@@ -595,7 +678,7 @@ export default function Editor({
       if (Number.isFinite(parsed) && parsed >= 300 && parsed <= 700) {
         return parsed;
       }
-    } catch {}
+    } catch { /* Use the default width if storage is unavailable. */ }
     return 340;
   });
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
@@ -628,7 +711,7 @@ export default function Editor({
         setSidebarWidth((finalW) => {
           try {
             localStorage.setItem('foux_sidebar_width', String(finalW));
-          } catch {}
+          } catch { /* Keep the current width when storage is unavailable. */ }
           return finalW;
         });
       }
@@ -646,7 +729,7 @@ export default function Editor({
         project={project}
         onRename={handleRename}
         onNavigate={handleBackToDashboard}
-        onAction={handleToolbarAction}
+        onOpenFaq={() => setIsFaqOpen(true)}
         onNewFile={handleNewFile}
         onOpenConfig={handleOpenConfig}
         onOpenProfile={handleOpenProfile}
@@ -659,6 +742,10 @@ export default function Editor({
         isTutorialProject={isTutorialProject}
         showTipsLocal={showTipsLocal}
         onToggleTips={toggleLocalTips}
+        onExportCss={handleExportCss}
+        onExpand={handleExpand}
+        hasLoaded={hasLoaded}
+        isExporting={isExporting}
       />
 
       <input
@@ -675,6 +762,8 @@ export default function Editor({
           onFileSelect={handleFileSelect}
           iframeRef={iframeRef}
           onIframeLoad={handleIframeLoad}
+          canvasRef={canvasRef}
+          isPreview={isPreview}
           t={t}
         />
 
@@ -707,6 +796,8 @@ export default function Editor({
           onResizeStart={handleResizeStart}
         />
       </div>
+
+      <FaqModal isOpen={isFaqOpen} onClose={() => setIsFaqOpen(false)} t={t} />
     </div>
   );
 }

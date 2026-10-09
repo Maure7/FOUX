@@ -41,9 +41,17 @@ const SELECT_OFFSET = '1px';
 
 const ATTR_HOVERED = 'data-foux-hovered';
 const ATTR_SELECTED = 'data-foux-selected';
+const INSPECTOR_STYLE_ID = 'foux-inspector-styles';
 
 const HOVER_STYLE_ID = 'foux-user-hover-rules';
 const HOVER_CLASS_PREFIX = 'foux-hover-target-';
+const ORIGINAL_STYLE_ATTR = 'data-foux-original-style';
+
+function rememberOriginalStyle(element) {
+  if (!element.hasAttribute(ORIGINAL_STYLE_ATTR)) {
+    element.setAttribute(ORIGINAL_STYLE_ATTR, element.getAttribute('style') || '');
+  }
+}
 
 /**
  * Lê os estilos computados relevantes de um elemento DOM.
@@ -85,15 +93,12 @@ export default function useIframeInspector(iframeRef) {
   const hoveredRef = useRef(null);
   const selectedRef = useRef(null);
   const cleanupRef = useRef(null);
+  const previewModeRef = useRef(false);
 
   /* ------ Limpar destaque de hover ------ */
   const clearHover = useCallback(() => {
     const el = hoveredRef.current;
     if (el) {
-      if (!el.hasAttribute(ATTR_SELECTED)) {
-        el.style.outline = '';
-        el.style.outlineOffset = '';
-      }
       el.removeAttribute(ATTR_HOVERED);
       hoveredRef.current = null;
     }
@@ -103,8 +108,6 @@ export default function useIframeInspector(iframeRef) {
   const clearSelectionOutline = useCallback(() => {
     const el = selectedRef.current;
     if (el) {
-      el.style.outline = '';
-      el.style.outlineOffset = '';
       el.removeAttribute(ATTR_SELECTED);
     }
   }, []);
@@ -122,6 +125,7 @@ export default function useIframeInspector(iframeRef) {
   const applyStyle = useCallback((cssProperty, value) => {
     const el = selectedRef.current;
     if (!el) return;
+    rememberOriginalStyle(el);
 
     if (cssProperty === 'borderRadius') {
       const valStr = typeof value === 'number' ? `${value}px` : String(value);
@@ -149,62 +153,42 @@ export default function useIframeInspector(iframeRef) {
       return null;
     }
 
-    // Remover temporariamente atributos de inspeção
-    const markedHover = doc.querySelectorAll(`[${ATTR_HOVERED}]`);
-    const markedSelect = doc.querySelectorAll(`[${ATTR_SELECTED}]`);
-
-    // Guardar outlines dos selecionados antes de limpar
-    const savedOutlines = [];
-    markedSelect.forEach((el) => {
-      savedOutlines.push({
-        el,
-        outline: el.style.outline,
-        outlineOffset: el.style.outlineOffset,
-      });
-      el.style.outline = '';
-      el.style.outlineOffset = '';
+    const clone = doc.documentElement.cloneNode(true);
+    clone.querySelector(`#${INSPECTOR_STYLE_ID}`)?.remove();
+    clone.querySelectorAll(`[${ATTR_HOVERED}], [${ATTR_SELECTED}]`).forEach((el) => {
+      el.removeAttribute(ATTR_HOVERED);
       el.removeAttribute(ATTR_SELECTED);
     });
-    markedHover.forEach((el) => {
-      el.style.outline = '';
-      el.style.outlineOffset = '';
-      el.removeAttribute(ATTR_HOVERED);
-    });
-
-    // Serializar
-    const html = doc.documentElement.outerHTML;
-
-    // Restaurar atributos e outlines
-    savedOutlines.forEach(({ el, outline, outlineOffset }) => {
-      el.style.outline = outline;
-      el.style.outlineOffset = outlineOffset;
-      el.setAttribute(ATTR_SELECTED, '');
-    });
-
-    return `<!DOCTYPE html>\n${html}`;
+    return `<!DOCTYPE html>\n${clone.outerHTML}`;
   }, [iframeRef]);
 
+  const setPreviewMode = useCallback((enabled) => {
+    previewModeRef.current = enabled;
+    clearHover();
+    const style = iframeRef.current?.contentDocument?.getElementById(INSPECTOR_STYLE_ID);
+    if (style?.sheet) style.sheet.disabled = enabled;
+  }, [iframeRef, clearHover]);
+
   /* ------ Injetar @font-face no iframe ------ */
-  const injectFont = useCallback((fontName, blobUrl) => {
+  const injectFont = useCallback((fontName, fontUrl) => {
     const iframe = iframeRef.current;
     if (!iframe?.contentDocument) return;
     const doc = iframe.contentDocument;
 
     // Verificar se já existe
     const existingId = `foux-font-${fontName.replace(/\s+/g, '-')}`;
-    if (doc.getElementById(existingId)) return;
-
-    const style = doc.createElement('style');
+    const existingStyle = doc.getElementById(existingId);
+    const style = existingStyle || doc.createElement('style');
     style.id = existingId;
     style.textContent = `
       @font-face {
         font-family: '${fontName}';
-        src: url('${blobUrl}') format('woff2'), url('${blobUrl}') format('woff'), url('${blobUrl}') format('truetype');
+        src: url('${fontUrl}') format('woff2'), url('${fontUrl}') format('woff'), url('${fontUrl}') format('truetype');
         font-weight: normal;
         font-style: normal;
       }
     `;
-    doc.head.appendChild(style);
+    if (!existingStyle) doc.head.appendChild(style);
   }, [iframeRef]);
 
   /* ------ Listar elementos com id no documento ------ */
@@ -216,7 +200,7 @@ export default function useIframeInspector(iframeRef) {
     const result = [];
     elements.forEach((el) => {
       // Filtrar ids de inspeção e internos
-      if (el.id && !el.id.startsWith('foux-font-') && el.id !== HOVER_STYLE_ID) {
+      if (el.id && !el.id.startsWith('foux-font-') && el.id !== HOVER_STYLE_ID && el.id !== INSPECTOR_STYLE_ID) {
         result.push({
           id: el.id,
           tagName: el.tagName,
@@ -241,8 +225,6 @@ export default function useIframeInspector(iframeRef) {
     clearSelectionOutline();
 
     // Selecionar
-    element.style.outline = SELECT_OUTLINE;
-    element.style.outlineOffset = SELECT_OFFSET;
     element.setAttribute(ATTR_SELECTED, '');
     selectedRef.current = element;
 
@@ -274,7 +256,7 @@ export default function useIframeInspector(iframeRef) {
     }
 
     if (!targetClass) {
-      targetClass = `${HOVER_CLASS_PREFIX}${fouxId}`;
+      targetClass = `${HOVER_CLASS_PREFIX}${Math.random().toString(36).slice(2, 10)}`;
       element.classList.add(targetClass);
     }
     return targetClass;
@@ -378,12 +360,36 @@ export default function useIframeInspector(iframeRef) {
     const doc = iframe.contentDocument;
     const win = iframe.contentWindow;
     if (!doc || !win) return;
+    doc.querySelectorAll('[style]').forEach(rememberOriginalStyle);
 
     // Limpar listeners anteriores se existirem
     if (cleanupRef.current) {
       cleanupRef.current();
       cleanupRef.current = null;
     }
+
+    // Inspection markers use a separate stylesheet, preserving authored outlines.
+    let inspectorStyle = doc.getElementById(INSPECTOR_STYLE_ID);
+    if (!inspectorStyle) {
+      inspectorStyle = doc.createElement('style');
+      inspectorStyle.id = INSPECTOR_STYLE_ID;
+      doc.head.appendChild(inspectorStyle);
+    }
+    inspectorStyle.textContent = `
+      [${ATTR_HOVERED}]:not([${ATTR_SELECTED}]) {
+        outline: ${HOVER_OUTLINE} !important;
+        outline-offset: ${HOVER_OFFSET} !important;
+      }
+      [${ATTR_SELECTED}] {
+        outline: ${SELECT_OUTLINE} !important;
+        outline-offset: ${SELECT_OFFSET} !important;
+      }
+    `;
+    inspectorStyle.sheet.disabled = previewModeRef.current;
+    doc.querySelectorAll(`[${ATTR_HOVERED}], [${ATTR_SELECTED}]`).forEach((el) => {
+      el.removeAttribute(ATTR_HOVERED);
+      el.removeAttribute(ATTR_SELECTED);
+    });
 
     // Reset state
     selectedRef.current = null;
@@ -396,6 +402,7 @@ export default function useIframeInspector(iframeRef) {
     try {
       const boxUnica = doc.getElementById('box-unica');
       if (boxUnica) {
+        rememberOriginalStyle(boxUnica);
         boxUnica.style.setProperty('overflow', 'hidden', 'important');
         boxUnica.style.setProperty('box-sizing', 'border-box', 'important');
         const computed = win.getComputedStyle(boxUnica);
@@ -408,12 +415,11 @@ export default function useIframeInspector(iframeRef) {
     }
 
     function onMouseOver(e) {
+      if (previewModeRef.current) return;
       const target = e.target;
       if (!target || target === doc.documentElement) return;
       clearHover();
       if (target === selectedRef.current) return;
-      target.style.outline = HOVER_OUTLINE;
-      target.style.outlineOffset = HOVER_OFFSET;
       target.setAttribute(ATTR_HOVERED, '');
       hoveredRef.current = target;
     }
@@ -428,6 +434,7 @@ export default function useIframeInspector(iframeRef) {
     function onClick(e) {
       e.preventDefault();
       e.stopPropagation();
+      if (previewModeRef.current) return;
 
       const target = e.target;
       if (!target) return;
@@ -436,8 +443,6 @@ export default function useIframeInspector(iframeRef) {
       clearSelectionOutline();
 
       const element = target;
-      element.style.outline = SELECT_OUTLINE;
-      element.style.outlineOffset = SELECT_OFFSET;
       element.setAttribute(ATTR_SELECTED, '');
       selectedRef.current = element;
 
@@ -512,6 +517,7 @@ export default function useIframeInspector(iframeRef) {
     computedStyles,
     applyStyle,
     clearSelection,
+    setPreviewMode,
     serializeDocument,
     injectFont,
     getElementsWithId,

@@ -535,18 +535,17 @@ export default function SidebarEstilos({
     if (!file) return;
 
     const fontName = file.name.replace(/\.(ttf|otf|woff2?|)$/i, '').replace(/[^a-zA-Z0-9\s-]/g, '');
-    const blobUrl = URL.createObjectURL(file);
-
-    if (injectFont) {
-      injectFont(fontName, blobUrl);
-    }
-
-    setCustomFonts((prev) => {
-      if (prev.some((f) => f.label === fontName)) return prev;
-      return [...prev, { label: fontName, value: `'${fontName}'` }];
-    });
-
-    apply('fontFamily', `'${fontName}'`);
+    const reader = new FileReader();
+    reader.onload = () => {
+      // Data URLs remain functional after reopening the project and in exported CSS.
+      if (injectFont) injectFont(fontName, reader.result);
+      setCustomFonts((prev) => {
+        if (prev.some((f) => f.label === fontName)) return prev;
+        return [...prev, { label: fontName, value: `'${fontName}'` }];
+      });
+      apply('fontFamily', `'${fontName}'`);
+    };
+    reader.readAsDataURL(file);
     e.target.value = '';
   }, [injectFont, apply]);
 

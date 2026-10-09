@@ -32,7 +32,7 @@ if (missingInEs.length === 0 && missingInPt.length === 0) {
 
 console.log('\n=== TESTE 2: Vocabulário Sul-Americano exigido ===');
 const termsToCheck = [
-  { path: 'editor.saveAs', expected: 'Guardar como' },
+  { path: 'editor.exportCSS', expected: 'Exportar CSS' },
   { path: 'dashboard.newProject', expected: 'Nuevo Proyecto' },
   { path: 'dashboard.newFolder', expected: 'Nueva Carpeta' },
   { path: 'sidebar.fontSize', expected: 'Tamaño de fuente' },

@@ -25,11 +25,12 @@ import ModalRenomear from '../components/ModalRenomear';
 import ContextMenu from '../components/ContextMenu';
 import FolderContextMenu from '../components/FolderContextMenu';
 import AtividadeRecente from '../components/AtividadeRecente';
+import FaqModal from '../components/FaqModal';
 import { useLanguage } from '../context/LanguageContext';
 import '../styles/Dashboard.css';
 
 /* ===== HEADER ===== */
-function Header({ searchQuery, onSearchChange, onNewFolder, onOpenConfig, onOpenProfile, userProfile, onNotImplemented, t }) {
+function Header({ searchQuery, onSearchChange, onNewFolder, onOpenConfig, onOpenProfile, onOpenFaq, userProfile, t }) {
   return (
     <header className="header" id="header">
       <span className="header__logo">FOUX</span>
@@ -66,7 +67,7 @@ function Header({ searchQuery, onSearchChange, onNewFolder, onOpenConfig, onOpen
         <button
           className="header__icon-btn"
           aria-label={t('dashboard.help')}
-          onClick={() => onNotImplemented(t('dashboard.help'))}
+          onClick={onOpenFaq}
         >
           <HelpCircle size={17} />
         </button>
@@ -335,6 +336,7 @@ export default function Dashboard({
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
+  const [isFaqOpen, setIsFaqOpen] = useState(false);
   const [viewMode, setViewMode] = useState('grid');
   const [currentFolderId, setCurrentFolderId] = useState(null);
 
@@ -354,13 +356,6 @@ export default function Dashboard({
 
   /* Rename modal state */
   const [renameModal, setRenameModal] = useState({ isOpen: false, targetId: null, currentName: '', isFolder: false });
-
-  const handleNotImplemented = useCallback(
-    (featureName) => {
-      showToast(t('common.notImplemented', { feature: featureName }));
-    },
-    [showToast, t]
-  );
 
   /* Current folder object */
   const currentFolder = useMemo(
@@ -540,7 +535,7 @@ export default function Dashboard({
         onOpenConfig={() => onNavigate('settings')}
         onOpenProfile={() => onNavigate('profile')}
         userProfile={userProfile}
-        onNotImplemented={handleNotImplemented}
+        onOpenFaq={() => setIsFaqOpen(true)}
         t={t}
       />
 
@@ -658,6 +653,8 @@ export default function Dashboard({
           />
         )}
       </main>
+
+      <FaqModal isOpen={isFaqOpen} onClose={() => setIsFaqOpen(false)} t={t} />
 
       {/* Footer */}
       <footer className="footer" id="footer">
