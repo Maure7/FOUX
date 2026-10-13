@@ -71,6 +71,9 @@ try {
   await command('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: temporaryDir });
   await command('Page.navigate', { url: 'http://127.0.0.1:4175' });
   await eventually(() => evaluate('!!document.querySelector(".dashboard") || !!document.querySelector(".project-card")'), 'App did not load');
+  if (process.env.FOUX_UI_ONLY === '1') {
+    await (await import('./test_ui_refinements.mjs')).runUiRefinements({ evaluate, command, eventually, temporaryDir });
+  } else {
   const originalHtml = `<!doctype html><html><head><style>
     body { margin: 0; background: #fafafa; }
     .shared { color: #333; }
@@ -84,6 +87,7 @@ try {
     <h1 id="title:main" style="color: red; outline: 3px dotted blue">Título</h1>
     <p class="shared">Primeiro</p><p class="shared">Segundo</p>
     <div id="duplicate">A</div><div id="duplicate">B</div>
+    <section id="secao-titulos" style="width: 240px; height: 140px; background-color: white; border: 8px solid #333;">Escala e borda</section>
     <button>Hover sem ID</button><footer style="margin-top: 1800px">Fim</footer>
     <span id="priority" style="color: red">Prioridade</span>
     <h2 class="learn-title">Título para aprender</h2>
@@ -94,6 +98,8 @@ try {
   await evaluate('document.querySelector(".project-card--saved").click()');
   await eventually(() => evaluate('!!document.querySelector(".editor-canvas__iframe")?.contentDocument?.getElementById("title:main")'), 'Editor did not load');
   assert.equal(await evaluate('document.body.innerText.includes("Importar CSS")'), false);
+
+  await (await import('./test_style_regressions.mjs')).runStyleRegressions({ evaluate, command, eventually });
 
   // Exercise the real inspector and sidebar rather than only manipulating CSS.
   await evaluate(`document.querySelector('iframe').contentDocument.getElementById('title:main').click()`);
@@ -108,10 +114,10 @@ try {
   await eventually(() => evaluate(`document.querySelector('iframe').contentDocument.getElementById('title:main').style.color === 'rgb(18, 52, 86)'`), 'Sidebar edit was not applied');
 
   // Export must use the live DOM, including undo/redo, before autosave finishes.
-  await evaluate(`document.querySelector('[aria-label="Desfazer"]').click()`);
+  await evaluate(`document.querySelector('[aria-label="Desfazer alteração (Ctrl+Z)"]').click()`);
   await eventually(() => evaluate(`document.querySelector('iframe').contentDocument.getElementById('title:main')?.style.color === 'red'`), 'Undo did not restore the original color');
   assert.match(await evaluate(`(async () => {const {generateProjectCss} = await import('/src/utils/exportCss.js'); return generateProjectCss(document.querySelector('iframe').contentDocument);})()`), /color: red;/);
-  await evaluate(`document.querySelector('[aria-label="Refazer"]').click()`);
+  await evaluate(`document.querySelector('[aria-label="Refazer alteração (Ctrl+Y)"]').click()`);
   await eventually(() => evaluate(`document.querySelector('iframe').contentDocument.getElementById('title:main')?.style.color === 'rgb(18, 52, 86)'`), 'Redo did not restore the edit');
   await evaluate(`document.querySelector('iframe').contentDocument.getElementById('title:main').click()`);
 
@@ -326,6 +332,8 @@ try {
   await eventually(() => evaluate('!document.querySelector(".editor-canvas--expanded")'), 'Esc did not exit fallback');
   console.log('PASS: native fullscreen, scrolling, preview without inspection, Esc inside iframe and fallback');
 
+  await (await import('./test_ui_refinements.mjs')).runUiRefinements({ evaluate, command, eventually, temporaryDir });
+
   await evaluate(`localStorage.setItem('foux_projects', JSON.stringify([{id:'empty',name:'Vazio',folderId:null,htmlContent:null,createdAt:Date.now(),updatedAt:Date.now()}]));`);
   await command('Page.reload');
   await eventually(() => evaluate('!!document.querySelector(".project-card--saved")'), 'Empty project did not appear');
@@ -334,6 +342,7 @@ try {
   assert.equal(await evaluate(`document.querySelector('[aria-label="Exportar CSS"]').disabled`), true);
   assert.equal(await evaluate(`document.querySelector('[aria-label="Expandir página"]').disabled`), true);
   console.log('PASS: empty projects disable export and fullscreen');
+  }
 } finally {
   socket?.close();
   browser?.kill();

@@ -27,6 +27,7 @@ export default function Settings({
   onClearCache,
   globalTutorialTips = true,
   onGlobalTutorialTipsChange,
+  onRestartTutorial,
 }) {
   const { language, setLanguage, t } = useLanguage();
   // Calcula o tamanho real consumido em bytes no carregamento da tela
@@ -142,6 +143,7 @@ export default function Settings({
             <label className="settings-switch">
               <input
                 type="checkbox"
+                aria-label={t('settings.tutorialTipsLabel')}
                 checked={globalTutorialTips}
                 onChange={(e) => {
                   if (onGlobalTutorialTipsChange) {
@@ -152,6 +154,10 @@ export default function Settings({
               <span className="settings-switch__slider" />
             </label>
           </div>
+          <button type="button" className="settings-row__btn" onClick={() => {
+            onRestartTutorial?.();
+            showToast(t('tour.resetSuccess'));
+          }}>{t('tour.restart')}</button>
         </section>
 
         <div className="settings-divider" />

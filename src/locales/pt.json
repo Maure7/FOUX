@@ -45,8 +45,8 @@
     "clearConfirmBtn": "Limpar tudo",
     "clearSuccessToast": "Cache limpo com sucesso!",
     "tutorialTitle": "Tutorial",
-    "tutorialTipsLabel": "Exibir balões de ajuda do tutorial",
-    "tutorialTipsHint": "Se desativado, os balões de dica nunca aparecerão em projetos de tutorial"
+    "tutorialTipsLabel": "Exibir tour guiado automaticamente",
+    "tutorialTipsHint": "Exibe o tour na primeira visita ao projeto TUTORIAL. Você pode reiniciá-lo quando quiser."
   },
   "dashboard": {
     "searchPlaceholder": "Pesquisar projetos...",
@@ -127,8 +127,8 @@
     "clickToRename": "Clique para renomear",
     "dropzoneTitle": "Clique aqui para importar seu arquivo HTML",
     "dropzoneHint": "ou arraste e solte o arquivo nesta área",
-    "undo": "Desfazer",
-    "redo": "Refazer",
+    "undo": "Desfazer alteração (Ctrl+Z)",
+    "redo": "Refazer alteração (Ctrl+Y)",
     "hideTutorialTips": "Ocultar dicas do tutorial",
     "showTutorialTips": "Mostrar dicas do tutorial"
   },
@@ -185,7 +185,9 @@
     "gradient": "Gradiente",
     "gradientAngle": "Ângulo",
     "gradientColorStart": "Cor Inicial",
-    "gradientColorEnd": "Cor Final"
+    "gradientColorEnd": "Cor Final",
+    "spacing": "Espaçamentos",
+    "background": "Fundos e cores"
   },
   "tutorial": {
     "tipTypography": "Use este painel para alterar fonte, tamanho, cor e alinhamento do texto selecionado.",
@@ -270,5 +272,59 @@
     "savedSuccess": "Perfil atualizado com sucesso!",
     "saveBtn": "Salvar Alterações",
     "defaultName": "Usuário FOUX"
+  },
+  "tour": {
+    "progress": "{current} de {total}",
+    "previous": "Anterior",
+    "next": "Próximo",
+    "finish": "Concluir",
+    "close": "Fechar tutorial (Esc)",
+    "skip": "Pular tutorial / Não mostrar novamente",
+    "restart": "Reiniciar tutorial",
+    "button": "Tour guiado",
+    "content": "Conteúdo",
+    "restartHint": "Você pode reiniciar pelo botão Tour guiado ou nas configurações.",
+    "resetSuccess": "Tutorial reiniciado. Abra o projeto TUTORIAL para começar.",
+    "steps": {
+      "sidebar": {
+        "title": "Barra lateral do editor",
+        "description": "Selecione um elemento no canvas. A barra lateral mostra os controles para editar e entender seu CSS."
+      },
+      "styles": {
+        "title": "Aba Estilos",
+        "description": "Transforme controles visuais em propriedades CSS. As alterações aparecem no canvas assim que você ajusta um valor."
+      },
+      "typography": {
+        "title": "Tipografia",
+        "description": "Ajuste tamanho, peso, alinhamento e cor do texto. Observe como cada propriedade muda a leitura."
+      },
+      "borders": {
+        "title": "Bordas e formas",
+        "description": "Defina a largura e a cor da borda. O border-radius arredonda os cantos do elemento."
+      },
+      "spacing": {
+        "title": "Espaçamentos",
+        "description": "Padding cria espaço dentro da borda. Margin afasta o elemento dos vizinhos, por fora da borda."
+      },
+      "background": {
+        "title": "Fundos e cores",
+        "description": "Escolha uma cor sólida ou ative um gradiente linear. Ajuste as duas cores, o ângulo e a opacidade."
+      },
+      "events": {
+        "title": "Eventos :hover",
+        "description": "Configure cor, escala e sombra ao passar o cursor. Depois do tour, teste o efeito no canvas expandido."
+      },
+      "layout": {
+        "title": "Inspeção de layout",
+        "description": "Encontre e selecione elementos pelo ID. Ao concluir, explore o documento e acompanhe o elemento selecionado na barra lateral."
+      }
+    }
+  },
+  "tooltips": {
+    "align": { "left": "Alinhar texto à esquerda", "center": "Centralizar texto", "right": "Alinhar texto à direita", "justify": "Justificar texto" },
+    "estilos": "Estilos: aparência do elemento",
+    "layout": "Layout: inspecionar e selecionar elementos",
+    "eventos": "Eventos: configurar efeitos :hover",
+    "resizeSidebar": "Arrastar para redimensionar a barra lateral"
   }
 }

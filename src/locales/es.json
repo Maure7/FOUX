@@ -45,8 +45,8 @@
     "clearConfirmBtn": "Limpiar todo",
     "clearSuccessToast": "¡Caché limpiada con éxito!",
     "tutorialTitle": "Tutorial",
-    "tutorialTipsLabel": "Mostrar globos de ayuda del tutorial",
-    "tutorialTipsHint": "Si está desactivado, los globos de ayuda nunca aparecerán en proyectos de tutorial"
+    "tutorialTipsLabel": "Mostrar tour guiado automáticamente",
+    "tutorialTipsHint": "Muestra el tour en la primera visita al proyecto TUTORIAL. Puedes reiniciarlo cuando quieras."
   },
   "dashboard": {
     "searchPlaceholder": "Buscar proyectos...",
@@ -127,8 +127,8 @@
     "clickToRename": "Haz clic para renombrar",
     "dropzoneTitle": "Haz clic aquí para importar tu archivo HTML",
     "dropzoneHint": "o arrastra y suelta el archivo en esta área",
-    "undo": "Deshacer",
-    "redo": "Rehacer",
+    "undo": "Deshacer cambio (Ctrl+Z)",
+    "redo": "Rehacer cambio (Ctrl+Y)",
     "hideTutorialTips": "Ocultar consejos del tutorial",
     "showTutorialTips": "Mostrar consejos del tutorial"
   },
@@ -185,7 +185,9 @@
     "gradient": "Gradiente",
     "gradientAngle": "Ángulo",
     "gradientColorStart": "Color Inicial",
-    "gradientColorEnd": "Color Final"
+    "gradientColorEnd": "Color Final",
+    "spacing": "Espaciado",
+    "background": "Fondos y colores"
   },
   "tutorial": {
     "tipTypography": "Usa este panel para cambiar fuente, tamaño, color y alineación del texto seleccionado.",
@@ -270,5 +272,59 @@
     "savedSuccess": "¡Perfil actualizado con éxito!",
     "saveBtn": "Guardar Cambios",
     "defaultName": "Usuario FOUX"
+  },
+  "tour": {
+    "progress": "{current} de {total}",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "finish": "Finalizar",
+    "close": "Cerrar tutorial (Esc)",
+    "skip": "Omitir tutorial / No mostrar de nuevo",
+    "restart": "Reiniciar tutorial",
+    "button": "Tour guiado",
+    "content": "Contenido",
+    "restartHint": "Puedes reiniciarlo con el botón Tour guiado o en la configuración.",
+    "resetSuccess": "Tutorial reiniciado. Abre el proyecto TUTORIAL para comenzar.",
+    "steps": {
+      "sidebar": {
+        "title": "Barra lateral del editor",
+        "description": "Selecciona un elemento en el canvas. La barra lateral muestra los controles para editar y comprender su CSS."
+      },
+      "styles": {
+        "title": "Pestaña Estilos",
+        "description": "Convierte controles visuales en propiedades CSS. Los cambios aparecen en el canvas al ajustar cada valor."
+      },
+      "typography": {
+        "title": "Tipografía",
+        "description": "Ajusta tamaño, peso, alineación y color del texto. Observa cómo cada propiedad cambia la lectura."
+      },
+      "borders": {
+        "title": "Bordes y formas",
+        "description": "Define el ancho y el color del borde. Border-radius redondea las esquinas del elemento."
+      },
+      "spacing": {
+        "title": "Espaciado",
+        "description": "Padding crea espacio dentro del borde. Margin separa el elemento de sus vecinos, fuera del borde."
+      },
+      "background": {
+        "title": "Fondos y colores",
+        "description": "Elige un color sólido o activa un degradado lineal. Ajusta los dos colores, el ángulo y la opacidad."
+      },
+      "events": {
+        "title": "Eventos :hover",
+        "description": "Configura color, escala y sombra al pasar el cursor. Después del tour, prueba el efecto en el canvas expandido."
+      },
+      "layout": {
+        "title": "Inspección del layout",
+        "description": "Busca y selecciona elementos por ID. Al finalizar, explora el documento y observa el elemento seleccionado en la barra lateral."
+      }
+    }
+  },
+  "tooltips": {
+    "align": { "left": "Alinear texto a la izquierda", "center": "Centrar texto", "right": "Alinear texto a la derecha", "justify": "Justificar texto" },
+    "estilos": "Estilos: apariencia del elemento",
+    "layout": "Layout: inspeccionar y seleccionar elementos",
+    "eventos": "Eventos: configurar efectos :hover",
+    "resizeSidebar": "Arrastrar para redimensionar la barra lateral"
   }
 }

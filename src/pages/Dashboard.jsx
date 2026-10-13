@@ -78,7 +78,7 @@ function Header({ searchQuery, onSearchChange, onNewFolder, onOpenConfig, onOpen
           role="button"
           tabIndex={0}
           aria-label={t('profile.title')}
-          title={userProfile?.name || t('profile.title')}
+          title={t('profile.title')}
           onKeyDown={(e) => {
             if (e.key === 'Enter') onOpenProfile();
           }}

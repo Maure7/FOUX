@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { getGradientBorder, parseLinearGradient, setGradientBorder, updateGradientBorderBackground } from '../utils/gradientBorder';
 
 /* ===================================================================
    useIframeInspector — Hook de inspeção e estilização de elementos
@@ -60,6 +61,16 @@ function rememberOriginalStyle(element) {
 function extractComputedStyles(element, iframeWindow) {
   if (!element || !iframeWindow) return null;
   const cs = iframeWindow.getComputedStyle(element);
+  let gradientBorder = getGradientBorder(element);
+  if (!gradientBorder) {
+    const legacyGradient = parseLinearGradient(cs.borderImageSource);
+    if (legacyGradient) {
+      rememberOriginalStyle(element);
+      setGradientBorder(element, legacyGradient, { replaceBorderImage: true });
+      gradientBorder = getGradientBorder(element);
+    }
+  }
+  const borderColor = gradientBorder?.borderColor || cs.borderColor;
 
   return {
     fontSize: parsePx(cs.fontSize),
@@ -69,7 +80,10 @@ function extractComputedStyles(element, iframeWindow) {
     backgroundColor: rgbToHex(cs.backgroundColor),
     borderRadius: parsePx(cs.borderRadius),
     borderWidth: parsePx(cs.borderWidth),
-    borderColor: rgbToHex(cs.borderColor),
+    borderColor: rgbToHex(borderColor),
+    borderGradient: gradientBorder ? {
+      color1: gradientBorder.color1, color2: gradientBorder.color2, angle: gradientBorder.angle,
+    } : null,
     padding: parsePx(cs.padding),
     margin: parsePx(cs.margin),
     width: parsePx(cs.width),
@@ -77,7 +91,7 @@ function extractComputedStyles(element, iframeWindow) {
     /* Raw color strings for alpha extraction */
     _rawColor: cs.color || '',
     _rawBg: cs.backgroundColor || '',
-    _rawBorderColor: cs.borderColor || '',
+    _rawBorderColor: borderColor || '',
   };
 }
 
@@ -127,7 +141,11 @@ export default function useIframeInspector(iframeRef) {
     if (!el) return;
     rememberOriginalStyle(el);
 
-    if (cssProperty === 'borderRadius') {
+    if (cssProperty === 'borderGradient') {
+      setGradientBorder(el, value);
+    } else if (updateGradientBorderBackground(el, cssProperty, value)) {
+      // The helper updates the logical background without losing the border layer.
+    } else if (cssProperty === 'borderRadius') {
       const valStr = typeof value === 'number' ? `${value}px` : String(value);
       el.style.setProperty('border-radius', valStr, 'important');
       el.style.setProperty('overflow', 'hidden', 'important');
@@ -269,7 +287,7 @@ export default function useIframeInspector(iframeRef) {
   }, []);
 
   /** Injeta/atualiza regras de :hover diretamente no textContent de <style id="foux-user-hover-rules"> */
-  const injectHoverStyles = useCallback((selector, cssText) => {
+  const injectHoverStyles = useCallback((selector, cssText, element = selectedRef.current) => {
     const iframe = iframeRef.current;
     if (!iframe?.contentDocument) return;
     const doc = iframe.contentDocument;
@@ -285,21 +303,29 @@ export default function useIframeInspector(iframeRef) {
       }
     }
 
-    // Parsear regras existentes do textContent
-    const currentContent = styleEl.textContent || '';
+    // CSSOM ignores comments and normalizes selectors. A regexp treated the
+    // leading FOUX comment as part of the first selector, retaining stale rules.
     const ruleMap = new Map();
-
-    const ruleRegex = /([^{]+)\{([^}]+)\}/g;
-    let match;
-    while ((match = ruleRegex.exec(currentContent)) !== null) {
-      const sel = match[1].trim();
-      const decls = match[2].trim();
-      if (sel && decls) {
-        ruleMap.set(sel, decls);
+    for (const rule of styleEl.sheet?.cssRules || []) {
+      if (rule.selectorText && rule.style) {
+        ruleMap.set(rule.selectorText, rule.style.cssText);
       }
     }
 
     const hoverSelector = selector.includes(':hover') ? selector.trim() : `${selector.trim()}:hover`;
+
+    // Migrate legacy ID/data selectors to the current target class. Otherwise
+    // an old transform could still win after the new class rule is removed.
+    if (element) {
+      const escape = doc.defaultView.CSS.escape;
+      const id = element.getAttribute('data-foux-id');
+      const aliases = [
+        element.id ? `#${escape(element.id)}:hover` : null,
+        id ? `[data-foux-id="${escape(id)}"]:hover` : null,
+        ...Array.from(element.classList).filter((name) => name.startsWith(HOVER_CLASS_PREFIX)).map((name) => `.${escape(name)}:hover`),
+      ].filter(Boolean);
+      for (const alias of aliases) ruleMap.delete(alias);
+    }
 
     if (cssText && cssText.trim()) {
       ruleMap.set(hoverSelector, cssText.trim());
@@ -310,11 +336,12 @@ export default function useIframeInspector(iframeRef) {
     // Reconstruir regras em texto puro serializável
     const lines = [];
     ruleMap.forEach((decls, sel) => {
-      const formatted = decls
-        .split(';')
-        .map((s) => s.trim())
-        .filter(Boolean)
-        .join(';\n  ');
+      const declarations = doc.createElement('span').style;
+      declarations.cssText = decls;
+      const formatted = Array.from(declarations, (property) => {
+        const priority = declarations.getPropertyPriority(property) ? ' !important' : '';
+        return `${property}: ${declarations.getPropertyValue(property)}${priority}`;
+      }).join(';\n  ');
       lines.push(`${sel} {\n  ${formatted};\n}`);
     });
 
@@ -332,24 +359,23 @@ export default function useIframeInspector(iframeRef) {
     if (!styleEl || !styleEl.textContent) return null;
 
     const cls = Array.from(element.classList).find((c) => c.startsWith(HOVER_CLASS_PREFIX));
-    const fouxId = element.getAttribute('data-foux-id') || element.id;
+    const fouxId = element.getAttribute('data-foux-id');
+    const escape = doc.defaultView.CSS.escape;
 
     const possibleSelectors = [
-      cls ? `.${cls}:hover` : null,
-      fouxId ? `[data-foux-id="${fouxId}"]:hover` : null,
-      fouxId ? `#${fouxId}:hover` : null,
+      cls ? `.${escape(cls)}:hover` : null,
+      fouxId ? `[data-foux-id="${escape(fouxId)}"]:hover` : null,
+      element.id ? `#${escape(element.id)}:hover` : null,
     ].filter(Boolean);
 
-    const ruleRegex = /([^{]+)\{([^}]+)\}/g;
-    let match;
-    while ((match = ruleRegex.exec(styleEl.textContent)) !== null) {
-      const sel = match[1].trim();
-      const decls = match[2].trim();
-      if (possibleSelectors.includes(sel)) {
-        return decls;
+    const declarations = doc.createElement('span').style;
+    for (const rule of styleEl.sheet?.cssRules || []) {
+      if (!possibleSelectors.includes(rule.selectorText) || !rule.style) continue;
+      for (const property of rule.style) {
+        declarations.setProperty(property, rule.style.getPropertyValue(property), rule.style.getPropertyPriority(property));
       }
     }
-    return null;
+    return declarations.cssText || null;
   }, [iframeRef]);
 
   /* ------ Função de setup dos listeners (extraída para reuso) ------ */

@@ -1,0 +1,537 @@
+/* FOUX Liquid Glass: neutral, translucent surfaces with soft specular edges. */
+[data-theme="liquid-glass"] {
+  color-scheme: dark;
+
+  --bg-app: #111113;
+  --bg-card: rgba(255, 255, 255, .055);
+  --bg-card-hover: rgba(255, 255, 255, .09);
+  --bg-input: rgba(255, 255, 255, .04);
+  --bg-header: rgba(18, 18, 24, .45);
+  --bg-sidebar: rgba(18, 18, 24, .42);
+
+  --text-primary: #f5f5f7;
+  --text-secondary: #d1d1d8;
+  --text-muted: #a8a8b2;
+  --text-dark: #8d8d98;
+
+  --accent-gold: #c4b5fd;
+  --accent-gold-light: #e8e1ff;
+  --accent-gold-bg: rgba(168, 85, 247, .12);
+  --accent-purple: #c4b5fd;
+  --accent-purple-light: #e8e1ff;
+  --accent-purple-bg: rgba(168, 85, 247, .12);
+  --status-green: #a7f3d0;
+
+  --border-subtle: rgba(255, 255, 255, .1);
+  --border-light: rgba(255, 255, 255, .16);
+  --border-color: rgba(255, 255, 255, .12);
+
+  --glass-surface: rgba(18, 18, 24, .45);
+  --glass-surface-raised: rgba(28, 28, 36, .54);
+  --glass-surface-subtle: rgba(255, 255, 255, .04);
+  --glass-surface-hover: rgba(255, 255, 255, .08);
+  --glass-surface-active: rgba(255, 255, 255, .1);
+  --glass-border: rgba(255, 255, 255, .16);
+  --glass-border-soft: rgba(255, 255, 255, .1);
+  --glass-border-focus: rgba(196, 181, 253, .72);
+  --glass-halo: 0 0 12px rgba(168, 85, 247, .24);
+  --glass-blur: blur(24px) saturate(190%);
+  --glass-blur-sm: blur(16px) saturate(175%);
+  --glass-shadow:
+    0 12px 40px rgba(0, 0, 0, .55),
+    inset 0 1px 1px rgba(255, 255, 255, .22),
+    inset 0 -1px 1px rgba(0, 0, 0, .4);
+  --glass-shadow-soft:
+    0 8px 28px rgba(0, 0, 0, .38),
+    inset 0 1px 1px rgba(255, 255, 255, .16),
+    inset 0 -1px 1px rgba(0, 0, 0, .28);
+
+  --tour-surface: rgba(28, 28, 36, .96);
+  --tour-text: #f5f5f7;
+  --tour-secondary: #d1d1d8;
+  --tour-border: rgba(255, 255, 255, .2);
+  --tour-accent: #c4b5fd;
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+}
+
+/* Soft monochrome ambient light gives the translucent panels something to refract. */
+[data-theme="liquid-glass"] body {
+  color: var(--text-primary);
+  background:
+    radial-gradient(ellipse 70% 58% at 12% 5%, rgba(118, 116, 137, .2), transparent 72%),
+    radial-gradient(ellipse 62% 56% at 91% 38%, rgba(92, 91, 109, .16), transparent 70%),
+    radial-gradient(ellipse 66% 62% at 47% 105%, rgba(78, 78, 94, .18), transparent 72%),
+    linear-gradient(145deg, #1d1d22 0%, #121214 52%, #1b1b21 100%);
+  background-attachment: fixed;
+}
+
+[data-theme="liquid-glass"] :is(.dashboard, .editor-shell, .settings-page, .profile-page) {
+  background: transparent;
+}
+
+/* Shared glass surface recipe for cards, floating menus, and app panels. */
+[data-theme="liquid-glass"] :is(
+  .header, .editor-header, .settings-page__header, .profile-page__header,
+  .editor-sidebar, .project-card, .folder-card, .list-item,
+  .modal-card, .modal-content, .modal, .faq-modal, .foux-config-modal,
+  .settings-section, .profile-card, .activity-section, .activity-panel, .activity-sidebar,
+  .context-menu, .context-menu__submenu, .folder-context-menu, .toast
+) {
+  background-color: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+[data-theme="liquid-glass"] :is(
+  .header, .editor-header, .settings-page__header, .profile-page__header
+) {
+  background-color: rgba(18, 18, 24, .55);
+  border-radius: 0;
+  border-top: 0;
+  border-left: 0;
+  border-right: 0;
+  border-bottom-color: rgba(255, 255, 255, .12);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .28), inset 0 1px 1px rgba(255, 255, 255, .12);
+}
+
+[data-theme="liquid-glass"] :is(.project-card, .folder-card, .list-item, .settings-section, .profile-card, .activity-section) {
+  background-color: rgba(18, 18, 24, .42);
+  border-radius: 22px;
+  transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+/* Keep settings headings and controls comfortably inside the glass edge. */
+[data-theme="liquid-glass"] .settings-section {
+  box-sizing: border-box;
+  padding: 20px 24px;
+}
+
+[data-theme="liquid-glass"] .settings-section__title {
+  position: static;
+  margin: 0 0 8px;
+  line-height: 1.4;
+}
+
+[data-theme="liquid-glass"] :is(.project-card, .folder-card, .list-item, .settings-section, .profile-card, .activity-section):hover {
+  background-color: rgba(28, 28, 36, .56);
+  border-color: rgba(255, 255, 255, .24);
+  box-shadow: var(--glass-shadow);
+}
+
+[data-theme="liquid-glass"] :is(.project-card, .folder-card, .list-item, .modal-card, .context-menu, .folder-context-menu, .profile-card, .settings-section):focus-within {
+  border-color: var(--glass-border-focus);
+  box-shadow: var(--glass-shadow), var(--glass-halo);
+}
+
+[data-theme="liquid-glass"] :is(.project-card--new, .project-card--list-new) {
+  background-color: rgba(255, 255, 255, .035);
+  border: 1px dashed rgba(221, 214, 254, .55);
+}
+
+[data-theme="liquid-glass"] :is(.project-card--new, .project-card--list-new):hover {
+  background-color: rgba(255, 255, 255, .075);
+  border-color: rgba(221, 214, 254, .82);
+  box-shadow: var(--glass-shadow-soft), var(--glass-halo);
+}
+
+/* The modal scrim dims the page without hiding its blurred colour and detail. */
+[data-theme="liquid-glass"] .modal-overlay {
+  background: rgba(7, 7, 10, .36);
+  -webkit-backdrop-filter: blur(7px) saturate(125%);
+  backdrop-filter: blur(7px) saturate(125%);
+}
+
+[data-theme="liquid-glass"] :is(.modal-card, .modal-content, .faq-modal, .foux-config-modal) {
+  background-color: rgba(18, 18, 24, .45);
+  border-radius: 24px;
+  border-color: rgba(255, 255, 255, .2);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+[data-theme="liquid-glass"] :is(.context-menu, .context-menu__submenu, .folder-context-menu) {
+  background-color: rgba(18, 18, 24, .54);
+  border-radius: 18px;
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+/* Actions use only translucent neutral fills. Accents stay on the edge and icon. */
+[data-theme="liquid-glass"] :is(
+  .header__icon-btn, .header__new-folder, .editor-header__icon-btn,
+  .editor-header__back, .editor-toolbar-btn, .editor-header__tutorial-btn,
+  .settings-page__back, .settings-row__btn, .profile-save-btn,
+  .modal-close, .modal-create-btn, .modal-cancel-btn,
+  .activity-header__clear, .activity-header__toggle, .context-menu__item,
+  .folder-context-menu__item, .view-toggle__btn, .sidebar-tab,
+  .sidebar-section__header, .sidebar-align-btn, .sidebar-import-font-btn,
+  .list-item__options
+) {
+  color: #f5f5f7;
+  background-color: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 12px;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .12);
+}
+
+[data-theme="liquid-glass"] :is(
+  .header__icon-btn, .header__new-folder, .editor-header__icon-btn,
+  .editor-header__back, .editor-toolbar-btn, .editor-header__tutorial-btn,
+  .settings-page__back, .settings-row__btn, .profile-save-btn,
+  .modal-close, .modal-create-btn, .modal-cancel-btn, .modal-confirm__delete-btn,
+  .activity-header__clear, .activity-header__toggle, .context-menu__item,
+  .folder-context-menu__item, .view-toggle__btn, .sidebar-tab,
+  .sidebar-section__header, .sidebar-align-btn, .sidebar-import-font-btn,
+  .list-item__options
+):hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, .12);
+  border-color: rgba(255, 255, 255, .24);
+}
+
+[data-theme="liquid-glass"] :is(.modal-create-btn, .modal-confirm__delete-btn, .settings-row__btn--danger) {
+  color: #fff;
+  background-color: rgba(255, 255, 255, .07);
+  border-color: rgba(196, 181, 253, .48);
+}
+
+[data-theme="liquid-glass"] :is(.modal-create-btn, .modal-confirm__delete-btn, .settings-row__btn--danger):hover {
+  background-color: rgba(255, 255, 255, .12);
+  border-color: rgba(221, 214, 254, .78);
+  box-shadow: var(--glass-shadow-soft), var(--glass-halo);
+}
+
+[data-theme="liquid-glass"] .tutorial-tour .tutorial-tour__next {
+  color: #f5f5f7;
+  background-color: rgba(255, 255, 255, .07);
+  border-color: rgba(196, 181, 253, .56);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .16), 0 0 10px rgba(168, 85, 247, .16);
+}
+[data-theme="liquid-glass"] .tutorial-tour .tutorial-tour__next:hover { background-color: rgba(255, 255, 255, .12); }
+
+[data-theme="liquid-glass"] :is(.sidebar-tab--active, .sidebar-align-btn--active, .view-toggle__btn--active, .editor-header__tutorial-btn.is-active, .project-card--selected, .list-item--selected) {
+  color: #fff;
+  background-color: rgba(255, 255, 255, .09);
+  border-color: var(--glass-border-focus);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .16), var(--glass-halo);
+}
+
+[data-theme="liquid-glass"] :is(.sidebar-tab--active, .editor-header__tutorial-btn.is-active)::after {
+  background: #ddd6fe;
+  box-shadow: 0 0 9px rgba(196, 181, 253, .42);
+}
+
+/* Give the sidebar tabs breathing room and a continuous rounded track. */
+[data-theme="liquid-glass"] .sidebar-tabs {
+  box-sizing: border-box;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 10px;
+}
+
+[data-theme="liquid-glass"] .sidebar-tab {
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, .025);
+}
+
+[data-theme="liquid-glass"] .sidebar-tab:hover {
+  background-color: rgba(255, 255, 255, .07);
+  border-color: rgba(255, 255, 255, .14);
+}
+
+[data-theme="liquid-glass"] .sidebar-tab--active {
+  background-color: rgba(255, 255, 255, .08);
+  border-color: rgba(255, 255, 255, .2);
+}
+
+[data-theme="liquid-glass"] .sidebar-tab--active::after { content: none; }
+
+/* Inputs keep their own denser translucent fill for reliable reading. */
+[data-theme="liquid-glass"] :is(
+  input:not([type="range"]):not([type="checkbox"]):not([type="color"]):not([type="file"]):not([type="hidden"]),
+  select, textarea
+) {
+  color: #f5f5f7;
+  background-color: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 12px;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .06);
+}
+
+[data-theme="liquid-glass"] :is(input, textarea)::placeholder { color: rgba(245, 245, 247, .54); }
+[data-theme="liquid-glass"] select option { color: #f5f5f7; background-color: #202024; }
+
+[data-theme="liquid-glass"] :is(input, select, textarea):focus {
+  background-color: rgba(255, 255, 255, .04);
+  border-color: var(--glass-border-focus);
+  box-shadow: var(--glass-halo);
+  outline: none;
+}
+
+[data-theme="liquid-glass"] :is(button, input, select, textarea, [role="button"], [role="slider"]):focus-visible {
+  outline: 2px solid rgba(196, 181, 253, .65);
+  outline-offset: 3px;
+}
+
+[data-theme="liquid-glass"] :is(.sidebar-section__header, .sidebar-section__header:hover, .sidebar-section__header--open) {
+  background-color: transparent;
+  box-shadow: none;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+}
+
+[data-theme="liquid-glass"] :is(.sidebar-section__header--open, .sidebar-section__header:focus-visible) {
+  border-bottom-color: rgba(196, 181, 253, .5);
+}
+
+[data-theme="liquid-glass"] :is(.sidebar-content, .sidebar-tabs, .sidebar-section__body) { background-color: transparent; }
+[data-theme="liquid-glass"] :is(.sidebar-section__title, .sidebar-control__label, .sidebar-control__unit, .sidebar-section__icon) { color: var(--text-secondary); }
+
+/* Isolated glass cards keep each editor topic visually distinct. */
+[data-theme="liquid-glass"] .sidebar-content {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+[data-theme="liquid-glass"] .sidebar-section {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  overflow: hidden;
+  margin: 0;
+  background: rgba(255, 255, 255, .03);
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, .25);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+[data-theme="liquid-glass"] .sidebar-section:hover,
+[data-theme="liquid-glass"] .sidebar-section:focus-within {
+  border-color: rgba(255, 255, 255, .16);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .3), 0 0 10px rgba(168, 85, 247, .1);
+}
+
+[data-theme="liquid-glass"] .sidebar-section__header,
+[data-theme="liquid-glass"] .sidebar-section__header:hover,
+[data-theme="liquid-glass"] .sidebar-section__header--open {
+  box-sizing: border-box;
+  min-height: 46px;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+[data-theme="liquid-glass"] .sidebar-section__header--open {
+  color: var(--text-primary);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .08);
+}
+
+[data-theme="liquid-glass"] .sidebar-section__body {
+  box-sizing: border-box;
+  padding: 14px 16px 16px;
+  background: transparent;
+}
+
+/* High-contrast accordion header content for the dark glass surface. */
+[data-theme="liquid-glass"] {
+  --sidebar-text-color: #f8fafc;
+  --sidebar-icon-color: #fff;
+}
+
+[data-theme="liquid-glass"] .sidebar-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--sidebar-text-color) !important;
+}
+
+[data-theme="liquid-glass"] .sidebar-section__title {
+  color: var(--sidebar-text-color) !important;
+  font-weight: 700;
+}
+
+[data-theme="liquid-glass"] .sidebar-section__icon {
+  color: var(--sidebar-icon-color) !important;
+  stroke: currentColor !important;
+  fill: none !important;
+  opacity: 1 !important;
+}
+
+[data-theme="liquid-glass"] .sidebar-section__icon :is(path, line, polyline, polygon, rect, circle) {
+  stroke: currentColor !important;
+  fill: none !important;
+}
+
+/* Explicit SVG override also covers chevrons and any fixed child attributes. */
+[data-theme="liquid-glass"] .editor-sidebar .sidebar-accordion-header svg,
+[data-theme="liquid-glass"] .editor-sidebar .sidebar-accordion-header svg * {
+  color: #fff !important;
+  stroke: #fff !important;
+  fill: none !important;
+  opacity: 1 !important;
+}
+
+[data-theme="liquid-glass"] .editor-sidebar .sidebar-accordion-header svg {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .5));
+}
+
+[data-theme="liquid-glass"] .sidebar-section__chevron {
+  color: rgba(255, 255, 255, .7) !important;
+  opacity: 1;
+}
+
+[data-theme="liquid-glass"] .sidebar-section__header:hover .sidebar-section__title,
+[data-theme="liquid-glass"] .sidebar-section__header:hover .sidebar-section__icon,
+[data-theme="liquid-glass"] .sidebar-section__header:hover .sidebar-section__chevron,
+[data-theme="liquid-glass"] .sidebar-section__header:focus-visible .sidebar-section__chevron {
+  color: #fff !important;
+}
+
+[data-theme="liquid-glass"] .sidebar-section__header:hover .sidebar-section__icon,
+[data-theme="liquid-glass"] .sidebar-section__header:hover .sidebar-section__chevron svg {
+  stroke: currentColor !important;
+  fill: none !important;
+}
+
+[data-theme="liquid-glass"] .editor-header__project-name {
+  color: #f5f5f7;
+  background: transparent;
+  -webkit-text-fill-color: #f5f5f7;
+}
+
+[data-theme="liquid-glass"] :is(.header__logo, .editor-header__logo) {
+  color: #f5f5f7;
+  background: none;
+  -webkit-text-fill-color: #f5f5f7;
+  text-shadow: none;
+  filter: none;
+}
+
+[data-theme="liquid-glass"] .sidebar-slider::-webkit-slider-thumb {
+  background: #f5f5f7;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, .4), 0 0 8px rgba(255, 255, 255, .18);
+}
+[data-theme="liquid-glass"] .sidebar-slider::-moz-range-thumb {
+  background: #f5f5f7;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, .4), 0 0 8px rgba(255, 255, 255, .18);
+}
+
+[data-theme="liquid-glass"] .settings-switch__slider { background-color: rgba(255, 255, 255, .1); }
+[data-theme="liquid-glass"] .settings-switch input:checked + .settings-switch__slider {
+  background-color: rgba(255, 255, 255, .12);
+  box-shadow: inset 0 0 0 1px rgba(196, 181, 253, .58), var(--glass-halo);
+}
+[data-theme="liquid-glass"] .settings-switch input:checked + .settings-switch__slider::after {
+  background-color: #f5f5f7;
+}
+
+/* Recent activity content stays inside the card's rounded glass edge. */
+[data-theme="liquid-glass"] .activity-section {
+  box-sizing: border-box;
+  padding: 18px 20px;
+}
+
+[data-theme="liquid-glass"] .activity-header {
+  box-sizing: border-box;
+  gap: 8px 12px;
+  margin-bottom: 12px;
+}
+
+[data-theme="liquid-glass"] .activity-header__right {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+[data-theme="liquid-glass"] .activity-section--collapsed .activity-header {
+  margin-bottom: 0;
+}
+
+/* Restrained tactile feedback for interactive glass surfaces. */
+[data-theme="liquid-glass"] :is(
+  button:not(:disabled), [role="button"], [role="slider"],
+  input:not(:disabled), select:not(:disabled), textarea:not(:disabled),
+  .project-card, .folder-card, .list-item, .settings-section, .profile-card,
+  .activity-section, .activity-item
+) {
+  transition: all .2s cubic-bezier(.4, 0, .2, 1);
+}
+
+[data-theme="liquid-glass"] :is(button:not(:disabled), [role="button"]):hover {
+  background-color: rgba(255, 255, 255, .08);
+  border-color: rgba(255, 255, 255, .28);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .35), inset 0 1px 1px rgba(255, 255, 255, .2);
+  transform: translateY(-1px);
+}
+
+[data-theme="liquid-glass"] :is(input:not(:disabled), select:not(:disabled), textarea:not(:disabled)):hover {
+  border-color: rgba(255, 255, 255, .24);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .1), 0 2px 8px rgba(0, 0, 0, .2);
+}
+
+[data-theme="liquid-glass"] :is(.project-card, .folder-card, .list-item, .settings-section, .profile-card, .activity-section, .activity-item):hover {
+  background-color: rgba(255, 255, 255, .08);
+  border-color: rgba(255, 255, 255, .28);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .35), inset 0 1px 1px rgba(255, 255, 255, .2);
+  transform: translateY(-1px);
+}
+
+[data-theme="liquid-glass"] .gradient-angle-disc__inner {
+  background: rgba(18, 18, 24, .24);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, .28);
+}
+
+[data-theme="liquid-glass"] .gradient-angle-disc__label {
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, .85), 0 0 8px rgba(0, 0, 0, .5);
+}
+
+[data-theme="liquid-glass"] .gradient-angle-disc__handle {
+  background: #f5f5f7;
+  border-color: rgba(18, 18, 24, .9);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, .6), 0 0 0 1px rgba(255, 255, 255, .8);
+}
+
+/* Preserve the document being inspected; only the editor's chrome is glass. */
+[data-theme="liquid-glass"] :is(.editor-canvas, .editor-dropzone) {
+  background: #e5e5e7;
+  background-image: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+[data-theme="liquid-glass"] .editor-canvas__iframe { background: #fff; }
+[data-theme="liquid-glass"] .editor-dropzone { color: #27272a; }
+[data-theme="liquid-glass"] .editor-dropzone__hint { color: #52525b; }
+
+[data-theme="liquid-glass"] .tutorial-tour__card {
+  background: rgba(28, 28, 36, .96);
+  border-color: rgba(255, 255, 255, .2);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  [data-theme="liquid-glass"] {
+    --glass-surface: rgba(18, 18, 24, .92);
+    --glass-surface-raised: rgba(28, 28, 36, .96);
+  }
+}

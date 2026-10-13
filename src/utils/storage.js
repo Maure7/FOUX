@@ -12,6 +12,8 @@ export const FOUX_STORAGE_KEYS = [
   'foux_language',
   'foux_user_profile',
   'foux_history_visibility',
+  'foux_global_tutorial_tips',
+  'foux_tutorial_completed',
 ];
 
 /**

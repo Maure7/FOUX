@@ -1,0 +1,70 @@
+:root {
+  --tour-surface: #202026;
+  --tour-text: #f5f5f7;
+  --tour-secondary: #c5c5ce;
+  --tour-border: rgba(255, 255, 255, .18);
+  --tour-accent: #c4b5fd;
+}
+[data-theme="light"] {
+  --tour-surface: #fff;
+  --tour-text: #18181b;
+  --tour-secondary: #52525b;
+  --tour-border: #d4d4d8;
+  --tour-accent: #6d28d9;
+}
+[data-theme="solarized"] {
+  --tour-surface: #073642;
+  --tour-text: #fdf6e3;
+  --tour-secondary: #bac8c9;
+  --tour-accent: #6cdbcc;
+}
+.tutorial-tour {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  background: transparent;
+  color: var(--tour-text);
+}
+.tutorial-tour::backdrop { background: transparent; }
+.tutorial-tour__spotlight {
+  position: fixed;
+  border-radius: 12px;
+  outline: 2px solid var(--tour-accent);
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, .56);
+  pointer-events: none;
+}
+.tutorial-tour__card {
+  position: fixed;
+  width: min(320px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  padding: 20px;
+  border: 1px solid var(--tour-border);
+  border-radius: 18px;
+  background: var(--tour-surface);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, .3);
+  font-family: var(--font);
+}
+.tutorial-tour__header, .tutorial-tour__navigation { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+.tutorial-tour__progress { color: var(--tour-secondary); font-size: 12px; }
+.tutorial-tour__card h2 { font-size: 18px; line-height: 1.4; margin: 16px 0 8px; }
+.tutorial-tour__card p { color: var(--tour-secondary); font-size: 13px; line-height: 1.65; }
+.tutorial-tour button { font: inherit; cursor: pointer; border: 1px solid var(--tour-border); border-radius: 9px; padding: 8px 10px; background: transparent; color: var(--tour-text); display: inline-flex; gap: 6px; align-items: center; }
+.tutorial-tour button:hover { background: rgba(127, 127, 127, .14); }
+.tutorial-tour button:focus-visible { outline: 2px solid var(--tour-accent); outline-offset: 3px; }
+.tutorial-tour .tutorial-tour__close { padding: 5px; border: 0; }
+.tutorial-tour__navigation { margin-top: 20px; }
+.tutorial-tour .tutorial-tour__next { margin-left: auto; background: #6d28d9; border-color: #6d28d9; color: #fff; }
+.tutorial-tour .tutorial-tour__next:hover { background: #5b21b6; }
+.tutorial-tour .tutorial-tour__skip { border: 0; text-decoration: underline; color: var(--tour-secondary); font-size: 12px; padding: 10px 0 4px; }
+.tutorial-tour__card .tutorial-tour__hint { font-size: 11px; margin-top: 6px; }
+.tutorial-tour__box-model { margin-top: 14px; padding: 6px 14px 14px; border: 1px dashed var(--tour-accent); border-radius: 8px; text-align: center; font-size: 11px; }
+.tutorial-tour__box-model > div { border: 1px solid var(--tour-accent); padding: 6px 12px 12px; margin-top: 5px; border-radius: 4px; }
+.tutorial-tour__box-model strong { display: block; background: rgba(127, 127, 127, .18); padding: 8px; margin-top: 4px; }

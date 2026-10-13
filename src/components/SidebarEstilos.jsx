@@ -18,6 +18,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { cssColorToHex, getGradientBorder, gradientBorderBackground, parseLinearGradient } from '../utils/gradientBorder';
 
 /* ===================================================================
    SidebarEstilos — Painel lateral reativo de estilização visual.
@@ -65,21 +66,25 @@ function extractAlpha(colorValue) {
 }
 
 /* ===== COLLAPSIBLE SECTION ===== */
-function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true }) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+function CollapsibleSection({ title, icon: Icon, children, defaultOpen = true, tourId, tourStep }) {
+  const [userOpen, setIsOpen] = useState(defaultOpen);
+  const isOpen = tourStep ? tourStep.id === tourId : userOpen;
 
   return (
-    <div className={`sidebar-section ${isOpen ? 'sidebar-section--open' : 'sidebar-section--closed'}`}>
+    <div data-tour={tourId} className={`sidebar-section ${isOpen ? 'sidebar-section--open' : 'sidebar-section--closed'}`}>
       <button
-        className={`sidebar-section__header ${isOpen ? 'sidebar-section__header--open' : ''}`}
+        className={`sidebar-section__header sidebar-accordion-header ${isOpen ? 'sidebar-section__header--open' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
       >
         <div className="sidebar-section__header-left">
-          {Icon && <Icon size={14} className="sidebar-section__icon" />}
+          {Icon && <Icon size={14} color="currentColor" className="sidebar-section__icon" />}
           <span className="sidebar-section__title">{title}</span>
         </div>
         <span className="sidebar-section__chevron">
-          {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          {isOpen
+            ? <ChevronDown size={14} color="currentColor" />
+            : <ChevronRight size={14} color="currentColor" />}
         </span>
       </button>
       {isOpen && (
@@ -108,6 +113,7 @@ function SliderControl({ label, unit, value, min, max, step, disabled, onChange 
         <input
           type="number"
           className="sidebar-inline-number"
+          aria-label={label}
           value={displayValue}
           min={min}
           max={max}
@@ -123,6 +129,7 @@ function SliderControl({ label, unit, value, min, max, step, disabled, onChange 
       <input
         type="range"
         className="sidebar-slider"
+        aria-label={label}
         min={min}
         max={max}
         step={step || 1}
@@ -135,7 +142,8 @@ function SliderControl({ label, unit, value, min, max, step, disabled, onChange 
 }
 
 /* ===== GRADIENT ANGLE DISC CONTROLLER ===== */
-function GradientAngleDisc({ angle, onAngleChange, disabled }) {
+function GradientAngleDisc({ angle, colorStart = '#e59843', colorEnd = '#9333ea', onAngleChange, disabled }) {
+  const { t } = useLanguage();
   const discRef = useRef(null);
   const isDraggingRef = useRef(false);
 
@@ -180,10 +188,22 @@ function GradientAngleDisc({ angle, onAngleChange, disabled }) {
     <div className="gradient-angle-disc-wrapper">
       <div
         className="gradient-angle-disc"
+        role="slider"
+        tabIndex={disabled ? -1 : 0}
+        aria-label={t('sidebar.gradientAngle')}
+        aria-valuemin={0}
+        aria-valuemax={359}
+        aria-valuenow={angle}
+        aria-disabled={disabled}
+        onKeyDown={(event) => {
+          if (disabled || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+          event.preventDefault();
+          onAngleChange((angle + (['ArrowRight', 'ArrowUp'].includes(event.key) ? 1 : 359)) % 360);
+        }}
         ref={discRef}
         onMouseDown={handleMouseDown}
         style={{
-          background: `conic-gradient(from 0deg, #e59843, #9333ea, #e59843)`,
+          background: `linear-gradient(${angle}deg, ${colorStart}, ${colorEnd})`,
         }}
       >
         <div className="gradient-angle-disc__inner" />
@@ -295,6 +315,8 @@ function ColorControl({
             </div>
             <GradientAngleDisc
               angle={gradientAngle ?? 135}
+              colorStart={gradientColor1 || '#e59843'}
+              colorEnd={gradientColor2 || '#9333ea'}
               onAngleChange={onGradientAngleChange}
               disabled={disabled}
             />
@@ -315,6 +337,7 @@ function ColorControl({
             <input
               type="color"
               className="sidebar-color-picker"
+              aria-label={label}
               value={hexValue || '#000000'}
               disabled={disabled}
               onChange={(e) => onColorChange(e.target.value)}
@@ -322,6 +345,7 @@ function ColorControl({
             <input
               type="text"
               className="sidebar-color-text"
+              aria-label={label}
               value={hexValue || '#000000'}
               disabled={disabled}
               onChange={(e) => onColorChange(e.target.value)}
@@ -376,9 +400,11 @@ export default function SidebarEstilos({
   width,
   isResizing,
   onResizeStart,
+  tourStep,
 }) {
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState('estilos');
+  const [userTab, setActiveTab] = useState('estilos');
+  const activeTab = tourStep?.tab || userTab;
   const [customFonts, setCustomFonts] = useState([]);
   const [idElements, setIdElements] = useState([]);
   const fontInputRef = useRef(null);
@@ -445,7 +471,7 @@ export default function SidebarEstilos({
 
     const existingCss = getHoverRules ? getHoverRules(selectedElement) : null;
     if (existingCss) {
-      const hasBgGrad = existingCss.includes('linear-gradient');
+      const hasBgGrad = existingCss.includes('linear-gradient') && !existingCss.includes('background-color');
       const hasBg = existingCss.includes('background-color') || hasBgGrad;
       const hasColor = /(?:^|;)\s*color:/.test(existingCss);
       const hasScale = existingCss.includes('scale(');
@@ -454,21 +480,23 @@ export default function SidebarEstilos({
       setHoverBgEnabled(hasBg);
       setHoverBgGradientEnabled(hasBgGrad);
       if (hasBgGrad) {
-        const gradMatch = existingCss.match(/linear-gradient\(\s*(\d+)deg\s*,\s*([^,]+),\s*([^)]+)\)/);
-        if (gradMatch) {
-          setHoverBgGradientAngle(parseInt(gradMatch[1], 10) || 135);
-          setHoverBgGradientColor1(gradMatch[2].trim());
-          setHoverBgGradientColor2(gradMatch[3].trim());
+        const style = selectedElement.ownerDocument.createElement('span').style;
+        style.cssText = existingCss;
+        const gradient = parseLinearGradient(style.backgroundImage);
+        if (gradient) {
+          setHoverBgGradientAngle(gradient.angle);
+          setHoverBgGradientColor1(gradient.color1);
+          setHoverBgGradientColor2(gradient.color2);
         }
       } else if (hasBg) {
         const bgMatch = existingCss.match(/background-color:\s*([^;!]+)/);
-        if (bgMatch) setHoverBgColor(bgMatch[1].trim());
+        if (bgMatch) setHoverBgColor(cssColorToHex(bgMatch[1].trim()));
       }
 
       setHoverTextEnabled(hasColor);
       if (hasColor) {
         const colorMatch = existingCss.match(/(?:^|;)\s*color:\s*([^;!]+)/);
-        if (colorMatch) setHoverTextColor(colorMatch[1].trim());
+        if (colorMatch) setHoverTextColor(cssColorToHex(colorMatch[1].trim()));
       }
 
       setHoverScaleEnabled(hasScale);
@@ -502,7 +530,13 @@ export default function SidebarEstilos({
 
     // Reset gradient states for general tab
     setBgGradientEnabled(false);
-    setBorderGradientEnabled(false);
+    const borderGradient = computedStyles?.borderGradient;
+    setBorderGradientEnabled(!!borderGradient);
+    if (borderGradient) {
+      setBorderGradientColor1(borderGradient.color1);
+      setBorderGradientColor2(borderGradient.color2);
+      setBorderGradientAngle(borderGradient.angle);
+    }
   }
 
   /* Helper: ler valor com fallback */
@@ -623,8 +657,7 @@ export default function SidebarEstilos({
   }, [applyBgGradient, bgGradientColor1, bgGradientColor2]);
 
   const applyBorderGradient = useCallback((c1, c2, angle) => {
-    apply('borderImage', `linear-gradient(${angle}deg, ${c1}, ${c2}) 1`);
-    apply('borderColor', '');
+    apply('borderGradient', { color1: c1, color2: c2, angle });
   }, [apply]);
 
   const handleBorderGradientToggle = useCallback((enabled) => {
@@ -632,11 +665,9 @@ export default function SidebarEstilos({
     if (enabled) {
       applyBorderGradient(borderGradientColor1, borderGradientColor2, borderGradientAngle);
     } else {
-      apply('borderImage', 'none');
-      const hex = val('borderColor', '#CBD5E1');
-      apply('borderColor', hex);
+      apply('borderGradient', null);
     }
-  }, [apply, val, applyBorderGradient, borderGradientColor1, borderGradientColor2, borderGradientAngle]);
+  }, [apply, applyBorderGradient, borderGradientColor1, borderGradientColor2, borderGradientAngle]);
 
   const handleBorderGradientColor1Change = useCallback((c) => {
     setBorderGradientColor1(c);
@@ -663,8 +694,17 @@ export default function SidebarEstilos({
     if (!cls) return;
 
     const rules = [];
+    const borderGradient = getGradientBorder(selectedElement);
     if (hoverBgEnabled) {
-      if (hoverBgGradientEnabled) {
+      if (borderGradient) {
+        const background = gradientBorderBackground(borderGradient, hoverBgGradientEnabled
+          ? { image: `linear-gradient(${hoverBgGradientAngle}deg, ${hoverBgGradientColor1}, ${hoverBgGradientColor2})` }
+          : { color: hoverBgColor });
+        rules.push(`background-image: ${background.image} !important`);
+        if (!hoverBgGradientEnabled) rules.push(`background-color: ${hoverBgColor} !important`);
+        rules.push(`background-clip: ${background.clip} !important`);
+        rules.push(`background-origin: ${background.origin} !important`);
+      } else if (hoverBgGradientEnabled) {
         rules.push(`background-image: linear-gradient(${hoverBgGradientAngle}deg, ${hoverBgGradientColor1}, ${hoverBgGradientColor2}) !important`);
       } else {
         rules.push(`background-color: ${hoverBgColor} !important`);
@@ -679,19 +719,19 @@ export default function SidebarEstilos({
 
     if (rules.length > 0) {
       rules.push('transition: all 0.25s ease !important');
-      injectHoverStyles(`.${cls}`, rules.join('; '));
+      injectHoverStyles(`.${cls}`, rules.join('; '), selectedElement);
     } else {
-      injectHoverStyles(`.${cls}`, '');
+      injectHoverStyles(`.${cls}`, '', selectedElement);
     }
 
     if (onStyleChange) onStyleChange();
   }, [selectedElement, assignHoverClass, injectHoverStyles, hoverBgEnabled, hoverBgColor, hoverTextEnabled, hoverTextColor, hoverScaleEnabled, hoverScale, hoverShadowEnabled, hoverShadowX, hoverShadowY, hoverShadowBlur, hoverShadowOpacity, hoverBgGradientEnabled, hoverBgGradientColor1, hoverBgGradientColor2, hoverBgGradientAngle, onStyleChange]);
 
   useEffect(() => {
-    if (activeTab === 'eventos' && hasSelection) {
+    if (!tourStep && activeTab === 'eventos' && hasSelection) {
       buildAndInjectHoverCSS();
     }
-  }, [activeTab, hasSelection, buildAndInjectHoverCSS]);
+  }, [activeTab, hasSelection, buildAndInjectHoverCSS, tourStep]);
 
   const tabsConfig = [
     { id: 'estilos', label: t('sidebar.tabStyles') },
@@ -701,6 +741,7 @@ export default function SidebarEstilos({
 
   return (
     <aside
+      data-tour="sidebar"
       className={`editor-sidebar ${isLocked ? 'editor-sidebar--locked' : ''} ${isResizing ? 'editor-sidebar--resizing' : ''}`}
       style={width ? { width: `${width}px` } : undefined}
     >
@@ -708,7 +749,6 @@ export default function SidebarEstilos({
       <div
         className={`sidebar-resize-handle ${isResizing ? 'is-active' : ''}`}
         onMouseDown={onResizeStart}
-        title="Arrastar para redimensionar barra lateral"
       />
 
       {/* Locked overlay */}
@@ -725,6 +765,8 @@ export default function SidebarEstilos({
         {tabsConfig.map((tab) => (
           <button
             key={tab.id}
+            data-tour={tab.id === 'estilos' ? 'styles' : undefined}
+            aria-pressed={activeTab === tab.id}
             className={`sidebar-tab ${activeTab === tab.id ? 'sidebar-tab--active' : ''}`}
             onClick={() => setActiveTab(tab.id)}
           >
@@ -798,15 +840,15 @@ export default function SidebarEstilos({
                 <div className="sidebar-control">
                   <span className="sidebar-control__label">{t('sidebar.alignment')}</span>
                   <div className="sidebar-align-group">
-                    <button className="sidebar-align-btn" disabled={disabled} title={t('sidebar.floatLeft')}
+                    <button className="sidebar-align-btn" disabled={disabled}
                       onClick={() => { apply('display', 'inline'); apply('float', 'left'); apply('margin', '0 12px 12px 0'); }}>
                       <AlignLeft size={14} />
                     </button>
-                    <button className="sidebar-align-btn" disabled={disabled} title={t('sidebar.center')}
+                    <button className="sidebar-align-btn" disabled={disabled}
                       onClick={() => { apply('display', 'block'); apply('float', 'none'); apply('margin', '0 auto'); }}>
                       <AlignCenter size={14} />
                     </button>
-                    <button className="sidebar-align-btn" disabled={disabled} title={t('sidebar.floatRight')}
+                    <button className="sidebar-align-btn" disabled={disabled}
                       onClick={() => { apply('display', 'inline'); apply('float', 'right'); apply('margin', '0 0 12px 12px'); }}>
                       <AlignRight size={14} />
                     </button>
@@ -817,7 +859,7 @@ export default function SidebarEstilos({
 
             {/* ── TIPOGRAFIA (oculto para <img>) ── */}
             {!isImage && (
-              <CollapsibleSection title={t('sidebar.typography')} icon={Type}>
+              <CollapsibleSection title={t('sidebar.typography')} icon={Type} tourId="typography" tourStep={tourStep}>
                 {/* Font Family */}
                 {isTextElement && (
                   <div className="sidebar-control">
@@ -887,6 +929,8 @@ export default function SidebarEstilos({
                     ].map(({ value, Icon }) => (
                       <button
                         key={value}
+                        aria-label={t(`tooltips.align.${value}`)}
+                        aria-pressed={val('textAlign', 'left') === value}
                         className={`sidebar-align-btn ${val('textAlign', 'left') === value ? 'sidebar-align-btn--active' : ''}`}
                         disabled={disabled}
                         onClick={() => apply('textAlign', value)}
@@ -912,7 +956,7 @@ export default function SidebarEstilos({
             )}
 
             {/* ── BORDAS E FORMAS ── */}
-            <CollapsibleSection title={t('sidebar.bordersAndShapes')} icon={Square}>
+            <CollapsibleSection title={t('sidebar.bordersAndShapes')} icon={Square} tourId="borders" tourStep={tourStep}>
               <SliderControl
                 label={t('sidebar.borderRadius')}
                 unit="px"
@@ -959,7 +1003,7 @@ export default function SidebarEstilos({
             </CollapsibleSection>
 
             {/* ── ESPAÇAMENTO E FUNDO ── */}
-            <CollapsibleSection title={t('sidebar.spacingAndBackground')} icon={Maximize}>
+            <CollapsibleSection title={t('sidebar.spacing')} icon={Maximize} tourId="spacing" tourStep={tourStep}>
               <div className="sidebar-control sidebar-control--row">
                 <div className="sidebar-control__half">
                   <span className="sidebar-control__label">{t('sidebar.padding')}</span>
@@ -985,6 +1029,9 @@ export default function SidebarEstilos({
                 </div>
               </div>
 
+            </CollapsibleSection>
+
+            <CollapsibleSection title={t('sidebar.background')} icon={Paintbrush} tourId="background" tourStep={tourStep}>
               {/* Background Color with Alpha + Gradient */}
               <ColorControl
                 label={t('sidebar.backgroundColor')}
@@ -1012,7 +1059,7 @@ export default function SidebarEstilos({
         {/* ═══════════════ ABA LAYOUT ═══════════════ */}
         {activeTab === 'layout' && (
           <>
-            <CollapsibleSection title={t('sidebar.elementsById')} icon={Layers} defaultOpen={true}>
+            <CollapsibleSection title={t('sidebar.elementsById')} icon={Layers} defaultOpen={true} tourId="layout" tourStep={tourStep}>
               {idElements.length === 0 ? (
                 <div className="foux-editor-empty-state foux-editor-empty-state--compact">
                   <Layers size={22} className="foux-editor-empty-state__icon-inline" />
@@ -1094,7 +1141,7 @@ export default function SidebarEstilos({
               </div>
             ) : (
               <>
-                <CollapsibleSection title={t('sidebar.eventsHover')} icon={Palette} defaultOpen={true}>
+                <CollapsibleSection title={t('sidebar.eventsHover')} icon={Palette} defaultOpen={true} tourId="events" tourStep={tourStep}>
                   {/* Background Color on Hover */}
                   <div className="sidebar-control">
                     <label className="sidebar-toggle-row">
@@ -1152,7 +1199,13 @@ export default function SidebarEstilos({
                                 />
                                 <span className="sidebar-control__unit">°</span>
                               </div>
-                              <GradientAngleDisc angle={hoverBgGradientAngle} onAngleChange={setHoverBgGradientAngle} disabled={false} />
+                              <GradientAngleDisc
+                                angle={hoverBgGradientAngle}
+                                colorStart={hoverBgGradientColor1}
+                                colorEnd={hoverBgGradientColor2}
+                                onAngleChange={setHoverBgGradientAngle}
+                                disabled={false}
+                              />
                             </div>
                             <div className="sidebar-gradient-preview" style={{
                               background: `linear-gradient(${hoverBgGradientAngle}deg, ${hoverBgGradientColor1}, ${hoverBgGradientColor2})`,
@@ -1187,12 +1240,14 @@ export default function SidebarEstilos({
                           type="color"
                           className="sidebar-color-picker"
                           value={hoverTextColor}
+                          aria-label={t('sidebar.hoverTextColor')}
                           onChange={(e) => setHoverTextColor(e.target.value)}
                         />
                         <input
                           type="text"
                           className="sidebar-color-text"
                           value={hoverTextColor}
+                          aria-label={t('sidebar.hoverTextColor')}
                           onChange={(e) => setHoverTextColor(e.target.value)}
                         />
                       </div>

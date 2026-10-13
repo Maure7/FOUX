@@ -10,12 +10,13 @@ import {
   User,
   Undo2,
   Redo2,
-  X,
   Lightbulb,
   LightbulbOff,
 } from 'lucide-react';
 import useIframeInspector from '../hooks/useIframeInspector';
 import SidebarEstilos from '../components/SidebarEstilos';
+import TutorialTour from '../components/TutorialTour';
+import { TOUR_STEPS, hasCompletedTutorial, completeTutorial } from '../utils/tutorialTour';
 import FaqModal from '../components/FaqModal';
 import { useLanguage } from '../context/LanguageContext';
 import { TUTORIAL_PROJECT_NAME } from '../utils/tutorialTemplate';
@@ -115,6 +116,7 @@ function EditorHeader({
           onClick={onNavigate}
           role="button"
           tabIndex={0}
+          aria-label={t('editor.backToDashboard')}
           onKeyDown={(e) => { if (e.key === 'Enter') onNavigate(); }}
         >
           FOUX
@@ -150,7 +152,6 @@ function EditorHeader({
           disabled={!canUndo}
           aria-label={t('editor.undo')}
           title={t('editor.undo')}
-          style={!canUndo ? { opacity: 0.4, pointerEvents: 'none' } : undefined}
         >
           <Undo2 size={16} />
         </button>
@@ -160,7 +161,6 @@ function EditorHeader({
           disabled={!canRedo}
           aria-label={t('editor.redo')}
           title={t('editor.redo')}
-          style={!canRedo ? { opacity: 0.4, pointerEvents: 'none' } : undefined}
         >
           <Redo2 size={16} />
         </button>
@@ -172,8 +172,8 @@ function EditorHeader({
             <button
               className={`editor-header__tutorial-btn ${showTipsLocal ? 'is-active' : ''}`}
               onClick={onToggleTips}
-              title={showTipsLocal ? t('editor.hideTutorialTips') : t('editor.showTutorialTips')}
-              aria-label={showTipsLocal ? t('editor.hideTutorialTips') : t('editor.showTutorialTips')}
+              title={showTipsLocal ? t('tour.close') : t('tour.restart')}
+              aria-label={showTipsLocal ? t('tour.close') : t('tour.restart')}
             >
               {showTipsLocal ? (
                 <Lightbulb size={14} className="editor-header__tutorial-icon" />
@@ -181,7 +181,7 @@ function EditorHeader({
                 <LightbulbOff size={14} className="editor-header__tutorial-icon" />
               )}
               <span className="editor-header__tutorial-text">
-                {showTipsLocal ? t('editor.hideTutorialTips') : t('editor.showTutorialTips')}
+                {t('tour.button')}
               </span>
             </button>
           </>
@@ -210,7 +210,7 @@ function EditorHeader({
           role="button"
           tabIndex={0}
           aria-label={t('profile.title')}
-          title={userProfile?.name || t('profile.title')}
+          title={t('profile.title')}
           onKeyDown={(e) => {
             if (e.key === 'Enter') onOpenProfile();
           }}
@@ -300,46 +300,6 @@ function EditorCanvas({ initialHtml, onFileSelect, iframeRef, onIframeLoad, canv
   );
 }
 
-/* ===== TUTORIAL TIPS BALLOONS ===== */
-const TUTORIAL_TIPS = [
-  { id: 'tipTypography', position: 'top' },
-  { id: 'tipBorders', position: 'mid' },
-  { id: 'tipSpacing', position: 'mid2' },
-  { id: 'tipEvents', position: 'bottom' },
-  { id: 'tipLayout', position: 'bottom2' },
-];
-
-function TutorialTips({ visible, onDismissTip, dismissedTips, t }) {
-  if (!visible) return null;
-
-  const activeTips = TUTORIAL_TIPS.filter((tip) => !dismissedTips.has(tip.id));
-  if (activeTips.length === 0) return null;
-
-  return (
-    <div className="tutorial-tips-container">
-      {activeTips.map((tip, idx) => (
-        <div
-          key={tip.id}
-          className={`tutorial-tip tutorial-tip--${tip.position}`}
-          style={{ animationDelay: `${idx * 0.15}s` }}
-        >
-          <div className="tutorial-tip__content">
-            <Lightbulb size={14} className="tutorial-tip__icon" />
-            <span className="tutorial-tip__text">{t(`tutorial.${tip.id}`)}</span>
-          </div>
-          <button
-            className="tutorial-tip__close"
-            onClick={() => onDismissTip(tip.id)}
-            aria-label={t('common.close')}
-          >
-            <X size={12} />
-          </button>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 /* ===== MAIN EDITOR ===== */
 export default function Editor({
   project,
@@ -358,6 +318,11 @@ export default function Editor({
   const [isPreview, setIsPreview] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isFaqOpen, setIsFaqOpen] = useState(false);
+  const isTutorialProject = project.name === TUTORIAL_PROJECT_NAME;
+  const [tourStep, setTourStep] = useState(() => (
+    isTutorialProject && globalTutorialTips && project.showTutorialTips !== false && !hasCompletedTutorial() ? 0 : null
+  ));
+  const [iframeReady, setIframeReady] = useState(false);
 
   const [initialHtml, setInitialHtml] = useState(() => project.htmlContent);
   const [hasLoaded, setHasLoaded] = useState(() => !!project.htmlContent);
@@ -455,6 +420,7 @@ export default function Editor({
   // Keyboard shortcuts: Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y
   useEffect(() => {
     const handler = (e) => {
+      if (document.querySelector('.tutorial-tour[open]')) return;
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         handleUndo();
@@ -557,6 +523,7 @@ export default function Editor({
 
   const handleIframeLoad = useCallback(() => {
     setupIframeListeners();
+    setIframeReady(true);
     if (iframeRef.current?.contentDocument?.documentElement) {
       currentDocSnapshotRef.current = iframeRef.current.contentDocument.documentElement.outerHTML;
     }
@@ -655,20 +622,28 @@ export default function Editor({
     onNavigate('dashboard');
   }, [flushCurrentDocument, onNavigate]);
 
-  /* ===== Tutorial Tips State ===== */
-  const isTutorialProject = project.name === TUTORIAL_PROJECT_NAME;
-  const showTipsLocal = project.showTutorialTips !== false;
-  const shouldShowTips = isTutorialProject && globalTutorialTips && showTipsLocal && hasLoaded;
-
-  const [dismissedTips, setDismissedTips] = useState(new Set());
-  const handleDismissTip = useCallback((tipId) => {
-    setDismissedTips((prev) => new Set([...prev, tipId]));
+  /* Completion and dismissal both suppress automatic tours on later visits. */
+  const finishTour = useCallback(() => {
+    completeTutorial();
+    setTourStep(null);
+    onUpdateProjectRef.current({ showTutorialTips: false });
   }, []);
-
+  const selectTourExample = useCallback(() => {
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc?.body) return;
+    const example = doc.getElementById('titulo-exercicio') || doc.querySelector('h1, h2, h3, p, div, section') || doc.body;
+    if (example.id) selectElementById(example.id);
+    else example.click();
+  }, [selectElementById]);
   const toggleLocalTips = useCallback(() => {
-    const next = !showTipsLocal;
-    onUpdateProjectRef.current({ showTutorialTips: next });
-  }, [showTipsLocal]);
+    if (tourStep !== null) return finishTour();
+    selectTourExample();
+    setTourStep(0);
+  }, [tourStep, finishTour, selectTourExample]);
+
+  useEffect(() => {
+    if (tourStep !== null && iframeReady && !selectedElement) selectTourExample();
+  }, [tourStep, iframeReady, selectedElement, selectTourExample]);
 
   /* ===== RESIZABLE SIDEBAR ===== */
   const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -740,7 +715,7 @@ export default function Editor({
         onUndo={handleUndo}
         onRedo={handleRedo}
         isTutorialProject={isTutorialProject}
-        showTipsLocal={showTipsLocal}
+        showTipsLocal={tourStep !== null}
         onToggleTips={toggleLocalTips}
         onExportCss={handleExportCss}
         onExpand={handleExpand}
@@ -770,15 +745,8 @@ export default function Editor({
         {/* Overlay transparente para evitar que o iframe capture mousemove durante o redimensionamento */}
         {isResizingSidebar && <div className="editor-resize-glass-overlay" />}
 
-        {/* Tutorial Tips overlay — positioned over sidebar area */}
-        <TutorialTips
-          visible={shouldShowTips}
-          onDismissTip={handleDismissTip}
-          dismissedTips={dismissedTips}
-          t={t}
-        />
-
         <SidebarEstilos
+          tourStep={tourStep === null ? null : TOUR_STEPS[tourStep]}
           isLocked={!initialHtml}
           selectedElement={selectedElement}
           selectedTagName={selectedTagName}
@@ -798,6 +766,7 @@ export default function Editor({
       </div>
 
       <FaqModal isOpen={isFaqOpen} onClose={() => setIsFaqOpen(false)} t={t} />
+      {tourStep !== null && iframeReady && hasLoaded && <TutorialTour stepIndex={tourStep} onStepChange={setTourStep} onFinish={finishTour} />}
     </div>
   );
 }

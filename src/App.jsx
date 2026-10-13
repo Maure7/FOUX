@@ -7,6 +7,9 @@ import { useToast, ToastContainer } from './components/ToastNotification';
 import { LanguageProvider } from './context/LanguageContext';
 import { TUTORIAL_PROJECT_NAME, TUTORIAL_HTML } from './utils/tutorialTemplate';
 import { migrateLegacyActivity } from './utils/activityI18n';
+import { TooltipProvider } from './components/Tooltip';
+import { TUTORIAL_COMPLETED_KEY } from './utils/tutorialTour';
+import './styles/LiquidGlass.css';
 
 /* ===== LocalStorage helpers ===== */
 const STORAGE_KEY = 'foux_projects';
@@ -545,6 +548,7 @@ function AppContent() {
     <>
       {currentScreen === 'editor' && activeProject ? (
         <Editor
+          key={activeProject.id}
           project={activeProject}
           onUpdateProject={(updates) => updateProject(activeProject.id, updates)}
           onRenameProject={(newName) => renameProject(activeProject.id, newName)}
@@ -566,6 +570,12 @@ function AppContent() {
           onClearCache={handleClearCache}
           globalTutorialTips={globalTutorialTips}
           onGlobalTutorialTipsChange={handleGlobalTutorialTipsChange}
+          onRestartTutorial={() => {
+            try { localStorage.removeItem(TUTORIAL_COMPLETED_KEY); } catch { /* Continue in memory. */ }
+            setGlobalTutorialTips(true);
+            setProjects((prev) => prev.map((p) => p.name === TUTORIAL_PROJECT_NAME ? { ...p, showTutorialTips: true } : p));
+            if (activeProject?.name === TUTORIAL_PROJECT_NAME) setCurrentScreen('editor');
+          }}
         />
       ) : currentScreen === 'profile' ? (
         <Profile
@@ -616,7 +626,7 @@ function AppContent() {
 export default function App() {
   return (
     <LanguageProvider>
-      <AppContent />
+      <TooltipProvider><AppContent /></TooltipProvider>
     </LanguageProvider>
   );
 }
