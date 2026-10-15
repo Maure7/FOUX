@@ -101,6 +101,36 @@ function formatTagName(tag) {
   return `<${tag.toLowerCase()}>`;
 }
 
+// Keep incomplete text while typing (empty, minus sign, decimal), without
+// sending invalid CSS to the canvas. Normalize only when leaving the field.
+function NumericInput({ value, onChange, min, max, ...props }) {
+  const [draft, setDraft] = useState(null);
+  const clamp = (number) => Math.max(min ?? -Infinity, Math.min(max ?? Infinity, number));
+  return (
+    <input
+      {...props}
+      type="number"
+      min={min}
+      max={max}
+      value={draft ?? value}
+      onFocus={(event) => setDraft(event.target.value)}
+      onChange={(event) => {
+        const text = event.target.value;
+        setDraft(text);
+        if (text !== '' && Number.isFinite(Number(text))) {
+          onChange({ target: { value: String(clamp(Number(text))) } });
+        }
+      }}
+      onBlur={() => {
+        if (draft !== null && draft !== '' && Number.isFinite(Number(draft))) {
+          onChange({ target: { value: String(clamp(Number(draft))) } });
+        }
+        setDraft(null);
+      }}
+    />
+  );
+}
+
 /* ===== BIDIRECTIONAL SLIDER WITH NUMERIC INPUT ===== */
 function SliderControl({ label, unit, value, min, max, step, disabled, onChange }) {
   const numValue = parseFloat(value) || 0;
@@ -110,8 +140,7 @@ function SliderControl({ label, unit, value, min, max, step, disabled, onChange 
     <div className="sidebar-control">
       <div className="sidebar-control__label-row">
         <span className="sidebar-control__label">{label}</span>
-        <input
-          type="number"
+        <NumericInput
           className="sidebar-inline-number"
           aria-label={label}
           value={displayValue}
@@ -299,8 +328,7 @@ function ColorControl({
           <div className="sidebar-gradient-angle-section">
             <div className="sidebar-control__label-row">
               <span className="sidebar-control__label">{t ? t('sidebar.gradientAngle') : 'Ângulo'}</span>
-              <input
-                type="number"
+              <NumericInput
                 className="sidebar-inline-number"
                 value={gradientAngle ?? 135}
                 min={0}
@@ -354,8 +382,7 @@ function ColorControl({
           {/* Slider de Opacidade com input numérico bidirecional */}
           <div className="sidebar-opacity-row">
             <span className="sidebar-opacity-row__label">{opacityLabel || 'Opacidade:'}</span>
-            <input
-              type="number"
+            <NumericInput
               className="sidebar-inline-number sidebar-inline-number--small"
               value={displayAlpha}
               min={0}
@@ -502,17 +529,21 @@ export default function SidebarEstilos({
       setHoverScaleEnabled(hasScale);
       if (hasScale) {
         const scaleMatch = existingCss.match(/scale\(([\d.]+)\)/);
-        if (scaleMatch) setHoverScale(parseFloat(scaleMatch[1]) || 1.05);
+        if (scaleMatch) setHoverScale(parseFloat(scaleMatch[1]));
       }
 
       setHoverShadowEnabled(hasShadow);
       if (hasShadow) {
-        const shadowMatch = existingCss.match(/box-shadow:\s*(-?\d+)px\s+(-?\d+)px\s+(-?\d+)px\s+rgba\(0,\s*0,\s*0,\s*([\d.]+)\)/);
-        if (shadowMatch) {
-          setHoverShadowX(parseInt(shadowMatch[1], 10) || 0);
-          setHoverShadowY(parseInt(shadowMatch[2], 10) || 8);
-          setHoverShadowBlur(parseInt(shadowMatch[3], 10) || 20);
-          setHoverShadowOpacity(Math.round(parseFloat(shadowMatch[4]) * 100) || 35);
+        const style = selectedElement.ownerDocument.createElement('span').style;
+        style.cssText = existingCss;
+        // CSSOM may put the color before the offsets instead of after them.
+        const shadow = style.boxShadow;
+        const offsets = shadow.replace(/rgba?\([^)]*\)/g, '').match(/-?\d+(?:\.\d+)?px/g);
+        if (offsets?.length >= 3) {
+          setHoverShadowX(parseFloat(offsets[0]));
+          setHoverShadowY(parseFloat(offsets[1]));
+          setHoverShadowBlur(parseFloat(offsets[2]));
+          setHoverShadowOpacity(Math.round(extractAlpha(shadow.match(/rgba?\([^)]*\)/)?.[0]) * 100));
         }
       }
     } else {
@@ -976,7 +1007,7 @@ export default function SidebarEstilos({
                 disabled={disabled}
                 onChange={(v) => {
                   apply('borderWidth', `${v}px`);
-                  if (v > 0) apply('borderStyle', 'solid');
+                  if (v > 0 && ['none', 'hidden'].includes(val('borderStyle', 'none'))) apply('borderStyle', 'solid');
                 }}
               />
 
@@ -1007,8 +1038,7 @@ export default function SidebarEstilos({
               <div className="sidebar-control sidebar-control--row">
                 <div className="sidebar-control__half">
                   <span className="sidebar-control__label">{t('sidebar.padding')}</span>
-                  <input
-                    type="number"
+                  <NumericInput
                     className="sidebar-number-input"
                     value={val('padding', 0)}
                     min="0"
@@ -1018,8 +1048,7 @@ export default function SidebarEstilos({
                 </div>
                 <div className="sidebar-control__half">
                   <span className="sidebar-control__label">{t('sidebar.margin')}</span>
-                  <input
-                    type="number"
+                  <NumericInput
                     className="sidebar-number-input"
                     value={val('margin', 0)}
                     min="0"
@@ -1190,7 +1219,7 @@ export default function SidebarEstilos({
                             <div className="sidebar-gradient-angle-section">
                               <div className="sidebar-control__label-row">
                                 <span className="sidebar-control__label">{t('sidebar.gradientAngle')}</span>
-                                <input type="number" className="sidebar-inline-number" value={hoverBgGradientAngle}
+                                <NumericInput className="sidebar-inline-number" value={hoverBgGradientAngle}
                                   min={0} max={360}
                                   onChange={(e) => {
                                     const v = parseInt(e.target.value, 10);
@@ -1356,8 +1385,7 @@ export default function SidebarEstilos({
                         <div className="shadow-offset-row">
                           <div className="shadow-offset-field">
                             <span className="shadow-offset-field__label">X</span>
-                            <input
-                              type="number"
+                            <NumericInput
                               className="sidebar-inline-number"
                               value={hoverShadowX}
                               min={-30}
@@ -1371,8 +1399,7 @@ export default function SidebarEstilos({
                           </div>
                           <div className="shadow-offset-field">
                             <span className="shadow-offset-field__label">Y</span>
-                            <input
-                              type="number"
+                            <NumericInput
                               className="sidebar-inline-number"
                               value={hoverShadowY}
                               min={-30}
@@ -1402,7 +1429,7 @@ export default function SidebarEstilos({
                           label={t('sidebar.shadowOpacity')}
                           unit="%"
                           value={hoverShadowOpacity}
-                          min={5}
+                          min={0}
                           max={100}
                           disabled={false}
                           onChange={(v) => setHoverShadowOpacity(v)}

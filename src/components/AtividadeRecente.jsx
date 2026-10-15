@@ -1,3 +1,4 @@
+import { appStorage } from '../utils/appStorage';
 import { useState, useEffect } from 'react';
 import { ClipboardList, Clock, FileCode, Folder, Trash2, X, Eye, EyeOff } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -72,7 +73,7 @@ export default function AtividadeRecente({ activities, onClearActivities, onRemo
   /* 1. Inicialização segura com persistência da preferência do usuário */
   const [isHistoryVisible, setIsHistoryVisible] = useState(() => {
     try {
-      const saved = localStorage.getItem(HISTORY_VISIBILITY_KEY);
+      const saved = appStorage.getItem(HISTORY_VISIBILITY_KEY);
       if (saved !== null) {
         return saved === 'true';
       }
@@ -87,7 +88,7 @@ export default function AtividadeRecente({ activities, onClearActivities, onRemo
     setIsHistoryVisible((prev) => {
       const next = !prev;
       try {
-        localStorage.setItem(HISTORY_VISIBILITY_KEY, String(next));
+        appStorage.setItem(HISTORY_VISIBILITY_KEY, String(next));
       } catch (e) {
         console.error('Erro ao persistir foux_history_visibility:', e);
       }

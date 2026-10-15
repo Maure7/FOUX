@@ -3,6 +3,8 @@
  * FOUX — Fancy and Organized UX
  */
 
+import { appStorage } from './appStorage';
+
 export const FOUX_STORAGE_KEYS = [
   'foux_projects',
   'foux_active_project',
@@ -14,6 +16,7 @@ export const FOUX_STORAGE_KEYS = [
   'foux_history_visibility',
   'foux_global_tutorial_tips',
   'foux_tutorial_completed',
+  'foux_sidebar_width',
 ];
 
 /**
@@ -22,7 +25,7 @@ export const FOUX_STORAGE_KEYS = [
  * @returns {number} Quantidade total de bytes consumidos.
  */
 export function calculateStorageUsage() {
-  const storage = typeof window !== 'undefined' ? window.localStorage : (typeof globalThis !== 'undefined' ? globalThis.localStorage : null);
+  const storage = appStorage;
   if (!storage) {
     return 0;
   }
@@ -82,7 +85,7 @@ export function formatBytes(bytes) {
  * Garante que chaves legadas e chaves do app sejam removidas com segurança.
  */
 export function clearAllStorage() {
-  const storage = typeof window !== 'undefined' ? window.localStorage : (typeof globalThis !== 'undefined' ? globalThis.localStorage : null);
+  const storage = appStorage;
   if (!storage) {
     return;
   }

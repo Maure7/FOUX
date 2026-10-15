@@ -1,13 +1,66 @@
 {
   "name": "foux1",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.2",
   "type": "module",
+  "description": "FOUX - editor visual de interfaces",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron:start": "npm run build && node scripts/start-electron.cjs",
+    "electron:pack": "npm run build:desktop && electron-builder --win --x64 --dir --publish never",
+    "electron:build": "npm run dist:win",
+    "icons": "node scripts/generate-icons.cjs",
+    "build:desktop": "npm run icons && npm run build",
+    "dist": "node scripts/build-release.cjs",
+    "dist:win": "node scripts/build-release.cjs",
+    "package:win": "electron-builder --win nsis --x64 --publish never",
+    "verify:release": "node scripts/verify-release.cjs",
+    "test:build": "node --test scripts/test_build_pipeline.cjs",
+    "test:i18n": "node --test scripts/test_manual.cjs && node scripts/test_editor.mjs --i18n"
+  },
+  "build": {
+    "appId": "com.foux.desktop",
+    "productName": "FOUX",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "public/docs",
+        "to": "docs",
+        "filter": [
+          "manual_pt.pdf",
+          "manual_es.pdf"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "FOUX-Setup-${version}.${ext}"
+    },
+    "beforePack": "./build/validate-resources.cjs"
   },
   "dependencies": {
     "lucide-react": "^1.31.0",
@@ -16,13 +69,28 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@resvg/resvg-js": "^2.6.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3",
     "eslint": "^10.8.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
     "globals": "^17.7.0",
     "vite": "^8.2.0"
+  },
+  "author": {
+    "name": "Maure7",
+    "email": "maurecarvalho22@gmail.com"
+  },
+  "homepage": "https://github.com/Maure7/FOUX",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Maure7/FOUX.git"
+  },
+  "engines": {
+    "node": ">=24 <25"
   }
 }

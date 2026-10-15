@@ -1,11 +1,13 @@
+import { appStorage } from './utils/appStorage';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import Dashboard from './pages/Dashboard';
 import Editor from './pages/Editor';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import { useToast, ToastContainer } from './components/ToastNotification';
-import { LanguageProvider } from './context/LanguageContext';
-import { TUTORIAL_PROJECT_NAME, TUTORIAL_HTML } from './utils/tutorialTemplate';
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
+import { TUTORIAL_PROJECT_NAME } from './utils/tutorialTemplate';
+import { getTutorialHtml, isTutorialProject } from './utils/tutorialI18n';
 import { migrateLegacyActivity } from './utils/activityI18n';
 import { TooltipProvider } from './components/Tooltip';
 import { TUTORIAL_COMPLETED_KEY } from './utils/tutorialTour';
@@ -22,7 +24,7 @@ const GLOBAL_TUTORIAL_TIPS_KEY = 'foux_global_tutorial_tips';
 
 function saveToStorage(key, value) {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    appStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
     console.warn('Erro ao salvar no localStorage:', e);
   }
@@ -31,9 +33,9 @@ function saveToStorage(key, value) {
 function saveActiveProjectId(id) {
   try {
     if (id) {
-      localStorage.setItem(ACTIVE_KEY, id);
+      appStorage.setItem(ACTIVE_KEY, id);
     } else {
-      localStorage.removeItem(ACTIVE_KEY);
+      appStorage.removeItem(ACTIVE_KEY);
     }
   } catch (e) {
     console.warn('Erro ao salvar projeto ativo:', e);
@@ -42,7 +44,7 @@ function saveActiveProjectId(id) {
 
 function saveTheme(theme) {
   try {
-    localStorage.setItem(THEME_KEY, theme);
+    appStorage.setItem(THEME_KEY, theme);
   } catch (e) {
     console.warn('Erro ao salvar tema:', e);
   }
@@ -55,12 +57,13 @@ function nextId(prefix = 'id') {
 }
 
 function AppContent() {
+  const { language } = useLanguage();
   const [currentScreen, setCurrentScreen] = useState('dashboard');
 
   /* Inicialização segura e preguiçosa de estado (Lazy State Initialization) */
   const [projects, setProjects] = useState(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = appStorage.getItem(STORAGE_KEY);
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
       console.error("Erro ao carregar projetos:", e);
@@ -70,7 +73,7 @@ function AppContent() {
 
   const [folders, setFolders] = useState(() => {
     try {
-      const saved = localStorage.getItem(FOLDERS_KEY);
+      const saved = appStorage.getItem(FOLDERS_KEY);
       return saved ? JSON.parse(saved) : [];
     } catch (e) {
       console.error("Erro ao carregar pastas:", e);
@@ -80,7 +83,7 @@ function AppContent() {
 
   const [activities, setActivities] = useState(() => {
     try {
-      const saved = localStorage.getItem(ACTIVITIES_KEY);
+      const saved = appStorage.getItem(ACTIVITIES_KEY);
       if (!saved) return [];
       const parsed = JSON.parse(saved);
       if (!Array.isArray(parsed)) return [];
@@ -93,7 +96,7 @@ function AppContent() {
 
   const [activeProjectId, setActiveProjectId] = useState(() => {
     try {
-      return localStorage.getItem(ACTIVE_KEY) || null;
+      return appStorage.getItem(ACTIVE_KEY) || null;
     } catch (e) {
       console.error("Erro ao carregar projeto ativo:", e);
       return null;
@@ -103,7 +106,7 @@ function AppContent() {
   /* Chave de tema isolada e desacoplada */
   const [theme, setTheme] = useState(() => {
     try {
-      return localStorage.getItem(THEME_KEY) || 'dark';
+      return appStorage.getItem(THEME_KEY) || 'dark';
     } catch (e) {
       console.error("Erro ao carregar tema:", e);
       return 'dark';
@@ -112,7 +115,7 @@ function AppContent() {
 
   const [userProfile, setUserProfile] = useState(() => {
     try {
-      const saved = localStorage.getItem(PROFILE_KEY);
+      const saved = appStorage.getItem(PROFILE_KEY);
       return saved
         ? JSON.parse(saved)
         : { name: 'Usuário FOUX', avatar: null, bio: '' };
@@ -125,7 +128,7 @@ function AppContent() {
   /* Configuração global: exibir balões de tutorial */
   const [globalTutorialTips, setGlobalTutorialTips] = useState(() => {
     try {
-      const saved = localStorage.getItem(GLOBAL_TUTORIAL_TIPS_KEY);
+      const saved = appStorage.getItem(GLOBAL_TUTORIAL_TIPS_KEY);
       return saved !== null ? JSON.parse(saved) : true;
     } catch {
       return true;
@@ -204,7 +207,7 @@ function AppContent() {
   /* Persistir globalTutorialTips no localStorage */
   useEffect(() => {
     try {
-      localStorage.setItem(GLOBAL_TUTORIAL_TIPS_KEY, JSON.stringify(globalTutorialTips));
+      appStorage.setItem(GLOBAL_TUTORIAL_TIPS_KEY, JSON.stringify(globalTutorialTips));
     } catch (e) {
       console.warn('Erro ao salvar config tutorial:', e);
     }
@@ -379,7 +382,8 @@ function AppContent() {
       folderId: null,
       favorite: false,
       htmlFileName: 'tutorial.html',
-      htmlContent: TUTORIAL_HTML,
+      htmlContent: getTutorialHtml(language),
+      template: 'tutorial',
       showTutorialTips: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -392,7 +396,7 @@ function AppContent() {
       params: {},
       type: 'project',
     });
-  }, [addActivity]);
+  }, [addActivity, language]);
 
   const openProject = useCallback((projectId) => {
     setActiveProjectId(projectId);
@@ -571,10 +575,10 @@ function AppContent() {
           globalTutorialTips={globalTutorialTips}
           onGlobalTutorialTipsChange={handleGlobalTutorialTipsChange}
           onRestartTutorial={() => {
-            try { localStorage.removeItem(TUTORIAL_COMPLETED_KEY); } catch { /* Continue in memory. */ }
+            try { appStorage.removeItem(TUTORIAL_COMPLETED_KEY); } catch { /* Continue in memory. */ }
             setGlobalTutorialTips(true);
-            setProjects((prev) => prev.map((p) => p.name === TUTORIAL_PROJECT_NAME ? { ...p, showTutorialTips: true } : p));
-            if (activeProject?.name === TUTORIAL_PROJECT_NAME) setCurrentScreen('editor');
+            setProjects((prev) => prev.map((p) => isTutorialProject(p) ? { ...p, showTutorialTips: true } : p));
+            if (activeProject && isTutorialProject(activeProject)) setCurrentScreen('editor');
           }}
         />
       ) : currentScreen === 'profile' ? (

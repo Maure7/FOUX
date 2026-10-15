@@ -1,3 +1,4 @@
+import { appStorage } from '../utils/appStorage';
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   ArrowLeft,
@@ -19,7 +20,7 @@ import TutorialTour from '../components/TutorialTour';
 import { TOUR_STEPS, hasCompletedTutorial, completeTutorial } from '../utils/tutorialTour';
 import FaqModal from '../components/FaqModal';
 import { useLanguage } from '../context/LanguageContext';
-import { TUTORIAL_PROJECT_NAME } from '../utils/tutorialTemplate';
+import { isTutorialProject as isTutorial, localizeTutorialHtml } from '../utils/tutorialI18n';
 import { downloadCss, generateProjectCss, getCssFileName } from '../utils/exportCss';
 import '../styles/Dashboard.css';
 
@@ -310,7 +311,7 @@ export default function Editor({
   userProfile = {},
   globalTutorialTips = true,
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const newFileInputRef = useRef(null);
   const iframeRef = useRef(null);
   const canvasRef = useRef(null);
@@ -318,13 +319,14 @@ export default function Editor({
   const [isPreview, setIsPreview] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isFaqOpen, setIsFaqOpen] = useState(false);
-  const isTutorialProject = project.name === TUTORIAL_PROJECT_NAME;
+  const isTutorialProject = isTutorial(project);
   const [tourStep, setTourStep] = useState(() => (
     isTutorialProject && globalTutorialTips && project.showTutorialTips !== false && !hasCompletedTutorial() ? 0 : null
   ));
   const [iframeReady, setIframeReady] = useState(false);
 
-  const [initialHtml, setInitialHtml] = useState(() => project.htmlContent);
+  const [initialHtml, setInitialHtml] = useState(() => isTutorialProject
+    ? localizeTutorialHtml(project.htmlContent, language) : project.htmlContent);
   const [hasLoaded, setHasLoaded] = useState(() => !!project.htmlContent);
   const [prevProjectId, setPrevProjectId] = useState(project.id);
   const [prevProjectHtml, setPrevProjectHtml] = useState(project.htmlContent);
@@ -333,7 +335,7 @@ export default function Editor({
   if (project.id !== prevProjectId || (project.htmlContent && project.htmlContent !== prevProjectHtml && !hasLoaded)) {
     setPrevProjectId(project.id);
     setPrevProjectHtml(project.htmlContent);
-    setInitialHtml(project.htmlContent);
+    setInitialHtml(isTutorialProject ? localizeTutorialHtml(project.htmlContent, language) : project.htmlContent);
     setHasLoaded(!!project.htmlContent);
   }
 
@@ -537,6 +539,25 @@ export default function Editor({
     onUpdateProjectRef.current = onUpdateProject;
   }, [onUpdateProject]);
 
+  const tutorialLanguageRef = useRef(null);
+  useEffect(() => {
+    if (!isTutorialProject || tutorialLanguageRef.current === language) return;
+    const previousLanguage = tutorialLanguageRef.current;
+    tutorialLanguageRef.current = language;
+    // On first load initialHtml already uses the active language. For a live
+    // switch, translate the current document before the autosave can run.
+    const html = previousLanguage === null ? initialHtml : localizeTutorialHtml(serializeDocument() || initialHtml, language);
+    if (previousLanguage !== null) {
+      clearTimeout(saveTimerRef.current);
+      setIframeReady(false);
+      setInitialHtml(html);
+      setPastStates((states) => states.map((state) => localizeTutorialHtml(state, language)));
+      setFutureStates((states) => states.map((state) => localizeTutorialHtml(state, language)));
+      currentDocSnapshotRef.current = html;
+    }
+    if (html !== project.htmlContent) onUpdateProjectRef.current({ htmlContent: html });
+  }, [isTutorialProject, language, initialHtml, project.htmlContent, serializeDocument]);
+
   const debouncedSave = useCallback(() => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
@@ -607,6 +628,13 @@ export default function Editor({
     }
   }, [serializeDocument, hasLoaded]);
 
+  useEffect(() => {
+    window.addEventListener('foux:before-close', flushCurrentDocument);
+    return () => {
+      window.removeEventListener('foux:before-close', flushCurrentDocument);
+    };
+  }, [flushCurrentDocument]);
+
   const handleOpenConfig = useCallback(() => {
     flushCurrentDocument();
     onNavigate('settings');
@@ -631,7 +659,7 @@ export default function Editor({
   const selectTourExample = useCallback(() => {
     const doc = iframeRef.current?.contentDocument;
     if (!doc?.body) return;
-    const example = doc.getElementById('titulo-exercicio') || doc.querySelector('h1, h2, h3, p, div, section') || doc.body;
+    const example = doc.getElementById('titulo-ejercicio') || doc.getElementById('titulo-exercicio') || doc.querySelector('h1, h2, h3, p, div, section') || doc.body;
     if (example.id) selectElementById(example.id);
     else example.click();
   }, [selectElementById]);
@@ -648,7 +676,7 @@ export default function Editor({
   /* ===== RESIZABLE SIDEBAR ===== */
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     try {
-      const saved = localStorage.getItem('foux_sidebar_width');
+      const saved = appStorage.getItem('foux_sidebar_width');
       const parsed = parseInt(saved, 10);
       if (Number.isFinite(parsed) && parsed >= 300 && parsed <= 700) {
         return parsed;
@@ -685,7 +713,7 @@ export default function Editor({
         setIsResizingSidebar(false);
         setSidebarWidth((finalW) => {
           try {
-            localStorage.setItem('foux_sidebar_width', String(finalW));
+            appStorage.setItem('foux_sidebar_width', String(finalW));
           } catch { /* Keep the current width when storage is unavailable. */ }
           return finalW;
         });

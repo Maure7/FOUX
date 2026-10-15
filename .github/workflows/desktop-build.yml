@@ -1,0 +1,103 @@
+name: desktop-build
+'on':
+  push:
+    branches:
+      - main
+    tags:
+      - v*
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: null
+permissions:
+  contents: read
+concurrency:
+  group: desktop-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+jobs:
+  renderer:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Validate release version
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          node -e 'const p = require("./package.json"); if (process.env.GITHUB_REF_NAME !== `v${p.version}`) throw new Error("A tag deve coincidir com package.json");'
+      - run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      - run: node --test scripts/test_data_store.cjs
+      - run: npm run test:build
+      - run: npm run test:i18n
+      - name: Compile renderer and generate icons once
+        run: npm run build:desktop
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: foux-renderer
+          path: |
+            dist/
+            build/icons/
+            build/icon.ico
+          if-no-files-found: error
+          retention-days: 7
+  package:
+    needs: renderer
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          name: foux-renderer
+          path: .
+      - name: Package native x64 targets
+        run: npm run package:win
+      - name: Verify artifacts and checksums
+        run: npm run verify:release
+      - name: Verify packaged persistence on Windows
+        run: node scripts/test_desktop_persistence.mjs
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: foux-windows-x64
+          path: |
+            release/*.exe
+            release/SHA256SUMS-windows.txt
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+  draft-release:
+    needs: package
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-2022
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: foux-*-x64
+          merge-multiple: true
+          path: release
+      - name: Attach Windows installer to a draft GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $files = @(Get-ChildItem release/*.exe, release/SHA256SUMS-windows.txt | ForEach-Object { $_.FullName })
+          gh release view $env:GITHUB_REF_NAME *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:GITHUB_REF_NAME @files --clobber
+          } else {
+            gh release create $env:GITHUB_REF_NAME @files --draft --title "FOUX $env:GITHUB_REF_NAME" --generate-notes
+          }
+          if ($LASTEXITCODE -ne 0) { throw 'Falha ao preparar release' }

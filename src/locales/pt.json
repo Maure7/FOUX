@@ -78,10 +78,7 @@
     "deleteFolderTitle": "Excluir pasta",
     "deleteProjectTitle": "Excluir projeto",
     "deleteFolderConfirm": "Tem certeza que deseja excluir \"{name}\"? Os projetos dentro dela serão movidos para a raiz.",
-    "deleteProjectConfirm": "Tem certeza que deseja excluir \"{name}\"? Esta ação não pode ser desfeita.",
-    "terms": "TERMOS",
-    "privacy": "PRIVACIDADE",
-    "support": "SUPORTE"
+    "deleteProjectConfirm": "Tem certeza que deseja excluir \"{name}\"? Esta ação não pode ser desfeita."
   },
   "faq": {
     "title": "Perguntas frequentes",

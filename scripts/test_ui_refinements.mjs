@@ -4,14 +4,18 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 export async function runUiRefinements({ evaluate, command, eventually }) {
+  // Finish any editor autosave before replacing this test profile's storage.
+  await evaluate(`document.querySelector('.editor-header__back')?.click()`);
+  await eventually(() => evaluate(`!!document.getElementById('card-new-project')`), 'Dashboard did not settle before tutorial fixture');
   await command('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
   await evaluate(`(async () => {
     const {TUTORIAL_HTML} = await import('/src/utils/tutorialTemplate.js');
     localStorage.clear();
     localStorage.setItem('foux_projects', JSON.stringify([{id:'tour', name:'TUTORIAL', folderId:null, htmlContent:TUTORIAL_HTML, showTutorialTips:true, createdAt:Date.now(), updatedAt:Date.now()}]));
+    window.__fouxUiOldDocument = true;
   })()`);
   await command('Page.reload');
-  await eventually(() => evaluate('!!document.querySelector(".project-card--saved")'), 'Tutorial project missing');
+  await eventually(() => evaluate('!window.__fouxUiOldDocument && !!document.querySelector(".project-card--saved")'), 'Tutorial project missing');
   await evaluate('document.querySelector(".project-card--saved").click()');
   await eventually(() => evaluate('!!document.querySelector(".tutorial-tour[open] .tutorial-tour__spotlight")'), 'Automatic tour did not start');
 
@@ -80,8 +84,8 @@ export async function runUiRefinements({ evaluate, command, eventually }) {
     assert.ok((Math.max(a, b) + .05) / (Math.min(a, b) + .05) >= 4.5, `Tour text contrast: ${theme}`);
     if (theme === 'liquid-glass') {
       const styles = await evaluate(`(() => {const css=getComputedStyle(document.querySelector('.editor-sidebar')); return {blur:css.backdropFilter,bg:css.backgroundColor,canvas:getComputedStyle(document.querySelector('.editor-canvas')).backgroundColor};})()`);
-      assert.match(styles.blur, /blur\(20px\)/);
-      assert.equal(styles.bg, 'rgba(18, 18, 24, 0.65)');
+      assert.match(styles.blur, /blur\(24px\)/);
+      assert.equal(styles.bg, 'rgba(18, 18, 24, 0.45)');
       assert.equal(styles.canvas, 'rgb(229, 229, 231)');
       const shot = await command('Page.captureScreenshot', { format: 'png' });
       const screenshotPath = path.join(tmpdir(), 'foux-ui-liquid-glass.png');

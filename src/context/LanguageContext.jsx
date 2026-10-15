@@ -1,3 +1,4 @@
+import { appStorage } from '../utils/appStorage';
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import ptTranslations from '../locales/pt.json';
@@ -34,7 +35,7 @@ function getNestedTranslation(obj, path) {
 export function LanguageProvider({ children }) {
   const [language, setLanguageState] = useState(() => {
     try {
-      const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+      const stored = appStorage.getItem(LANGUAGE_STORAGE_KEY);
       return stored === 'es' ? 'es' : DEFAULT_LANGUAGE;
     } catch {
       return DEFAULT_LANGUAGE;
@@ -45,7 +46,7 @@ export function LanguageProvider({ children }) {
     const validLang = newLang === 'es' ? 'es' : 'pt';
     setLanguageState(validLang);
     try {
-      localStorage.setItem(LANGUAGE_STORAGE_KEY, validLang);
+      appStorage.setItem(LANGUAGE_STORAGE_KEY, validLang);
       document.documentElement.setAttribute('lang', validLang === 'es' ? 'es-419' : 'pt-BR');
     } catch (e) {
       console.warn('Erro ao salvar preferência de idioma:', e);
@@ -137,6 +138,7 @@ export function LanguageProvider({ children }) {
 
   const value = useMemo(() => ({
     language,
+    manualUrl: `${import.meta.env.BASE_URL}docs/manual_${language === 'es' ? 'es' : 'pt'}.pdf`,
     setLanguage,
     t,
     formatDate,

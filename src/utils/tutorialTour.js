@@ -1,3 +1,4 @@
+import { appStorage } from './appStorage';
 export const TUTORIAL_COMPLETED_KEY = 'foux_tutorial_completed';
 
 export const TOUR_STEPS = [
@@ -12,11 +13,11 @@ export const TOUR_STEPS = [
 ];
 
 export function hasCompletedTutorial() {
-  try { return localStorage.getItem(TUTORIAL_COMPLETED_KEY) === 'true'; }
+  try { return appStorage.getItem(TUTORIAL_COMPLETED_KEY) === 'true'; }
   catch { return false; }
 }
 
 export function completeTutorial() {
-  try { localStorage.setItem(TUTORIAL_COMPLETED_KEY, 'true'); }
+  try { appStorage.setItem(TUTORIAL_COMPLETED_KEY, 'true'); }
   catch { /* The project preference remains available when storage is blocked. */ }
 }

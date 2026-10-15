@@ -78,16 +78,13 @@
     "deleteFolderTitle": "Eliminar carpeta",
     "deleteProjectTitle": "Eliminar proyecto",
     "deleteFolderConfirm": "¿Estás seguro de que deseas eliminar \"{name}\"? Los proyectos dentro de ella se moverán a la raíz.",
-    "deleteProjectConfirm": "¿Estás seguro de que deseas eliminar \"{name}\"? Esta acción no se puede deshacer.",
-    "terms": "TÉRMINOS",
-    "privacy": "PRIVACIDAD",
-    "support": "SOPORTE"
+    "deleteProjectConfirm": "¿Estás seguro de que deseas eliminar \"{name}\"? Esta acción no se puede deshacer."
   },
   "faq": {
     "title": "Preguntas frecuentes",
     "subtitle": "Respuestas rápidas para empezar a usar FOUX.",
     "manualHint": "Consulta el manual para conocer todas las funciones del sistema.",
-    "manualButton": "Abrir manual de usuario",
+    "manualButton": "Abrir manual del usuario",
     "questions": {
       "q1": {
         "question": "¿Cómo empiezo un proyecto?",

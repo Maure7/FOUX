@@ -80,6 +80,7 @@ function extractComputedStyles(element, iframeWindow) {
     backgroundColor: rgbToHex(cs.backgroundColor),
     borderRadius: parsePx(cs.borderRadius),
     borderWidth: parsePx(cs.borderWidth),
+    borderStyle: cs.borderTopStyle,
     borderColor: rgbToHex(borderColor),
     borderGradient: gradientBorder ? {
       color1: gradientBorder.color1, color2: gradientBorder.color2, angle: gradientBorder.angle,
@@ -149,6 +150,10 @@ export default function useIframeInspector(iframeRef) {
       const valStr = typeof value === 'number' ? `${value}px` : String(value);
       el.style.setProperty('border-radius', valStr, 'important');
       el.style.setProperty('overflow', 'hidden', 'important');
+    } else if (['borderWidth', 'borderStyle', 'borderColor'].includes(cssProperty)) {
+      // Imported stylesheets may declare borders with !important.
+      const property = cssProperty.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+      el.style.setProperty(property, String(value), 'important');
     } else {
       el.style[cssProperty] = value;
     }
@@ -426,7 +431,7 @@ export default function useIframeInspector(iframeRef) {
 
     // Blindagem de renderização para o componente #box-unica no tutorial (Design System: rounded-2xl / 16px)
     try {
-      const boxUnica = doc.getElementById('box-unica');
+      const boxUnica = doc.getElementById('caja-unica') || doc.getElementById('box-unica');
       if (boxUnica) {
         rememberOriginalStyle(boxUnica);
         boxUnica.style.setProperty('overflow', 'hidden', 'important');

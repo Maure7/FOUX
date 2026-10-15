@@ -35,6 +35,20 @@ export async function runStyleRegressions({ evaluate, command, eventually }) {
   await toggle('Escala');
   await toggle('Sombra');
   await eventually(async () => (await hoverCss()).includes('box-shadow'), 'Shadow was not enabled');
+  // Zero values must survive selecting another element and returning.
+  await evaluate(`(() => {
+    const inputs = [...document.querySelectorAll('.shadow-offset-field input'),
+      ...Array.from(document.querySelectorAll('.sidebar-control')).filter(control => /Desfoque|Opacidade/.test(control.textContent)).flatMap(control => [...control.querySelectorAll('input[type="number"]')])];
+    for (const input of inputs) {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, '0');
+      input.dispatchEvent(new Event('input', {bubbles:true}));
+    }
+  })()`);
+  await evaluate(`document.querySelector('.editor-canvas__iframe').contentDocument.getElementById('title:main').click()`);
+  await evaluate(`document.querySelector('.editor-canvas__iframe').contentDocument.getElementById('secao-titulos').click()`);
+  assert.equal(await evaluate(`document.querySelectorAll('.shadow-offset-field input')[1].value`), '0', 'Zero shadow Y changed after reselection');
+  assert.equal(await evaluate(`document.querySelector('input[aria-label="Desfoque (Blur)"][type="number"]').value`), '0');
+  assert.equal(await evaluate(`document.querySelector('input[aria-label="Opacidade da Sombra"][type="number"]').value`), '0');
   await toggle('Escala');
   await eventually(async () => !(await hoverCss()).includes('transform') && (await hoverCss()).includes('box-shadow'), 'Scale removal affected another hover property');
   await command('Input.dispatchMouseEvent', { type: 'mouseMoved', ...point });
@@ -183,6 +197,35 @@ export async function runStyleRegressions({ evaluate, command, eventually }) {
     assert.ok(center[0] >= 127 && center[0] <= 128 && center[1] === 255 && center[2] >= 127 && center[2] <= 128, 'Border gradient leaked through translucent content');
   }
   await evaluate(`document.getElementById('border-regression-test').remove()`);
+  // Use the actual keyboard editing path, including clearing the numeric input.
+  await evaluate(`(() => {
+    const element = document.querySelector('.editor-canvas__iframe').contentDocument.getElementById('secao-titulos');
+    element.style.setProperty('border', '0px none red', 'important');
+    element.click();
+    const input = document.querySelector('input[aria-label="Espessura da Borda"][type="number"]');
+    if (!input) throw new Error('Missing border width input');
+    input.focus(); input.select();
+  })()`);
+  await command('Input.dispatchKeyEvent', {type:'keyDown', key:'Backspace', code:'Backspace', windowsVirtualKeyCode:8});
+  await command('Input.dispatchKeyEvent', {type:'keyUp', key:'Backspace', code:'Backspace', windowsVirtualKeyCode:8});
+  assert.equal(await evaluate(`document.activeElement.value`), '', 'Clearing a number restored the previous value');
+  await command('Input.insertText', {text:'5'});
+  await evaluate(`document.activeElement.blur()`);
+  assert.deepEqual(await evaluate(`(() => {
+    const frame = document.querySelector('.editor-canvas__iframe');
+    const cs = frame.contentWindow.getComputedStyle(frame.contentDocument.getElementById('secao-titulos'));
+    return [cs.borderTopWidth, cs.borderTopStyle];
+  })()`), ['5px', 'solid']);
+  await evaluate(`(() => {
+    const frame = document.querySelector('.editor-canvas__iframe');
+    const element = frame.contentDocument.getElementById('secao-titulos');
+    element.style.setProperty('border-style', 'dashed', 'important'); element.click();
+    const input = document.querySelector('input[aria-label="Espessura da Borda"][type="number"]');
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, '7');
+    input.dispatchEvent(new Event('input', {bubbles:true}));
+  })()`);
+  assert.equal(await evaluate(`document.querySelector('.editor-canvas__iframe').contentDocument.getElementById('secao-titulos').style.borderStyle`), 'dashed');
+  console.log('PASS: direct numeric typing, zero shadow persistence, important border edits and preserved dashed style');
   await evaluate(`document.querySelector('.editor-canvas__iframe').contentDocument.getElementById('title:main').click()`);
   console.log('PASS: rounded gradient pixels, composed backgrounds, persisted gradient, restored solid border and exported CSS');
 }

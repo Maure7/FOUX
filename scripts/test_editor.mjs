@@ -71,7 +71,9 @@ try {
   await command('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: temporaryDir });
   await command('Page.navigate', { url: 'http://127.0.0.1:4175' });
   await eventually(() => evaluate('!!document.querySelector(".dashboard") || !!document.querySelector(".project-card")'), 'App did not load');
-  if (process.env.FOUX_UI_ONLY === '1') {
+  if (process.argv.includes('--i18n')) {
+    await (await import('./test_i18n.mjs')).runI18n({ evaluate, command, eventually });
+  } else if (process.env.FOUX_UI_ONLY === '1') {
     await (await import('./test_ui_refinements.mjs')).runUiRefinements({ evaluate, command, eventually, temporaryDir });
   } else {
   const originalHtml = `<!doctype html><html><head><style>

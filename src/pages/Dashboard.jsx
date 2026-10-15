@@ -661,17 +661,6 @@ export default function Dashboard({
         <span className="footer__copyright">
           © 2026 FANCY AND ORGANIZED UX INC
         </span>
-        <nav className="footer__links">
-          <a className="footer__link" href="#" onClick={(e) => e.preventDefault()}>
-            {t('dashboard.terms')}
-          </a>
-          <a className="footer__link" href="#" onClick={(e) => e.preventDefault()}>
-            {t('dashboard.privacy')}
-          </a>
-          <a className="footer__link" href="#" onClick={(e) => e.preventDefault()}>
-            {t('dashboard.support')}
-          </a>
-        </nav>
       </footer>
 
       {/* Modal Novo Projeto */}

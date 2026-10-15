@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
 import { BookOpen, HelpCircle, X } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function FaqModal({ isOpen, onClose, t }) {
+  const { manualUrl } = useLanguage();
   useEffect(() => {
     if (!isOpen) return undefined;
 
@@ -61,7 +63,7 @@ export default function FaqModal({ isOpen, onClose, t }) {
           </div>
           <a
             className="faq-manual__button"
-            href={`${import.meta.env.BASE_URL}manual-do-usuario-foux.pdf`}
+            href={manualUrl}
             target="_blank"
             rel="noopener noreferrer"
           >
