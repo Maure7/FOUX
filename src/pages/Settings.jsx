@@ -2,14 +2,8 @@ import { useState, useCallback } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { calculateStorageUsage, formatBytes, clearAllStorage } from '../utils/storage';
-import ModalConfirm from '../components/ModalConfirm';
-import '../styles/Dashboard.css';
+import ModalConfirm from '../components/ui/ModalConfirm';
 
-/* ===================================================================
-   Settings — Página dedicada de configurações (tela inteira).
-   Design limpo FOUX, reativo, com suporte a troca de idiomas (i18n)
-   e gerenciamento real de cache/armazenamento local.
-   =================================================================== */
 
 const THEMES = [
   { id: 'dark' },

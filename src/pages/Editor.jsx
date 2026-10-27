@@ -1,307 +1,16 @@
-import { appStorage } from '../utils/appStorage';
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import {
-  ArrowLeft,
-  FilePlus,
-  Download,
-  Maximize,
-  Settings,
-  HelpCircle,
-  Upload,
-  User,
-  Undo2,
-  Redo2,
-  Lightbulb,
-  LightbulbOff,
-} from 'lucide-react';
+import EditorHeader from '../components/editor/EditorHeader';
+import EditorCanvas from '../components/editor/EditorCanvas';
+import useEditorHistory from '../hooks/useEditorHistory';
+import useSidebarResize from '../hooks/useSidebarResize';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import useIframeInspector from '../hooks/useIframeInspector';
-import SidebarEstilos from '../components/SidebarEstilos';
-import TutorialTour from '../components/TutorialTour';
+import SidebarEstilos from '../components/editor/SidebarEstilos';
+import TutorialTour from '../components/editor/TutorialTour';
 import { TOUR_STEPS, hasCompletedTutorial, completeTutorial } from '../utils/tutorialTour';
-import FaqModal from '../components/FaqModal';
+import FaqModal from '../components/ui/FaqModal';
 import { useLanguage } from '../context/LanguageContext';
 import { isTutorialProject as isTutorial, localizeTutorialHtml } from '../utils/tutorialI18n';
-import { downloadCss, generateProjectCss, getCssFileName } from '../utils/exportCss';
-import '../styles/Dashboard.css';
 
-/* ===== HTML SANITIZER — neutralize navigation inside srcDoc ===== */
-function neutralizeHtml(html) {
-  const baseTag = '<base target="_blank">';
-  if (/<head[^>]*>/i.test(html)) {
-    return html.replace(/<head([^>]*)>/i, `<head$1>${baseTag}`);
-  }
-  if (/<html[^>]*>/i.test(html)) {
-    return html.replace(/<html([^>]*)>/i, `<html$1><head>${baseTag}</head>`);
-  }
-  return `<head>${baseTag}</head>${html}`;
-}
-
-/* ===== EDITABLE PROJECT NAME ===== */
-function EditableProjectName({ name, onRename, t }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [draft, setDraft] = useState(name);
-  const [prevName, setPrevName] = useState(name);
-  const inputRef = useRef(null);
-
-  if (name !== prevName) {
-    setPrevName(name);
-    setDraft(name);
-  }
-
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [isEditing]);
-
-  const commit = () => {
-    const trimmed = draft.trim();
-    onRename(trimmed || t('editor.untitledProject'));
-    setIsEditing(false);
-  };
-
-  if (isEditing) {
-    return (
-      <input
-        ref={inputRef}
-        className="editor-header__name-input"
-        type="text"
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') commit();
-          if (e.key === 'Escape') { setDraft(name); setIsEditing(false); }
-        }}
-      />
-    );
-  }
-
-  return (
-    <span
-      className="editor-header__project-name"
-      onClick={() => setIsEditing(true)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter') setIsEditing(true); }}
-      title={t('editor.clickToRename')}
-    >
-      {name}
-    </span>
-  );
-}
-
-/* ===== EDITOR HEADER with Undo/Redo and Tutorial Toggle ===== */
-function EditorHeader({
-  project, onRename, onNavigate, onOpenFaq, onNewFile,
-  onOpenConfig, onOpenProfile, userProfile, t,
-  canUndo, canRedo, onUndo, onRedo,
-  isTutorialProject, showTipsLocal, onToggleTips,
-  onExportCss, onExpand, hasLoaded, isExporting,
-}) {
-  return (
-    <header className="editor-header">
-      <div className="editor-header__left">
-        <button
-          className="editor-header__back"
-          onClick={onNavigate}
-          aria-label={t('editor.backToDashboard')}
-        >
-          <ArrowLeft size={15} />
-          <span>{t('editor.backToDashboard')}</span>
-        </button>
-
-        <span
-          className="editor-header__logo"
-          onClick={onNavigate}
-          role="button"
-          tabIndex={0}
-          aria-label={t('editor.backToDashboard')}
-          onKeyDown={(e) => { if (e.key === 'Enter') onNavigate(); }}
-        >
-          FOUX
-        </span>
-
-        <div className="editor-header__separator" />
-
-        <button className="editor-toolbar-btn" onClick={onNewFile}>
-          <FilePlus size={14} />
-          <span>{t('editor.newFile')}</span>
-        </button>
-        <button
-          className="editor-toolbar-btn"
-          onClick={onExportCss}
-          disabled={!hasLoaded || isExporting}
-          title={t('editor.exportCSS')}
-          aria-label={t('editor.exportCSS')}
-          aria-busy={isExporting}
-        >
-          <Download size={14} />
-          <span>{t('editor.exportCSS')}</span>
-        </button>
-
-        <div className="editor-header__separator" />
-
-        <EditableProjectName name={project.name} onRename={onRename} t={t} />
-
-        {/* ── Undo / Redo ── */}
-        <div className="editor-header__separator" />
-        <button
-          className="editor-header__icon-btn editor-undo-redo-btn"
-          onClick={onUndo}
-          disabled={!canUndo}
-          aria-label={t('editor.undo')}
-          title={t('editor.undo')}
-        >
-          <Undo2 size={16} />
-        </button>
-        <button
-          className="editor-header__icon-btn editor-undo-redo-btn"
-          onClick={onRedo}
-          disabled={!canRedo}
-          aria-label={t('editor.redo')}
-          title={t('editor.redo')}
-        >
-          <Redo2 size={16} />
-        </button>
-
-        {/* ── Botão de Dicas do Tutorial (exclusivo para TUTORIAL, entre Undo/Redo e Configurações) ── */}
-        {isTutorialProject && (
-          <>
-            <div className="editor-header__separator" />
-            <button
-              className={`editor-header__tutorial-btn ${showTipsLocal ? 'is-active' : ''}`}
-              onClick={onToggleTips}
-              title={showTipsLocal ? t('tour.close') : t('tour.restart')}
-              aria-label={showTipsLocal ? t('tour.close') : t('tour.restart')}
-            >
-              {showTipsLocal ? (
-                <Lightbulb size={14} className="editor-header__tutorial-icon" />
-              ) : (
-                <LightbulbOff size={14} className="editor-header__tutorial-icon" />
-              )}
-              <span className="editor-header__tutorial-text">
-                {t('tour.button')}
-              </span>
-            </button>
-          </>
-        )}
-      </div>
-
-      <div className="editor-header__right">
-        <button
-          className="editor-header__icon-btn"
-          onClick={onExpand}
-          disabled={!hasLoaded}
-          aria-label={t('editor.fullscreen')}
-          title={t('editor.fullscreenHint')}
-        >
-          <Maximize size={16} />
-        </button>
-        <button className="editor-header__icon-btn" onClick={onOpenConfig} aria-label={t('settings.title')}>
-          <Settings size={16} />
-        </button>
-        <button className="editor-header__icon-btn" onClick={onOpenFaq} aria-label={t('dashboard.help')} title={t('dashboard.help')}>
-          <HelpCircle size={16} />
-        </button>
-        <div
-          className="header__avatar-wrapper"
-          onClick={onOpenProfile}
-          role="button"
-          tabIndex={0}
-          aria-label={t('profile.title')}
-          title={t('profile.title')}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') onOpenProfile();
-          }}
-        >
-          <div className="header__avatar-placeholder">
-            {userProfile?.avatar ? (
-              <img src={userProfile.avatar} alt="Avatar" className="header__avatar-img" />
-            ) : (
-              <User size={15} />
-            )}
-          </div>
-          <span className="header__avatar-status" />
-        </div>
-      </div>
-    </header>
-  );
-}
-
-/* ===== DROPZONE / CANVAS ===== */
-function EditorCanvas({ initialHtml, onFileSelect, iframeRef, onIframeLoad, canvasRef, isPreview, t }) {
-  const fileInputRef = useRef(null);
-
-  const safeHtml = useMemo(
-    () => (initialHtml ? neutralizeHtml(initialHtml) : null),
-    [initialHtml]
-  );
-
-  const handleClick = () => {
-    if (!initialHtml) fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) onFileSelect(file);
-    e.target.value = '';
-  };
-
-  const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const file = e.dataTransfer.files?.[0];
-    if (file && file.name.endsWith('.html')) onFileSelect(file);
-  };
-
-  return (
-    <div ref={canvasRef} className={`editor-canvas${isPreview ? ' editor-canvas--expanded' : ''}`}>
-      {safeHtml ? (
-        <iframe
-          ref={iframeRef}
-          className="editor-canvas__iframe"
-          srcDoc={safeHtml}
-          title="HTML Preview Canvas"
-          sandbox="allow-same-origin"
-          onLoad={onIframeLoad}
-        />
-      ) : (
-        <div
-          className="editor-dropzone"
-          onClick={handleClick}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleClick(); }}
-        >
-          <div className="editor-dropzone__icon-wrapper">
-            <Upload size={36} />
-          </div>
-          <span className="editor-dropzone__title">
-            {t('editor.dropzoneTitle')}
-          </span>
-          <span className="editor-dropzone__hint">
-            {t('editor.dropzoneHint')}
-          </span>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".html"
-            className="editor-dropzone__input"
-            onChange={handleFileChange}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ===== MAIN EDITOR ===== */
 export default function Editor({
   project,
   onUpdateProject,
@@ -313,7 +22,9 @@ export default function Editor({
 }) {
   const { t, language } = useLanguage();
   const newFileInputRef = useRef(null);
+  const fileReaderRef = useRef(null);
   const iframeRef = useRef(null);
+  const pendingDocumentRef = useRef(null);
   const canvasRef = useRef(null);
   const expandButtonRef = useRef(null);
   const [isPreview, setIsPreview] = useState(false);
@@ -324,6 +35,7 @@ export default function Editor({
     isTutorialProject && globalTutorialTips && project.showTutorialTips !== false && !hasCompletedTutorial() ? 0 : null
   ));
   const [iframeReady, setIframeReady] = useState(false);
+  const [documentVersion, setDocumentVersion] = useState(0);
 
   const [initialHtml, setInitialHtml] = useState(() => isTutorialProject
     ? localizeTutorialHtml(project.htmlContent, language) : project.htmlContent);
@@ -339,108 +51,6 @@ export default function Editor({
     setHasLoaded(!!project.htmlContent);
   }
 
-  /* ===== UNDO / REDO STACK with Persistent Hover Snapshotting ===== */
-  const [pastStates, setPastStates] = useState([]);
-  const [futureStates, setFutureStates] = useState([]);
-  const isUndoRedoRef = useRef(false);
-  const currentDocSnapshotRef = useRef(null);
-  const isScrubbingRef = useRef(false);
-  const scrubTimerRef = useRef(null);
-
-  // Reset undo/redo when project changes
-  const [prevUndoProjectId, setPrevUndoProjectId] = useState(project.id);
-  if (project.id !== prevUndoProjectId) {
-    setPrevUndoProjectId(project.id);
-    setPastStates([]);
-    setFutureStates([]);
-  }
-
-  useEffect(() => {
-    currentDocSnapshotRef.current = null;
-  }, [project.id]);
-
-  const pushUndoState = useCallback(() => {
-    if (isUndoRedoRef.current) return;
-    const iframe = iframeRef.current;
-    if (!iframe?.contentDocument) return;
-    const doc = iframe.contentDocument;
-    if (!doc.body || !doc.body.innerHTML.trim()) return;
-
-    // Se não estiver em um gesto contínuo, salva o snapshot anterior
-    if (!isScrubbingRef.current) {
-      const snapToSave = currentDocSnapshotRef.current || doc.documentElement.outerHTML;
-      setPastStates((prev) => [...prev.slice(-50), snapToSave]);
-      setFutureStates([]);
-      isScrubbingRef.current = true;
-    }
-
-    if (scrubTimerRef.current) clearTimeout(scrubTimerRef.current);
-    scrubTimerRef.current = setTimeout(() => {
-      isScrubbingRef.current = false;
-      if (iframeRef.current?.contentDocument?.documentElement) {
-        currentDocSnapshotRef.current = iframeRef.current.contentDocument.documentElement.outerHTML;
-      }
-    }, 350);
-  }, []);
-
-  const handleUndo = useCallback(() => {
-    if (pastStates.length === 0) return;
-    const iframe = iframeRef.current;
-    if (!iframe?.contentDocument) return;
-
-    const currentSnapshot = iframe.contentDocument.documentElement.outerHTML;
-    const previousSnapshot = pastStates[pastStates.length - 1];
-
-    isUndoRedoRef.current = true;
-    setPastStates((prev) => prev.slice(0, -1));
-    setFutureStates((prev) => [currentSnapshot, ...prev]);
-    currentDocSnapshotRef.current = previousSnapshot;
-
-    // Rewrite iframe
-    setInitialHtml(`<!DOCTYPE html>\n${previousSnapshot}`);
-    setTimeout(() => { isUndoRedoRef.current = false; }, 300);
-  }, [pastStates]);
-
-  const handleRedo = useCallback(() => {
-    if (futureStates.length === 0) return;
-    const iframe = iframeRef.current;
-    if (!iframe?.contentDocument) return;
-
-    const currentSnapshot = iframe.contentDocument.documentElement.outerHTML;
-    const nextSnapshot = futureStates[0];
-
-    isUndoRedoRef.current = true;
-    setFutureStates((prev) => prev.slice(1));
-    setPastStates((prev) => [...prev, currentSnapshot]);
-    currentDocSnapshotRef.current = nextSnapshot;
-
-    // Rewrite iframe
-    setInitialHtml(`<!DOCTYPE html>\n${nextSnapshot}`);
-    setTimeout(() => { isUndoRedoRef.current = false; }, 300);
-  }, [futureStates]);
-
-  // Keyboard shortcuts: Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y
-  useEffect(() => {
-    const handler = (e) => {
-      if (document.querySelector('.tutorial-tour[open]')) return;
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        handleUndo();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
-        e.preventDefault();
-        handleRedo();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
-        e.preventDefault();
-        handleRedo();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [handleUndo, handleRedo]);
-
-  /* ---- Iframe Inspector Hook ---- */
   const {
     selectedElement,
     selectedTagName,
@@ -456,6 +66,21 @@ export default function Editor({
     getHoverRules,
     setPreviewMode,
   } = useIframeInspector(iframeRef);
+
+  const saveTimerRef = useRef(null);
+  const onUpdateProjectRef = useRef(onUpdateProject);
+  useEffect(() => { onUpdateProjectRef.current = onUpdateProject; }, [onUpdateProject]);
+  const restoreDocument = useCallback((html) => {
+    clearTimeout(saveTimerRef.current);
+    pendingDocumentRef.current = html;
+    setIframeReady(false);
+    setInitialHtml(html);
+    setDocumentVersion(version => version + 1);
+    onUpdateProjectRef.current({ htmlContent: html });
+  }, []);
+  const history = useEditorHistory(iframeRef, serializeDocument, restoreDocument);
+  const { undo: handleUndo, redo: handleRedo, recordChange: pushUndoState,
+    documentLoaded, reset: resetHistory, translate: translateHistory } = history;
 
   const handleExpand = useCallback((event) => {
     if (!iframeRef.current?.contentDocument?.body || !hasLoaded) return;
@@ -513,6 +138,7 @@ export default function Editor({
     if (!hasLoaded || !doc?.body || isExporting) return;
     setIsExporting(true);
     try {
+      const { downloadCss, generateProjectCss, getCssFileName } = await import('../utils/exportCss');
       const css = await generateProjectCss(doc);
       downloadCss(css, getCssFileName(project.name));
       showToast(t('editor.exportSuccess'));
@@ -525,19 +151,10 @@ export default function Editor({
 
   const handleIframeLoad = useCallback(() => {
     setupIframeListeners();
+    pendingDocumentRef.current = null;
     setIframeReady(true);
-    if (iframeRef.current?.contentDocument?.documentElement) {
-      currentDocSnapshotRef.current = iframeRef.current.contentDocument.documentElement.outerHTML;
-    }
-  }, [setupIframeListeners]);
-
-  /* ---- Debounced auto-save ---- */
-  const saveTimerRef = useRef(null);
-  const onUpdateProjectRef = useRef(onUpdateProject);
-
-  useEffect(() => {
-    onUpdateProjectRef.current = onUpdateProject;
-  }, [onUpdateProject]);
+    documentLoaded();
+  }, [setupIframeListeners, documentLoaded]);
 
   const tutorialLanguageRef = useRef(null);
   useEffect(() => {
@@ -549,14 +166,13 @@ export default function Editor({
     const html = previousLanguage === null ? initialHtml : localizeTutorialHtml(serializeDocument() || initialHtml, language);
     if (previousLanguage !== null) {
       clearTimeout(saveTimerRef.current);
+      pendingDocumentRef.current = html;
       setIframeReady(false);
       setInitialHtml(html);
-      setPastStates((states) => states.map((state) => localizeTutorialHtml(state, language)));
-      setFutureStates((states) => states.map((state) => localizeTutorialHtml(state, language)));
-      currentDocSnapshotRef.current = html;
+      translateHistory((state) => localizeTutorialHtml(state, language));
     }
     if (html !== project.htmlContent) onUpdateProjectRef.current({ htmlContent: html });
-  }, [isTutorialProject, language, initialHtml, project.htmlContent, serializeDocument]);
+  }, [isTutorialProject, language, initialHtml, project.htmlContent, serializeDocument, translateHistory]);
 
   const debouncedSave = useCallback(() => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -577,6 +193,7 @@ export default function Editor({
   // Cleanup limpo: cancela timers pendentes sem ler do iframe em processo de desmontagem
   useEffect(() => {
     return () => {
+      fileReaderRef.current?.abort();
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;
@@ -585,9 +202,24 @@ export default function Editor({
   }, []);
 
   const handleFileSelect = useCallback((file) => {
+    if (!/\.html?$/i.test(file.name)) {
+      showToast(t('editor.fileReadError'));
+      return;
+    }
+    fileReaderRef.current?.abort();
     const reader = new FileReader();
+    fileReaderRef.current = reader;
     reader.onload = (e) => {
       const content = e.target.result;
+      if (typeof content !== 'string' || !content.trim()) {
+        showToast(t('editor.fileReadError'));
+        return;
+      }
+      clearTimeout(saveTimerRef.current);
+      pendingDocumentRef.current = content;
+      resetHistory();
+      setDocumentVersion(version => version + 1);
+      setIframeReady(false);
       setInitialHtml(content);
       setHasLoaded(true);
       onUpdateProjectRef.current({
@@ -595,8 +227,9 @@ export default function Editor({
         htmlContent: content,
       });
     };
+    reader.onerror = () => showToast(t('editor.fileReadError'));
     reader.readAsText(file);
-  }, []);
+  }, [resetHistory, showToast, t]);
 
   const handleNewFile = useCallback(() => {
     newFileInputRef.current?.click();
@@ -622,7 +255,7 @@ export default function Editor({
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
-    const html = serializeDocument();
+    const html = pendingDocumentRef.current || serializeDocument();
     if (html && hasLoaded) {
       onUpdateProjectRef.current({ htmlContent: html });
     }
@@ -673,58 +306,7 @@ export default function Editor({
     if (tourStep !== null && iframeReady && !selectedElement) selectTourExample();
   }, [tourStep, iframeReady, selectedElement, selectTourExample]);
 
-  /* ===== RESIZABLE SIDEBAR ===== */
-  const [sidebarWidth, setSidebarWidth] = useState(() => {
-    try {
-      const saved = appStorage.getItem('foux_sidebar_width');
-      const parsed = parseInt(saved, 10);
-      if (Number.isFinite(parsed) && parsed >= 300 && parsed <= 700) {
-        return parsed;
-      }
-    } catch { /* Use the default width if storage is unavailable. */ }
-    return 340;
-  });
-  const [isResizingSidebar, setIsResizingSidebar] = useState(false);
-  const isResizingSidebarRef = useRef(false);
-  const startXRef = useRef(0);
-  const startWidthRef = useRef(340);
-
-  const handleResizeStart = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    isResizingSidebarRef.current = true;
-    startXRef.current = e.clientX;
-    startWidthRef.current = sidebarWidth;
-    setIsResizingSidebar(true);
-
-    const handleMouseMove = (moveEvent) => {
-      if (!isResizingSidebarRef.current) return;
-      const delta = startXRef.current - moveEvent.clientX;
-      const proposedWidth = startWidthRef.current + delta;
-      const minW = 300;
-      const maxW = Math.min(600, Math.floor(window.innerWidth * 0.45));
-      const clamped = Math.max(minW, Math.min(maxW, proposedWidth));
-      setSidebarWidth(clamped);
-    };
-
-    const handleMouseUp = () => {
-      if (isResizingSidebarRef.current) {
-        isResizingSidebarRef.current = false;
-        setIsResizingSidebar(false);
-        setSidebarWidth((finalW) => {
-          try {
-            appStorage.setItem('foux_sidebar_width', String(finalW));
-          } catch { /* Keep the current width when storage is unavailable. */ }
-          return finalW;
-        });
-      }
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-  }, [sidebarWidth]);
+  const { width: sidebarWidth, isResizing: isResizingSidebar, onResizeStart: handleResizeStart } = useSidebarResize();
 
   return (
     <div className="editor-shell">
@@ -738,8 +320,8 @@ export default function Editor({
         onOpenProfile={handleOpenProfile}
         userProfile={userProfile}
         t={t}
-        canUndo={pastStates.length > 0}
-        canRedo={futureStates.length > 0}
+        canUndo={history.canUndo}
+        canRedo={history.canRedo}
         onUndo={handleUndo}
         onRedo={handleRedo}
         isTutorialProject={isTutorialProject}
@@ -747,20 +329,21 @@ export default function Editor({
         onToggleTips={toggleLocalTips}
         onExportCss={handleExportCss}
         onExpand={handleExpand}
-        hasLoaded={hasLoaded}
+        hasLoaded={hasLoaded && iframeReady}
         isExporting={isExporting}
       />
 
       <input
         ref={newFileInputRef}
         type="file"
-        accept=".html"
+        accept=".html,.htm"
         style={{ display: 'none' }}
         onChange={handleNewFileChange}
       />
 
       <div className={`editor-layout ${isResizingSidebar ? 'is-resizing' : ''}`}>
         <EditorCanvas
+          documentVersion={documentVersion}
           initialHtml={initialHtml}
           onFileSelect={handleFileSelect}
           iframeRef={iframeRef}
@@ -775,7 +358,7 @@ export default function Editor({
 
         <SidebarEstilos
           tourStep={tourStep === null ? null : TOUR_STEPS[tourStep]}
-          isLocked={!initialHtml}
+          isLocked={!initialHtml || !iframeReady}
           selectedElement={selectedElement}
           selectedTagName={selectedTagName}
           computedStyles={computedStyles}

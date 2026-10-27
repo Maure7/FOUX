@@ -3,7 +3,7 @@
  * FOUX — Fancy and Organized UX
  */
 
-import { appStorage } from './appStorage';
+import { appStorage } from '../services/appStorage.js';
 
 export const FOUX_STORAGE_KEYS = [
   'foux_projects',
@@ -43,6 +43,7 @@ export function calculateStorageUsage() {
     }
   } catch (error) {
     console.warn('Erro ao calcular uso do localStorage:', error);
+    totalBytes = 0;
     // Fallback caso a API Blob falhe: estimativa UTF-16 (2 bytes por caractere)
     try {
       for (let i = 0; i < storage.length; i++) {

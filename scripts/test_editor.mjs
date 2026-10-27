@@ -17,6 +17,7 @@ const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--host
 let browser;
 let socket;
 const pending = new Map();
+const runtimeErrors = [];
 let requestId = 0;
 
 async function eventually(check, message) {
@@ -61,17 +62,22 @@ try {
   await new Promise((resolve, reject) => { socket.onopen = resolve; socket.onerror = reject; });
   socket.onmessage = ({ data }) => {
     const message = JSON.parse(data);
+    if (message.method === 'Runtime.exceptionThrown') runtimeErrors.push(message.params.exceptionDetails);
     if (!message.id) return;
     const request = pending.get(message.id);
+    if (!request) return;
     pending.delete(message.id);
     if (message.error) request.reject(new Error(JSON.stringify(message.error)));
     else request.resolve(message.result);
   };
   await command('Page.enable');
+  await command('Runtime.enable');
   await command('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: temporaryDir });
   await command('Page.navigate', { url: 'http://127.0.0.1:4175' });
   await eventually(() => evaluate('!!document.querySelector(".dashboard") || !!document.querySelector(".project-card")'), 'App did not load');
-  if (process.argv.includes('--i18n')) {
+  if (process.argv.includes('--rc')) {
+    await (await import('./test_release_edges.mjs')).runReleaseEdges({ evaluate, command, eventually });
+  } else if (process.argv.includes('--i18n')) {
     await (await import('./test_i18n.mjs')).runI18n({ evaluate, command, eventually });
   } else if (process.env.FOUX_UI_ONLY === '1') {
     await (await import('./test_ui_refinements.mjs')).runUiRefinements({ evaluate, command, eventually, temporaryDir });
@@ -345,6 +351,7 @@ try {
   assert.equal(await evaluate(`document.querySelector('[aria-label="Expandir página"]').disabled`), true);
   console.log('PASS: empty projects disable export and fullscreen');
   }
+  assert.deepEqual(runtimeErrors, [], 'Uncaught browser exceptions');
 } finally {
   socket?.close();
   browser?.kill();

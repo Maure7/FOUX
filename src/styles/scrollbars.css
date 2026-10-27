@@ -1,0 +1,67 @@
+/* Shared by the application and the isolated canvas document. */
+:root {
+  --foux-scroll-track: #141416;
+  --foux-scroll-thumb: #5b4630;
+  --foux-scroll-hover: #f59e0b;
+}
+
+[data-theme="light"] {
+  --foux-scroll-track: #f1f3f5;
+  --foux-scroll-thumb: #b8c0cc;
+  --foux-scroll-hover: #717b8b;
+}
+
+[data-theme="solarized"] {
+  --foux-scroll-track: #00242e;
+  --foux-scroll-thumb: #35636a;
+  --foux-scroll-hover: #2aa198;
+}
+
+[data-theme="liquid-glass"] {
+  --foux-scroll-track: #18181e;
+  --foux-scroll-thumb: #686078;
+  --foux-scroll-hover: #c4b5fd;
+}
+
+* {
+  scrollbar-color: var(--foux-scroll-thumb) var(--foux-scroll-track) !important;
+  scrollbar-width: thin !important;
+}
+
+/* Chromium's standard properties otherwise override the custom pseudo-elements. */
+@supports selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-color: auto !important;
+    scrollbar-width: auto !important;
+  }
+
+  *::-webkit-scrollbar {
+    width: 10px !important;
+    height: 10px !important;
+    background: var(--foux-scroll-track) !important;
+  }
+
+  *::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-corner {
+    background: var(--foux-scroll-track) !important;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--foux-scroll-thumb) !important;
+    border: 2px solid var(--foux-scroll-track) !important;
+    border-radius: 999px !important;
+    min-height: 28px !important;
+    min-width: 28px !important;
+  }
+
+  *::-webkit-scrollbar-thumb:hover,
+  *::-webkit-scrollbar-thumb:active {
+    background: var(--foux-scroll-hover) !important;
+  }
+
+  *::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+}

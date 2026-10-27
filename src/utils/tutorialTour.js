@@ -1,4 +1,4 @@
-import { appStorage } from './appStorage';
+import { appStorage } from '../services/appStorage';
 export const TUTORIAL_COMPLETED_KEY = 'foux_tutorial_completed';
 
 export const TOUR_STEPS = [

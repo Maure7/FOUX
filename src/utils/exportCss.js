@@ -1,10 +1,10 @@
-const INSPECTOR_STYLE_ID = 'foux-inspector-styles';
-const HOVER_STYLE_ID = 'foux-user-hover-rules';
-const ORIGINAL_STYLE_ATTR = 'data-foux-original-style';
+import { INSPECTOR_STYLE_ID, HOVER_STYLE_ID, ORIGINAL_STYLE_ATTR } from './inspector/constants';
+import { SCROLLBAR_STYLE_ID } from './inspector/constants';
+import { splitOutsideValues, resolveUrls, copyStyle, formatRule } from './css/format';
 
 export function getElementSelector(element) {
   const doc = element.ownerDocument;
-  const escape = doc.defaultView.CSS.escape;
+  const escape = (doc.defaultView || window).CSS.escape;
   const isUnique = (selector) => {
     const matches = doc.querySelectorAll(selector);
     return matches.length === 1 && matches[0] === element;
@@ -20,84 +20,11 @@ export function getElementSelector(element) {
   }
   if (isUnique(tag)) return tag;
   // Only repeated, unnamed elements need a position or a parent selector.
+  if (!element.parentElement) return tag;
   const siblings = [...element.parentElement.children].filter((node) => node.localName === element.localName);
   const local = `${tag}${siblings.length > 1 ? `:nth-of-type(${siblings.indexOf(element) + 1})` : ''}`;
   if (isUnique(local)) return local;
   return `${getElementSelector(element.parentElement)} > ${local}`;
-}
-
-// CSS values can contain semicolons and commas in strings, functions and URLs.
-function splitOutsideValues(text, separator) {
-  const parts = [];
-  let start = 0;
-  let quote = '';
-  let depth = 0;
-  for (let index = 0; index < text.length; index++) {
-    const character = text[index];
-    if (character === '\\') { index++; continue; }
-    if (quote) {
-      if (character === quote) quote = '';
-    } else if (character === '"' || character === "'") quote = character;
-    else if (character === '(' || character === '[' || character === '{') depth++;
-    else if (character === ')' || character === ']' || character === '}') depth--;
-    else if (!depth && character === separator) {
-      parts.push(text.slice(start, index).trim());
-      start = index + 1;
-    }
-  }
-  parts.push(text.slice(start).trim());
-  return parts.filter(Boolean);
-}
-
-function readableValue(value) {
-  // Preserve strings and URLs verbatim; turn opaque browser RGB colors into hex.
-  return value.replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|url\([^)]*\)|rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*(1(?:\.0*)?))?\s*\)|(?<![\w.-])0(?:px|em|rem|vh|vw|vmin|vmax|cm|mm|in|pt|pc)\b/gi,
-    (match, red, green, blue) => {
-      if (red !== undefined) return `#${[red, green, blue].map((channel) => Number(channel).toString(16).padStart(2, '0')).join('')}`;
-      return /^0[a-z]+$/i.test(match) ? '0' : match;
-    });
-}
-
-function resolveUrls(css, baseUrl) {
-  if (!baseUrl) return css;
-  return css.replace(/url\(\s*(?:"([^"]*)"|'([^']*)'|([^)]*))\s*\)|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/gi,
-    (match, doubleQuoted, singleQuoted, unquoted) => {
-      if (doubleQuoted === undefined && singleQuoted === undefined && unquoted === undefined) return match;
-      const url = doubleQuoted ?? singleQuoted ?? unquoted.trim();
-      if (!url || url.startsWith('#') || /^(data:|blob:)/i.test(url)) return match;
-      return `url(${JSON.stringify(new URL(url, baseUrl).href)})`;
-    });
-}
-
-function copyStyle(doc, style, baseUrl) {
-  if (style.parentRule && !style.parentRule.selectorText && !style.parentRule.keyText) {
-    // Descriptors such as @font-face's src are not valid inline properties.
-    return { cssText: resolveUrls(style.cssText, baseUrl), length: style.length };
-  }
-  const copy = doc.createElement('div').style;
-  copy.cssText = resolveUrls(style.cssText, baseUrl);
-  return copy;
-}
-
-function declarations(style, indent) {
-  // cssText retains standard shorthands such as margin, padding and border.
-  return splitOutsideValues(style.cssText, ';').map((declaration) => {
-    const colon = declaration.indexOf(':');
-    const property = declaration.slice(0, colon).trim();
-    const value = declaration.slice(colon + 1).trim();
-    return `${indent}${property}: ${property.startsWith('--') ? value : readableValue(value)};`;
-  }).join('\n');
-}
-
-function formatRule(rule, depth = 0) {
-  const indent = '  '.repeat(depth);
-  if (rule.statement) return `${indent}${rule.statement}`;
-  const header = rule.selector ? splitOutsideValues(rule.selector, ',').join(`,\n${indent}`) : rule.header;
-  const content = [
-    rule.style ? declarations(rule.style, `${indent}  `) : '',
-    ...(rule.children || []).map((child) => formatRule(child, depth + 1)),
-  ].filter(Boolean).join(rule.children ? '\n\n' : '\n');
-  return `${indent}${header} {\n${content}\n${indent}}`;
 }
 
 function allStyleRules(rules) {
@@ -114,7 +41,7 @@ async function readRules(doc, sheet, baseUrl, visited = new Set(), active = true
     // Some public stylesheets allow CORS fetches even when CSSOM access is denied.
     let parser;
     try {
-      const response = await fetch(baseUrl);
+      const response = await fetch(baseUrl, { signal: AbortSignal.timeout(10000) });
       if (!response.ok) throw new Error('Unable to read stylesheet');
       parser = doc.createElement('style');
       parser.media = 'not all';
@@ -185,7 +112,7 @@ function isMoreSpecific(left, right) {
 
 async function embedBlobUrls(css) {
   for (const url of new Set(css.match(/blob:[^\s"'()]+/g) || [])) {
-    const response = await fetch(url);
+    const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
     if (!response.ok) throw new Error('Unable to export a local asset');
     const blob = await response.blob();
     const dataUrl = await new Promise((resolve, reject) => {
@@ -203,7 +130,7 @@ export async function generateProjectCss(doc) {
   const rules = [];
   const hoverRules = [];
   for (const node of doc.querySelectorAll('style, link[rel~="stylesheet"]')) {
-    if (node.id === INSPECTOR_STYLE_ID || node.disabled || node.sheet?.disabled) continue;
+    if (node.id === INSPECTOR_STYLE_ID || node.id === SCROLLBAR_STYLE_ID || node.disabled || node.sheet?.disabled) continue;
     if (!node.sheet) {
       if (node.localName === 'link') rules.push({ externalImport: true, statement: `@import url(${JSON.stringify(node.href)})${node.media ? ` ${node.media}` : ''};` });
       continue;
@@ -287,10 +214,11 @@ export async function generateProjectCss(doc) {
 }
 
 export function getCssFileName(projectName) {
-  const name = [...projectName.trim()]
+  const name = [...String(projectName ?? '').trim()]
     .map((character) => character.charCodeAt(0) < 32 || /[<>:"/\\|?*]/.test(character) ? '_' : character)
     .join('').replace(/[. ]+$/, '');
-  return `${name || 'Projeto'}.css`;
+  const safe = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name) ? `_${name}` : name;
+  return `${safe || 'Projeto'}.css`;
 }
 
 export function downloadCss(css, fileName) {

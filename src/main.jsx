@@ -2,6 +2,9 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { flushSync } from 'react-dom'
 import './index.css'
+import './styles/Dashboard.css'
+import './styles/LiquidGlass.css'
+import './styles/scrollbars.css'
 import App from './App.jsx'
 
 function flushPendingChanges() {

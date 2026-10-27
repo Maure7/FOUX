@@ -1,13 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { ArrowLeft, Camera, Trash2, Folder, FileCode, Save, User } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import '../styles/Dashboard.css';
 
-/* ===================================================================
-   Profile — Tela de Perfil do Usuário em página inteira.
-   Permite edição de foto (avatar), nome, biografia (máx 300 caracteres)
-   e exibe métricas reais calculadas do localStorage.
-   =================================================================== */
 
 export default function Profile({
   onNavigate,

@@ -1,147 +1,33 @@
-import { appStorage } from './utils/appStorage';
-import { useState, useCallback, useEffect, useRef } from 'react';
+import useWorkspaceState from './hooks/useWorkspaceState';
+import { appStorage } from './services/appStorage';
+import { useState, useCallback, lazy, Suspense } from 'react';
 import Dashboard from './pages/Dashboard';
-import Editor from './pages/Editor';
-import Settings from './pages/Settings';
-import Profile from './pages/Profile';
-import { useToast, ToastContainer } from './components/ToastNotification';
+const Editor = lazy(() => import('./pages/Editor'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Profile = lazy(() => import('./pages/Profile'));
+import { useToast, ToastContainer } from './components/ui/ToastNotification';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { TUTORIAL_PROJECT_NAME } from './utils/tutorialTemplate';
 import { getTutorialHtml, isTutorialProject } from './utils/tutorialI18n';
 import { migrateLegacyActivity } from './utils/activityI18n';
-import { TooltipProvider } from './components/Tooltip';
+import { TooltipProvider } from './components/ui/Tooltip';
 import { TUTORIAL_COMPLETED_KEY } from './utils/tutorialTour';
-import './styles/LiquidGlass.css';
 
-/* ===== LocalStorage helpers ===== */
-const STORAGE_KEY = 'foux_projects';
-const ACTIVE_KEY = 'foux_active_project';
-const FOLDERS_KEY = 'foux_folders';
-const ACTIVITIES_KEY = 'foux_activities';
-const THEME_KEY = 'foux_theme';
-const PROFILE_KEY = 'foux_user_profile';
-const GLOBAL_TUTORIAL_TIPS_KEY = 'foux_global_tutorial_tips';
-
-function saveToStorage(key, value) {
-  try {
-    appStorage.setItem(key, JSON.stringify(value));
-  } catch (e) {
-    console.warn('Erro ao salvar no localStorage:', e);
-  }
-}
-
-function saveActiveProjectId(id) {
-  try {
-    if (id) {
-      appStorage.setItem(ACTIVE_KEY, id);
-    } else {
-      appStorage.removeItem(ACTIVE_KEY);
-    }
-  } catch (e) {
-    console.warn('Erro ao salvar projeto ativo:', e);
-  }
-}
-
-function saveTheme(theme) {
-  try {
-    appStorage.setItem(THEME_KEY, theme);
-  } catch (e) {
-    console.warn('Erro ao salvar tema:', e);
-  }
-}
-
-/* ===== Unique ID generators ===== */
 let idCounter = Date.now();
 function nextId(prefix = 'id') {
   return `${prefix}_${++idCounter}_${Math.random().toString(36).slice(2, 7)}`;
 }
 
 function AppContent() {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const [currentScreen, setCurrentScreen] = useState('dashboard');
 
   /* Inicialização segura e preguiçosa de estado (Lazy State Initialization) */
-  const [projects, setProjects] = useState(() => {
-    try {
-      const saved = appStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      console.error("Erro ao carregar projetos:", e);
-      return [];
-    }
-  });
-
-  const [folders, setFolders] = useState(() => {
-    try {
-      const saved = appStorage.getItem(FOLDERS_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      console.error("Erro ao carregar pastas:", e);
-      return [];
-    }
-  });
-
-  const [activities, setActivities] = useState(() => {
-    try {
-      const saved = appStorage.getItem(ACTIVITIES_KEY);
-      if (!saved) return [];
-      const parsed = JSON.parse(saved);
-      if (!Array.isArray(parsed)) return [];
-      return parsed.map(migrateLegacyActivity).filter(Boolean);
-    } catch (e) {
-      console.error("Erro ao carregar atividades:", e);
-      return [];
-    }
-  });
-
-  const [activeProjectId, setActiveProjectId] = useState(() => {
-    try {
-      return appStorage.getItem(ACTIVE_KEY) || null;
-    } catch (e) {
-      console.error("Erro ao carregar projeto ativo:", e);
-      return null;
-    }
-  });
-
-  /* Chave de tema isolada e desacoplada */
-  const [theme, setTheme] = useState(() => {
-    try {
-      return appStorage.getItem(THEME_KEY) || 'dark';
-    } catch (e) {
-      console.error("Erro ao carregar tema:", e);
-      return 'dark';
-    }
-  });
-
-  const [userProfile, setUserProfile] = useState(() => {
-    try {
-      const saved = appStorage.getItem(PROFILE_KEY);
-      return saved
-        ? JSON.parse(saved)
-        : { name: 'Usuário FOUX', avatar: null, bio: '' };
-    } catch (e) {
-      console.error("Erro ao carregar perfil:", e);
-      return { name: 'Usuário FOUX', avatar: null, bio: '' };
-    }
-  });
-
-  /* Configuração global: exibir balões de tutorial */
-  const [globalTutorialTips, setGlobalTutorialTips] = useState(() => {
-    try {
-      const saved = appStorage.getItem(GLOBAL_TUTORIAL_TIPS_KEY);
-      return saved !== null ? JSON.parse(saved) : true;
-    } catch {
-      return true;
-    }
-  });
+  const { projects, setProjects, folders, setFolders, activities, setActivities,
+    activeProjectId, setActiveProjectId, theme, setTheme, userProfile, setUserProfile,
+    globalTutorialTips, setGlobalTutorialTips } = useWorkspaceState();
 
   const { toasts, showToast } = useToast();
-
-  /* Guardas de carregamento para evitar sobrescrever localStorage no mount inicial */
-  const isProjectsLoadedRef = useRef(false);
-  const isFoldersLoadedRef = useRef(false);
-  const isActivitiesLoadedRef = useRef(false);
-  const isProfileLoadedRef = useRef(false);
 
   /* Track the previous screen for Settings / Profile "back" navigation */
   const [previousScreen, setPreviousScreen] = useState('dashboard');
@@ -157,7 +43,7 @@ function AppContent() {
   /* Atualização de perfil do usuário */
   const handleUpdateProfile = useCallback((updates) => {
     setUserProfile((prev) => ({ ...prev, ...updates }));
-  }, []);
+  }, [setUserProfile]);
 
   /* Limpeza suave de dados locais sem crash */
   const handleClearCache = useCallback(() => {
@@ -165,64 +51,11 @@ function AppContent() {
     setFolders([]);
     setActivities([]);
     setActiveProjectId(null);
-  }, []);
-
-  /* Persistência segura no localStorage (evita sobrescrita durante inicialização) */
-  useEffect(() => {
-    if (!isProjectsLoadedRef.current) {
-      isProjectsLoadedRef.current = true;
-      return;
-    }
-    saveToStorage(STORAGE_KEY, projects);
-  }, [projects]);
-
-  useEffect(() => {
-    if (!isFoldersLoadedRef.current) {
-      isFoldersLoadedRef.current = true;
-      return;
-    }
-    saveToStorage(FOLDERS_KEY, folders);
-  }, [folders]);
-
-  useEffect(() => {
-    if (!isActivitiesLoadedRef.current) {
-      isActivitiesLoadedRef.current = true;
-      return;
-    }
-    saveToStorage(ACTIVITIES_KEY, activities);
-  }, [activities]);
-
-  useEffect(() => {
-    saveActiveProjectId(activeProjectId);
-  }, [activeProjectId]);
-
-  useEffect(() => {
-    if (!isProfileLoadedRef.current) {
-      isProfileLoadedRef.current = true;
-      return;
-    }
-    saveToStorage(PROFILE_KEY, userProfile);
-  }, [userProfile]);
-
-  /* Persistir globalTutorialTips no localStorage */
-  useEffect(() => {
-    try {
-      appStorage.setItem(GLOBAL_TUTORIAL_TIPS_KEY, JSON.stringify(globalTutorialTips));
-    } catch (e) {
-      console.warn('Erro ao salvar config tutorial:', e);
-    }
-  }, [globalTutorialTips]);
-
-  /* Apply theme to DOM root — Isolado exclusivamente na chave foux_theme */
-  useEffect(() => {
-    saveTheme(theme);
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
+  }, [setActiveProjectId, setActivities, setFolders, setProjects]);
 
   /* Get the active project object */
   const activeProject = projects.find((p) => p.id === activeProjectId) || null;
 
-  /* ===== Activity ===== */
   const addActivity = useCallback((actionOrConfig, params = {}, type = 'project') => {
     let activityRecord;
     if (actionOrConfig && typeof actionOrConfig === 'object') {
@@ -257,27 +90,24 @@ function AppContent() {
     if (activityRecord) {
       setActivities((prev) => [activityRecord, ...prev]);
     }
-  }, []);
+  }, [setActivities]);
 
   const clearActivities = useCallback(() => {
     setActivities([]);
-  }, []);
+  }, [setActivities]);
 
   const removeActivity = useCallback((activityId) => {
     setActivities((prev) => prev.filter((a) => a.id !== activityId));
-  }, []);
+  }, [setActivities]);
 
-  /* ===== Theme ===== */
   const handleThemeChange = useCallback((newTheme) => {
     setTheme(newTheme);
-  }, []);
+  }, [setTheme]);
 
-  /* ===== Global Tutorial Tips Toggle ===== */
   const handleGlobalTutorialTipsChange = useCallback((enabled) => {
     setGlobalTutorialTips(enabled);
-  }, []);
+  }, [setGlobalTutorialTips]);
 
-  /* ===== Folders ===== */
   const createFolder = useCallback((name, borderColor) => {
     const id = nextId('folder');
     const newFolder = {
@@ -294,67 +124,35 @@ function AppContent() {
       type: 'folder',
     });
     return id;
-  }, [addActivity]);
+  }, [addActivity, setFolders]);
 
   const toggleFolderFavorite = useCallback((folderId) => {
-    setFolders((prev) => {
-      const folder = prev.find((f) => f.id === folderId);
-      if (!folder) return prev;
-      const newFav = !(folder.favorite || folder.isFavorite);
-      setTimeout(() => {
-        addActivity({
-          actionKey: newFav ? 'activity.pin_folder' : 'activity.unpin_folder',
-          params: { name: folder.name },
-          type: 'folder',
-        });
-      }, 0);
-      return prev.map((f) =>
-        f.id === folderId ? { ...f, favorite: newFav, isFavorite: newFav } : f
-      );
-    });
-  }, [addActivity]);
+    const folder = folders.find(item => item.id === folderId);
+    if (!folder) return;
+    const favorite = !(folder.favorite || folder.isFavorite);
+    setFolders(previous => previous.map(item => item.id === folderId ? { ...item, favorite, isFavorite: favorite } : item));
+    addActivity({ actionKey: favorite ? 'activity.pin_folder' : 'activity.unpin_folder', params: { name: folder.name }, type: 'folder' });
+  }, [folders, setFolders, addActivity]);
 
   const renameFolder = useCallback((folderId, newName) => {
-    setFolders((prev) => {
-      const folder = prev.find((f) => f.id === folderId);
-      if (!folder) return prev;
-      const oldName = folder.name;
-      setTimeout(() => {
-        addActivity({
-          actionKey: 'activity.rename_folder',
-          params: { oldName, newName },
-          type: 'folder',
-        });
-      }, 0);
-      return prev.map((f) =>
-        f.id === folderId ? { ...f, name: newName } : f
-      );
-    });
-  }, [addActivity]);
+    const folder = folders.find(item => item.id === folderId);
+    if (!folder || folder.name === newName) return;
+    setFolders(previous => previous.map(item => item.id === folderId ? { ...item, name: newName } : item));
+    addActivity({ actionKey: 'activity.rename_folder', params: { oldName: folder.name, newName }, type: 'folder' });
+  }, [folders, setFolders, addActivity]);
 
   const changeFolderColor = useCallback((folderId, newColor) => {
-    setFolders((prev) => {
-      const folder = prev.find((f) => f.id === folderId);
-      if (!folder) return prev;
-      setTimeout(() => {
-        addActivity({
-          actionKey: 'activity.change_folder_color',
-          params: { name: folder.name },
-          type: 'folder',
-        });
-      }, 0);
-      return prev.map((f) =>
-        f.id === folderId ? { ...f, borderColor: newColor } : f
-      );
-    });
-  }, [addActivity]);
+    const folder = folders.find(item => item.id === folderId);
+    if (!folder || folder.borderColor === newColor) return;
+    setFolders(previous => previous.map(item => item.id === folderId ? { ...item, borderColor: newColor } : item));
+    addActivity({ actionKey: 'activity.change_folder_color', params: { name: folder.name }, type: 'folder' });
+  }, [folders, setFolders, addActivity]);
 
-  /* ===== Projects ===== */
   const createProject = useCallback((name, folderId = null) => {
     const id = nextId('proj');
     const newProject = {
       id,
-      name: name || 'Projeto sem título',
+      name: name || t('editor.untitledProject'),
       folderId,
       favorite: false,
       htmlFileName: null,
@@ -371,9 +169,8 @@ function AppContent() {
       params: { name: newProject.name },
       type: 'project',
     });
-  }, [addActivity]);
+  }, [addActivity, setActiveProjectId, setProjects, t]);
 
-  /* ===== Tutorial Project Creator ===== */
   const createTutorialProject = useCallback(() => {
     const id = nextId('proj');
     const newProject = {
@@ -396,7 +193,7 @@ function AppContent() {
       params: {},
       type: 'project',
     });
-  }, [addActivity, language]);
+  }, [addActivity, language, setActiveProjectId, setProjects]);
 
   const openProject = useCallback((projectId) => {
     setActiveProjectId(projectId);
@@ -409,7 +206,7 @@ function AppContent() {
         type: 'project',
       });
     }
-  }, [projects, addActivity]);
+  }, [setActiveProjectId, projects, addActivity]);
 
   const updateProject = useCallback((projectId, updates) => {
     setProjects((prev) =>
@@ -441,65 +238,30 @@ function AppContent() {
         return { ...p, ...updates, updatedAt: new Date().toISOString() };
       })
     );
-  }, []);
+  }, [setProjects]);
 
   const renameProject = useCallback((projectId, newName) => {
-    setProjects((prev) => {
-      const old = prev.find((p) => p.id === projectId);
-      if (!old) return prev;
-      const oldName = old.name;
-      const updated = prev.map((p) =>
-        p.id === projectId
-          ? { ...p, name: newName, updatedAt: new Date().toISOString() }
-          : p
-      );
-      setTimeout(() => {
-        addActivity({
-          actionKey: 'activity.rename_project',
-          params: { oldName, newName },
-          type: 'project',
-        });
-      }, 0);
-      return updated;
-    });
-  }, [addActivity]);
+    const project = projects.find(item => item.id === projectId);
+    if (!project || project.name === newName) return;
+    setProjects(previous => previous.map(item => item.id === projectId ? { ...item, name: newName, updatedAt: new Date().toISOString() } : item));
+    addActivity({ actionKey: 'activity.rename_project', params: { oldName: project.name, newName }, type: 'project' });
+  }, [projects, setProjects, addActivity]);
 
   const deleteProject = useCallback((projectId) => {
-    setProjects((prev) => {
-      const proj = prev.find((p) => p.id === projectId);
-      if (proj) {
-        setTimeout(() => addActivity({
-          actionKey: 'activity.delete_project',
-          params: { name: proj.name },
-          type: 'project',
-        }), 0);
-      }
-      return prev.filter((p) => p.id !== projectId);
-    });
-    if (activeProjectId === projectId) {
-      setActiveProjectId(null);
-    }
-  }, [activeProjectId, addActivity]);
+    const project = projects.find(item => item.id === projectId);
+    if (!project) return;
+    setProjects(previous => previous.filter(item => item.id !== projectId));
+    if (activeProjectId === projectId) setActiveProjectId(null);
+    addActivity({ actionKey: 'activity.delete_project', params: { name: project.name }, type: 'project' });
+  }, [projects, activeProjectId, setProjects, setActiveProjectId, addActivity]);
 
   const duplicateProject = useCallback((projectId) => {
-    setProjects((prev) => {
-      const original = prev.find((p) => p.id === projectId);
-      if (!original) return prev;
-      const clone = {
-        ...original,
-        id: nextId('proj'),
-        name: `${original.name} (Cópia)`,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setTimeout(() => addActivity({
-        actionKey: 'activity.duplicate_project',
-        params: { name: original.name },
-        type: 'project',
-      }), 0);
-      return [clone, ...prev];
-    });
-  }, [addActivity]);
+    const original = projects.find(item => item.id === projectId);
+    if (!original) return;
+    const clone = { ...original, id: nextId('proj'), name: original.name + ' (' + t('common.copy') + ')', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    setProjects(previous => [clone, ...previous]);
+    addActivity({ actionKey: 'activity.duplicate_project', params: { name: original.name }, type: 'project' });
+  }, [projects, setProjects, addActivity, t]);
 
   const moveProject = useCallback((projectId, targetFolderId) => {
     setProjects((prev) =>
@@ -509,49 +271,30 @@ function AppContent() {
           : p
       )
     );
-  }, []);
+  }, [setProjects]);
 
   const toggleProjectFavorite = useCallback((projectId) => {
-    setProjects((prev) => {
-      const proj = prev.find((p) => p.id === projectId);
-      if (!proj) return prev;
-      const newFav = !(proj.favorite || proj.isFavorite);
-      setTimeout(() => {
-        addActivity({
-          actionKey: newFav ? 'activity.pin_project' : 'activity.unpin_project',
-          params: { name: proj.name },
-          type: 'project',
-        });
-      }, 0);
-      return prev.map((p) =>
-        p.id === projectId ? { ...p, favorite: newFav, isFavorite: newFav } : p
-      );
-    });
-  }, [addActivity]);
+    const project = projects.find(item => item.id === projectId);
+    if (!project) return;
+    const favorite = !(project.favorite || project.isFavorite);
+    setProjects(previous => previous.map(item => item.id === projectId ? { ...item, favorite, isFavorite: favorite } : item));
+    addActivity({ actionKey: favorite ? 'activity.pin_project' : 'activity.unpin_project', params: { name: project.name }, type: 'project' });
+  }, [projects, setProjects, addActivity]);
 
   const deleteFolder = useCallback((folderId) => {
-    setProjects((prev) =>
-      prev.map((p) =>
-        p.folderId === folderId ? { ...p, folderId: null } : p
-      )
-    );
-    setFolders((prev) => {
-      const folder = prev.find((f) => f.id === folderId);
-      if (folder) {
-        setTimeout(() => addActivity({
-          actionKey: 'activity.delete_folder',
-          params: { name: folder.name },
-          type: 'folder',
-        }), 0);
-      }
-      return prev.filter((f) => f.id !== folderId);
-    });
-  }, [addActivity]);
+    const folder = folders.find(item => item.id === folderId);
+    if (!folder) return;
+    setProjects(previous => previous.map(item => item.folderId === folderId ? { ...item, folderId: null } : item));
+    setFolders(previous => previous.filter(item => item.id !== folderId));
+    addActivity({ actionKey: 'activity.delete_folder', params: { name: folder.name }, type: 'folder' });
+  }, [folders, setFolders, setProjects, addActivity]);
 
   return (
     <>
+      <Suspense fallback={<div className="app-loading" role="status">{t('common.loading')}</div>}>
       {currentScreen === 'editor' && activeProject ? (
         <Editor
+          key={activeProject.id}
           key={activeProject.id}
           project={activeProject}
           onUpdateProject={(updates) => updateProject(activeProject.id, updates)}
@@ -621,6 +364,7 @@ function AppContent() {
         />
       )}
 
+      </Suspense>
       {/* Global toast layer */}
       <ToastContainer toasts={toasts} />
     </>

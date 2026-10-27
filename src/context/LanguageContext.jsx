@@ -1,4 +1,4 @@
-import { appStorage } from '../utils/appStorage';
+import { appStorage } from '../services/appStorage';
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import ptTranslations from '../locales/pt.json';
@@ -89,7 +89,8 @@ export function LanguageProvider({ children }) {
     if (!dateInput) return '';
     try {
       const locale = language === 'es' ? 'es-419' : 'pt-BR';
-      return new Date(dateInput).toLocaleDateString(locale, options);
+      const date = new Date(dateInput);
+      return Number.isFinite(date.getTime()) ? date.toLocaleDateString(locale, options) : '';
     } catch {
       return String(dateInput);
     }
@@ -101,7 +102,9 @@ export function LanguageProvider({ children }) {
   const timeAgo = useCallback((date) => {
     if (!date) return '';
     const now = Date.now();
-    const diffMs = now - new Date(date).getTime();
+    const timestamp = new Date(date).getTime();
+    if (!Number.isFinite(timestamp)) return '';
+    const diffMs = Math.max(0, now - timestamp);
     const diffSec = Math.floor(diffMs / 1000);
     const diffMin = Math.floor(diffSec / 60);
     const diffHour = Math.floor(diffMin / 60);

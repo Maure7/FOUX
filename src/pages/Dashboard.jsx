@@ -1,278 +1,30 @@
+import ProjectCard from '../components/dashboard/ProjectCard';
+import FolderCard from '../components/dashboard/FolderCard';
+import NewProjectCard from '../components/dashboard/NewProjectCard';
+import Header from '../components/dashboard/Header';
 import { useState, useCallback, useMemo } from 'react';
 import {
-  Search,
-  Settings,
-  FolderPlus,
-  HelpCircle,
-  Plus,
-  User,
   Inbox,
-  FileCode,
-  Folder,
   ArrowLeft,
-  CheckSquare,
-  MoreHorizontal,
   Grid3X3,
   List,
   FolderOpen,
   SearchX,
-  Pin,
 } from 'lucide-react';
-import ModalNovoProjeto from '../components/ModalNovoProjeto';
-import ModalNovaPasta from '../components/ModalNovaPasta';
-import ModalConfirm from '../components/ModalConfirm';
-import ModalRenomear from '../components/ModalRenomear';
-import ContextMenu from '../components/ContextMenu';
-import FolderContextMenu from '../components/FolderContextMenu';
-import AtividadeRecente from '../components/AtividadeRecente';
-import FaqModal from '../components/FaqModal';
+import ModalNovoProjeto from '../components/dashboard/ModalNovoProjeto';
+import ModalNovaPasta from '../components/dashboard/ModalNovaPasta';
+import ModalConfirm from '../components/ui/ModalConfirm';
+import ModalRenomear from '../components/ui/ModalRenomear';
+import ContextMenu from '../components/dashboard/ContextMenu';
+import FolderContextMenu from '../components/dashboard/FolderContextMenu';
+import AtividadeRecente from '../components/dashboard/AtividadeRecente';
+import FaqModal from '../components/ui/FaqModal';
 import { useLanguage } from '../context/LanguageContext';
-import '../styles/Dashboard.css';
 
-/* ===== HEADER ===== */
-function Header({ searchQuery, onSearchChange, onNewFolder, onOpenConfig, onOpenProfile, onOpenFaq, userProfile, t }) {
-  return (
-    <header className="header" id="header">
-      <span className="header__logo">FOUX</span>
 
-      <div className="header__controls">
-        <div className="header__search">
-          <Search className="header__search-icon" />
-          <input
-            className="header__search-input"
-            type="text"
-            placeholder={t('dashboard.searchPlaceholder')}
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-          />
-        </div>
 
-        <button
-          className="header__icon-btn"
-          aria-label={t('settings.title')}
-          onClick={onOpenConfig}
-        >
-          <Settings size={17} />
-        </button>
 
-        <button
-          className="header__new-folder"
-          aria-label={t('dashboard.newFolder')}
-          onClick={onNewFolder}
-        >
-          <FolderPlus size={15} />
-          <span>{t('dashboard.newFolder')}</span>
-        </button>
 
-        <button
-          className="header__icon-btn"
-          aria-label={t('dashboard.help')}
-          onClick={onOpenFaq}
-        >
-          <HelpCircle size={17} />
-        </button>
-
-        <div
-          className="header__avatar-wrapper"
-          onClick={onOpenProfile}
-          role="button"
-          tabIndex={0}
-          aria-label={t('profile.title')}
-          title={t('profile.title')}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') onOpenProfile();
-          }}
-        >
-          <div className="header__avatar-placeholder">
-            {userProfile?.avatar ? (
-              <img src={userProfile.avatar} alt="Avatar" className="header__avatar-img" />
-            ) : (
-              <User size={16} />
-            )}
-          </div>
-          <span className="header__avatar-status" />
-        </div>
-      </div>
-    </header>
-  );
-}
-
-/* ===== NEW PROJECT CARD ===== */
-function NewProjectCard({ onClick, viewMode, t }) {
-  return (
-    <div
-      className={`project-card project-card--new ${viewMode === 'list' ? 'project-card--list-new' : ''}`}
-      id="card-new-project"
-      onClick={onClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter') onClick(); }}
-    >
-      <div className="new-project__icon">
-        <Plus size={viewMode === 'list' ? 16 : 22} />
-      </div>
-      <span className="new-project__title">{t('dashboard.newProject')}</span>
-      {viewMode !== 'list' && (
-        <span className="new-project__subtitle">{t('dashboard.startFromScratch')}</span>
-      )}
-    </div>
-  );
-}
-
-/* ===== FOLDER CARD ===== */
-function FolderCard({ folder, onClick, viewMode, onContextMenu, fileCount, t, formatDate }) {
-  const isFavorite = !!(folder.favorite || folder.isFavorite);
-  const dateLabel = formatDate(folder.createdAt);
-  const fileCountLabel = fileCount === 1 ? t('dashboard.oneFile') : t('dashboard.filesCount', { count: fileCount });
-
-  if (viewMode === 'list') {
-    return (
-      <div
-        className={`list-item list-item--folder ${isFavorite ? 'list-item--pinned' : ''}`}
-        onClick={() => onClick(folder.id)}
-        onContextMenu={onContextMenu}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter') onClick(folder.id); }}
-      >
-        <Folder size={18} className="list-item__icon" style={{ color: folder.borderColor }} />
-        <div className="list-item__name-wrapper">
-          <span className="list-item__name">{folder.name}</span>
-          {isFavorite && (
-            <span className="list-item__pin-badge" title={t('common.pin') || t('common.favorite')}>
-              <Pin size={12} className="list-item__pin-icon" />
-            </span>
-          )}
-        </div>
-        <span className="list-item__file-count">{fileCountLabel}</span>
-        <span className="list-item__date">{dateLabel}</span>
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={`project-card project-card--folder ${isFavorite ? 'project-card--pinned' : ''}`}
-      style={{ '--folder-border-color': folder.borderColor }}
-      onClick={() => onClick(folder.id)}
-      onContextMenu={onContextMenu}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter') onClick(folder.id); }}
-    >
-      {isFavorite && (
-        <div className="card-pin-badge" title={t('common.pin') || t('common.favorite')}>
-          <Pin size={13} className="card-pin-icon" />
-        </div>
-      )}
-      <div className="project-card__preview project-card__preview--folder">
-        <Folder size={28} style={{ color: folder.borderColor }} />
-      </div>
-      <div className="project-card__info">
-        <span className="project-card__name">{folder.name}</span>
-        <span className="project-card__file-count">{fileCountLabel}</span>
-        <span className="project-card__date">{t('dashboard.createdDate', { date: dateLabel })}</span>
-      </div>
-    </div>
-  );
-}
-
-/* ===== PROJECT CARD ===== */
-function ProjectCard({
-  project,
-  onClick,
-  onContextMenu,
-  viewMode,
-  selectionMode,
-  isSelected,
-  onToggleSelect,
-  t,
-  formatDate,
-}) {
-  const isFavorite = !!(project.favorite || project.isFavorite);
-  const dateLabel = formatDate(project.updatedAt);
-
-  const handleClick = () => {
-    if (selectionMode) {
-      onToggleSelect(project.id);
-    } else {
-      onClick(project.id);
-    }
-  };
-
-  if (viewMode === 'list') {
-    return (
-      <div
-        className={`list-item ${selectionMode ? 'list-item--selectable' : ''} ${isSelected ? 'list-item--selected' : ''} ${isFavorite ? 'list-item--pinned' : ''}`}
-        onClick={handleClick}
-        onContextMenu={selectionMode ? undefined : onContextMenu}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter') handleClick(); }}
-      >
-        {selectionMode && (
-          <div className={`selection-checkbox ${isSelected ? 'selection-checkbox--checked' : ''}`}>
-            {isSelected && <CheckSquare size={16} />}
-          </div>
-        )}
-        <FileCode size={18} className="list-item__icon" />
-        <div className="list-item__name-wrapper">
-          <span className="list-item__name">{project.name}</span>
-          {isFavorite && (
-            <span className="list-item__pin-badge" title={t('common.pin') || t('common.favorite')}>
-              <Pin size={12} className="list-item__pin-icon" />
-            </span>
-          )}
-        </div>
-        <span className="list-item__date">{t('dashboard.editedDate', { date: dateLabel })}</span>
-        {!selectionMode && (
-          <button
-            className="list-item__options"
-            onClick={(e) => { e.stopPropagation(); onContextMenu(e); }}
-            aria-label={t('common.options')}
-          >
-            <MoreHorizontal size={16} />
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={`project-card project-card--saved ${selectionMode ? 'project-card--selectable' : ''} ${isSelected ? 'project-card--selected' : ''} ${isFavorite ? 'project-card--pinned' : ''}`}
-      onClick={handleClick}
-      onContextMenu={selectionMode ? undefined : onContextMenu}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter') handleClick(); }}
-    >
-      {isFavorite && (
-        <div className="card-pin-badge" title={t('common.pin') || t('common.favorite')}>
-          <Pin size={13} className="card-pin-icon" />
-        </div>
-      )}
-      {selectionMode && (
-        <div className={`selection-checkbox selection-checkbox--card ${isSelected ? 'selection-checkbox--checked' : ''}`}>
-          {isSelected && <CheckSquare size={18} />}
-        </div>
-      )}
-      <div className="project-card__preview">
-        {project.htmlContent ? (
-          <FileCode size={24} className="project-card__preview-icon project-card__preview-icon--active" />
-        ) : (
-          <FileCode size={24} className="project-card__preview-icon" />
-        )}
-      </div>
-      <div className="project-card__info">
-        <span className="project-card__name">{project.name}</span>
-        <span className="project-card__date">{t('dashboard.editedDate', { date: dateLabel })}</span>
-      </div>
-    </div>
-  );
-}
-
-/* ===== EMPTY STATES ===== */
 function ProjectsEmptyState({ t }) {
   return (
     <div className="empty-state">
@@ -308,7 +60,6 @@ function SearchEmptyState({ t }) {
   );
 }
 
-/* ===== MAIN DASHBOARD ===== */
 export default function Dashboard({
   projects,
   folders,

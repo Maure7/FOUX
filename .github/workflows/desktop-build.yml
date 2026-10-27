@@ -31,9 +31,7 @@ jobs:
       - run: npm ci
         env:
           ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
-      - run: node --test scripts/test_data_store.cjs
-      - run: npm run test:build
-      - run: npm run test:i18n
+      - run: npm test
       - name: Compile renderer and generate icons once
         run: npm run build:desktop
       - uses: actions/upload-artifact@v7.0.2

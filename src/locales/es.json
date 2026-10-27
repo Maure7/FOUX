@@ -1,5 +1,7 @@
 {
   "common": {
+    "loading": "Cargando…",
+    "copy": "Copia",
     "back": "Volver",
     "save": "Guardar",
     "cancel": "Cancelar",
@@ -113,6 +115,7 @@
     }
   },
   "editor": {
+    "fileReadError": "No se pudo abrir el archivo. Seleccioná un HTML válido que no esté vacío.",
     "backToDashboard": "Volver",
     "newFile": "Nuevo",
     "exportCSS": "Exportar CSS",

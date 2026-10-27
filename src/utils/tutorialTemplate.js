@@ -1,8 +1,4 @@
-/* ===================================================================
-   tutorialTemplate.js — Documento HTML educativo embutido para o FOUX.
-   Usado ao instanciar um projeto do tipo "TUTORIAL" via modal do Dashboard.
-   O conteúdo é semântico, limpo e orientado a exercícios de estilização.
-   =================================================================== */
+
 
 export const TUTORIAL_PROJECT_NAME = 'TUTORIAL';
 

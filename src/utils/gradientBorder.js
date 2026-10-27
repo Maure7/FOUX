@@ -9,7 +9,13 @@ const PAINT_PROPERTIES = [
 
 export function getGradientBorder(element) {
   try {
-    return JSON.parse(element?.getAttribute(STATE_ATTR) || 'null');
+    const state = JSON.parse(element?.getAttribute(STATE_ATTR) || 'null');
+    if (!state || !Number.isFinite(state.angle) || typeof state.color1 !== 'string' || typeof state.color2 !== 'string'
+      || typeof state.background?.image !== 'string' || typeof state.background?.color !== 'string'
+      || !state.original || typeof state.original !== 'object' || Array.isArray(state.original)
+      || !state.edits || typeof state.edits !== 'object' || Array.isArray(state.edits)) return null;
+    if (Object.values(state.original).some(value => !value || typeof value.value !== 'string' || typeof value.priority !== 'string')) return null;
+    return state;
   } catch {
     return null;
   }
@@ -48,6 +54,7 @@ export function cssColorToHex(value) {
 }
 
 export function parseLinearGradient(value) {
+  if (typeof value !== 'string') return null;
   const firstLayer = splitLayers(value)[0];
   if (!firstLayer.startsWith('linear-gradient(')) return null;
   const parts = splitLayers(firstLayer.slice('linear-gradient('.length, -1));
