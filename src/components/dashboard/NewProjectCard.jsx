@@ -1,3 +1,4 @@
+import { activateOnKey } from '../../utils/keyboard';
 import { Plus } from 'lucide-react';
 
 export default function NewProjectCard({ onClick, viewMode, t }) {
@@ -8,7 +9,7 @@ export default function NewProjectCard({ onClick, viewMode, t }) {
       onClick={onClick}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter') onClick(); }}
+      onKeyDown={(event) => activateOnKey(event, () => onClick())}
     >
       <div className="new-project__icon">
         <Plus size={viewMode === 'list' ? 16 : 22} />

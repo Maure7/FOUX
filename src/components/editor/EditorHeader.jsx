@@ -1,3 +1,4 @@
+import { activateOnKey } from '../../utils/keyboard';
 import { ArrowLeft, FilePlus, Download, Maximize, Settings, HelpCircle, User, Undo2, Redo2, Lightbulb, LightbulbOff } from 'lucide-react';
 import EditableProjectName from './EditableProjectName';
 
@@ -26,7 +27,7 @@ export default function EditorHeader({
           role="button"
           tabIndex={0}
           aria-label={t('editor.backToDashboard')}
-          onKeyDown={(e) => { if (e.key === 'Enter') onNavigate(); }}
+          onKeyDown={(event) => activateOnKey(event, () => onNavigate())}
         >
           FOUX
         </span>
@@ -120,9 +121,7 @@ export default function EditorHeader({
           tabIndex={0}
           aria-label={t('profile.title')}
           title={t('profile.title')}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') onOpenProfile();
-          }}
+          onKeyDown={(event) => activateOnKey(event, () => onOpenProfile())}
         >
           <div className="header__avatar-placeholder">
             {userProfile?.avatar ? (

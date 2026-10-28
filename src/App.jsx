@@ -1,4 +1,5 @@
 import useWorkspaceState from './hooks/useWorkspaceState';
+import useInputModality from './hooks/useInputModality';
 import { appStorage } from './services/appStorage';
 import { useState, useCallback, lazy, Suspense } from 'react';
 import Dashboard from './pages/Dashboard';
@@ -19,6 +20,7 @@ function nextId(prefix = 'id') {
 }
 
 function AppContent() {
+  useInputModality();
   const { language, t } = useLanguage();
   const [currentScreen, setCurrentScreen] = useState('dashboard');
 
@@ -27,7 +29,7 @@ function AppContent() {
     activeProjectId, setActiveProjectId, theme, setTheme, userProfile, setUserProfile,
     globalTutorialTips, setGlobalTutorialTips } = useWorkspaceState();
 
-  const { toasts, showToast } = useToast();
+  const { toasts, showToast, dismissToast, pauseToast, resumeToast } = useToast();
 
   /* Track the previous screen for Settings / Profile "back" navigation */
   const [previousScreen, setPreviousScreen] = useState('dashboard');
@@ -295,7 +297,6 @@ function AppContent() {
       {currentScreen === 'editor' && activeProject ? (
         <Editor
           key={activeProject.id}
-          key={activeProject.id}
           project={activeProject}
           onUpdateProject={(updates) => updateProject(activeProject.id, updates)}
           onRenameProject={(newName) => renameProject(activeProject.id, newName)}
@@ -366,7 +367,7 @@ function AppContent() {
 
       </Suspense>
       {/* Global toast layer */}
-      <ToastContainer toasts={toasts} />
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} onPause={pauseToast} onResume={resumeToast} />
     </>
   );
 }

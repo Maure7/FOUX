@@ -1,3 +1,4 @@
+import { activateOnKey } from '../../utils/keyboard';
 import { Folder, Pin } from 'lucide-react';
 
 export default function FolderCard({ folder, onClick, viewMode, onContextMenu, fileCount, t, formatDate }) {
@@ -13,7 +14,7 @@ export default function FolderCard({ folder, onClick, viewMode, onContextMenu, f
         onContextMenu={onContextMenu}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter') onClick(folder.id); }}
+        onKeyDown={(event) => activateOnKey(event, () => onClick(folder.id))}
       >
         <Folder size={18} className="list-item__icon" style={{ color: folder.borderColor }} />
         <div className="list-item__name-wrapper">
@@ -38,7 +39,7 @@ export default function FolderCard({ folder, onClick, viewMode, onContextMenu, f
       onContextMenu={onContextMenu}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter') onClick(folder.id); }}
+      onKeyDown={(event) => activateOnKey(event, () => onClick(folder.id))}
     >
       {isFavorite && (
         <div className="card-pin-badge" title={t('common.pin') || t('common.favorite')}>

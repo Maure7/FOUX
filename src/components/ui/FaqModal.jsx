@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
 import { BookOpen, HelpCircle, X } from 'lucide-react';
+import useModal from '../../hooks/useModal';
 import { useLanguage } from '../../context/LanguageContext';
 
 export default function FaqModal({ isOpen, onClose, t }) {
   const { manualUrl } = useLanguage();
+  const { modalRef, present } = useModal(isOpen);
   useEffect(() => {
     if (!isOpen) return undefined;
 
@@ -11,15 +13,13 @@ export default function FaqModal({ isOpen, onClose, t }) {
       if (event.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', handleKeyDown);
-    document.body.style.overflow = 'hidden';
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!present) return null;
 
   const questions = Array.from({ length: 6 }, (_, index) => ({
     question: t(`faq.questions.q${index + 1}.question`),
@@ -27,10 +27,11 @@ export default function FaqModal({ isOpen, onClose, t }) {
   }));
 
   return (
-    <div className="modal-overlay faq-overlay" onClick={onClose}>
+    <div className="modal-overlay faq-overlay" data-state={isOpen ? 'open' : 'closed'} inert={!isOpen} onClick={onClose}>
       <section
         className="modal-card faq-modal"
         onClick={(event) => event.stopPropagation()}
+        ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="faq-modal-title"

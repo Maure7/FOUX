@@ -13,7 +13,7 @@
   --accent-purple-bg: rgba(168, 85, 247, 0.14);
   --text-primary: #f4f4f6;
   --text-secondary: #a1a1aa;
-  --text-muted: #71717a;
+  --text-muted: #94949f;
   --text-dark: #52525b;
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-light: rgba(255, 255, 255, 0.14);
@@ -28,7 +28,18 @@
   --radius-lg: 20px;
   --radius-xl: 24px;
   --radius-pill: 9999px;
-  --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --duration-press: 120ms;
+  --duration-fast: 160ms;
+  --duration-enter: 220ms;
+  --duration-exit: 140ms;
+  --transition: transform var(--duration-fast) var(--ease-out), opacity var(--duration-fast) ease, background-color var(--duration-fast) ease, border-color var(--duration-fast) ease, color var(--duration-fast) ease;
+  --focus-ring: #fbbf24;
+  --on-accent: #17110a;
+  --danger-text: #fca5a5;
+  --danger-bg: rgba(239, 68, 68, .1);
+  color-scheme: dark;
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --status-green: #10b981;
 }
@@ -47,7 +58,7 @@
   --accent-purple-bg: rgba(168, 85, 247, 0.14);
   --text-primary: #f4f4f6;
   --text-secondary: #a1a1aa;
-  --text-muted: #71717a;
+  --text-muted: #94949f;
   --text-dark: #52525b;
   --border-subtle: rgba(255, 255, 255, 0.06);
   --border-light: rgba(255, 255, 255, 0.10);
@@ -57,6 +68,11 @@
   --radius-lg: 20px;
 }
 [data-theme="light"] {
+  color-scheme: light;
+  --focus-ring: #52525b;
+  --on-accent: #fff;
+  --danger-text: #b91c1c;
+  --danger-bg: #fef2f2;
   --bg-app: #fafafa;
   --bg-card: #ffffff;
   --bg-card-hover: #ffffff;
@@ -71,7 +87,7 @@
   --accent-purple-bg: #f4f4f5;
   --text-primary: #0a0a0a;
   --text-secondary: #52525b;
-  --text-muted: #71717a;
+  --text-muted: #64646f;
   --text-dark: #a1a1aa;
   --border-subtle: #eaeaea;
   --border-light: #e4e4e7;
@@ -94,6 +110,10 @@
   --radius-pill: 9999px;
 }
 [data-theme="solarized"] {
+  --focus-ring: #6cdbcc;
+  --on-accent: #fff;
+  --danger-text: #ffaaa3;
+  --danger-bg: rgba(220, 50, 47, .12);
   --bg-app: #001e26;
   --bg-card: #073642;
   --bg-card-hover: #0a3f4c;
@@ -108,7 +128,7 @@
   --accent-purple-bg: rgba(42, 161, 152, 0.16);
   --text-primary: #fdf6e3;
   --text-secondary: #93a1a1;
-  --text-muted: #657b83;
+  --text-muted: #9aafb5;
   --text-dark: #586e75;
   --border-subtle: rgba(147, 161, 161, 0.09);
   --border-light: rgba(147, 161, 161, 0.16);

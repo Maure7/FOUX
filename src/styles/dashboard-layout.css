@@ -66,7 +66,6 @@
 
 .header__search-input:focus {
   border-color: var(--accent-gold);
-  width: 260px;
 }
 
 .header__search-input:focus~.header__search-icon,
@@ -378,7 +377,6 @@
 }
 .activity-section {
   margin-top: var(--sp-1);
-  transition: margin-bottom 0.28s ease;
 }
 
 .activity-section--collapsed {
@@ -434,9 +432,7 @@
   grid-template-rows: 1fr;
   opacity: 1;
   visibility: visible;
-  transition: grid-template-rows 0.32s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.24s cubic-bezier(0.4, 0, 0.2, 1),
-    visibility 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: grid-template-rows 200ms var(--ease-out), opacity 160ms ease, visibility 200ms;
 }
 
 .activity-body--hidden {
@@ -501,8 +497,6 @@
 .activity-item:hover {
   background: rgba(255, 255, 255, 0.015);
   border-radius: var(--radius-sm);
-  padding-left: var(--sp-1);
-  padding-right: var(--sp-1);
 }
 
 .activity-item__icon-wrapper {
@@ -625,12 +619,16 @@
   border-radius: var(--radius-sm);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   pointer-events: auto;
-  animation: toast-in 0.3s ease forwards;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity var(--duration-enter) var(--ease-out), transform var(--duration-enter) var(--ease-out);
   max-width: 360px;
 }
 
 .toast--exiting {
-  animation: toast-out 0.25s ease forwards;
+  opacity: 0;
+  transform: translateY(8px) scale(.98);
+  transition-duration: var(--duration-exit);
 }
 
 .toast__icon {
@@ -647,27 +645,10 @@
   line-height: 1.4;
 }
 
-@keyframes toast-in {
-  from {
+@starting-style {
+  .toast {
     opacity: 0;
-    transform: translateY(12px) scale(0.96);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes toast-out {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-
-  to {
-    opacity: 0;
-    transform: translateY(8px) scale(0.96);
+    transform: translateY(8px) scale(.98);
   }
 }
 .modal-overlay {
@@ -680,17 +661,14 @@
   align-items: center;
   justify-content: center;
   padding: var(--sp-3);
-  animation: modal-overlay-in 0.25s ease forwards;
+  opacity: 1;
+  transition: opacity var(--duration-enter) var(--ease-out);
 }
 
-@keyframes modal-overlay-in {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
+.modal-overlay[data-state="closed"] {
+  opacity: 0;
+  pointer-events: none;
+  transition-duration: var(--duration-exit);
 }
 
 .modal-card {
@@ -705,18 +683,25 @@
     0 24px 80px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(212, 144, 63, 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  animation: modal-card-in 0.3s ease forwards;
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: opacity var(--duration-enter) var(--ease-out), transform var(--duration-enter) var(--ease-out);
 }
 
-@keyframes modal-card-in {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.96);
-  }
+.modal-overlay[data-state="closed"] .modal-card {
+  opacity: 0;
+  transform: translateY(6px) scale(.98);
+  transition-duration: var(--duration-exit);
+}
 
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
+@starting-style {
+  .modal-overlay { opacity: 0; }
+  .modal-card {
+    opacity: 0;
+    transform: translateY(8px) scale(.97);
   }
 }
 

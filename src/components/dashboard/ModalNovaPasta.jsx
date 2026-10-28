@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { X, Folder } from 'lucide-react';
+import useModal from '../../hooks/useModal';
 import { useLanguage } from '../../context/LanguageContext';
 
 const COLOR_PALETTE = [
@@ -15,6 +16,7 @@ const COLOR_PALETTE = [
 
 export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFolders }) {
   const { t } = useLanguage();
+  const { modalRef, present } = useModal(isOpen);
   const [folderName, setFolderName] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLOR_PALETTE[0]);
 
@@ -38,15 +40,6 @@ export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFold
     return () => window.removeEventListener('keydown', handleKey);
   }, [isOpen, onClose]);
 
-  /* Prevent body scroll */
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [isOpen]);
 
   /* Generate fallback name */
   const fallbackName = useMemo(() => {
@@ -71,13 +64,14 @@ export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFold
     onClose();
   };
 
-  if (!isOpen) return null;
+  if (!present) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" data-state={isOpen ? 'open' : 'closed'} inert={!isOpen} onClick={onClose}>
       <div
         className="modal-card modal-card--folder"
         onClick={(e) => e.stopPropagation()}
+        ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-folder-title"
@@ -120,7 +114,6 @@ export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFold
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleCreate();
             }}
-            autoFocus
           />
         </div>
 
@@ -134,7 +127,8 @@ export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFold
                 className={`color-picker-swatch ${selectedColor === color ? 'color-picker-swatch--active' : ''}`}
                 style={{ '--swatch-color': color }}
                 onClick={() => setSelectedColor(color)}
-                aria-label={`Cor ${color}`}
+                aria-label={t('common.color', { color })}
+                aria-pressed={selectedColor === color}
               />
             ))}
           </div>

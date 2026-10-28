@@ -32,7 +32,7 @@ export function normalizeCollection(value, kind) {
 export function normalizeProfile(value) {
   const profile = isRecord(value) ? value : {};
   return {
-    name: typeof profile.name === 'string' ? profile.name : 'Usuário FOUX',
+    name: typeof profile.name === 'string' ? profile.name : '',
     avatar: typeof profile.avatar === 'string' ? profile.avatar : null,
     bio: typeof profile.bio === 'string' ? profile.bio : '',
   };

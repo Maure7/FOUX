@@ -13,6 +13,8 @@
     "moveTo": "Mover a",
     "close": "Cerrar",
     "options": "Opciones",
+    "color": "Color {color}",
+    "notifications": "Notificaciones",
     "root": "Raíz",
     "favorite": "Marcar como favorita",
     "unfavorite": "Quitar de favoritos",
@@ -118,6 +120,7 @@
     "fileReadError": "No se pudo abrir el archivo. Seleccioná un HTML válido que no esté vacío.",
     "backToDashboard": "Volver",
     "newFile": "Nuevo",
+    "previewTitle": "Vista previa HTML del proyecto",
     "exportCSS": "Exportar CSS",
     "exportSuccess": "Descarga del CSS iniciada.",
     "exportError": "No se pudo exportar el CSS. Inténtalo de nuevo.",
@@ -271,7 +274,8 @@
     "projectsCount": "Proyectos Creados",
     "savedSuccess": "¡Perfil actualizado con éxito!",
     "saveBtn": "Guardar Cambios",
-    "defaultName": "Usuario FOUX"
+    "defaultName": "Usuario FOUX",
+    "invalidImage": "Selecciona un archivo de imagen válido."
   },
   "tour": {
     "progress": "{current} de {total}",

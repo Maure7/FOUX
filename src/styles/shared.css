@@ -17,7 +17,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  transition: all 0.25s ease;
+  transition: var(--transition);
 }
 
 .list-item {
@@ -29,7 +29,7 @@
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition);
 }
 
 .list-item:hover {
@@ -114,18 +114,16 @@
   box-shadow:
     0 12px 40px rgba(0, 0, 0, 0.45),
     0 0 0 1px rgba(255, 255, 255, 0.04);
-  animation: context-menu-in 0.15s ease forwards;
+  transform-origin: var(--menu-origin, top left);
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out);
 }
 
-@keyframes context-menu-in {
-  from {
+@starting-style {
+  .context-menu, .context-menu__submenu {
     opacity: 0;
-    transform: scale(0.95) translateY(-4px);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: scale(.97);
   }
 }
 
@@ -187,11 +185,13 @@
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
   display: none;
   z-index: 2001;
+  transform-origin: var(--submenu-origin, top left);
+  transition: opacity var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out), display var(--duration-fast) allow-discrete;
 }
 
-.context-menu__submenu-wrapper:hover .context-menu__submenu {
+.context-menu__submenu-wrapper:hover .context-menu__submenu,
+.context-menu__submenu-wrapper:focus-within .context-menu__submenu {
   display: block;
-  animation: context-menu-in 0.12s ease forwards;
 }
 .context-menu__submenu--colors {
   display: block !important;
@@ -226,7 +226,7 @@
   outline: none;
   background-clip: padding-box;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
-  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1),
+  transition: transform 0.16s var(--ease-out),
     box-shadow 0.16s ease,
     border-color 0.16s ease;
 }
@@ -595,7 +595,7 @@
   color: #fff;
 }
 .activity-list--expanded {
-  animation: activity-expand 0.3s ease forwards;
+  animation: activity-expand var(--duration-fast) var(--ease-out);
 }
 
 @keyframes activity-expand {
@@ -609,19 +609,8 @@
 }
 .projects-grid,
 .projects-list {
-  animation: view-transition 0.25s ease forwards;
-}
-
-@keyframes view-transition {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  /* Frequent view changes remain immediate and keep the pointer's target. */
+  animation: none;
 }
 @media (max-width: 960px) {
   .main-content {
@@ -710,11 +699,6 @@
     }
   }
 
-  .context-menu {
-    left: var(--sp-2) !important;
-    right: var(--sp-2) !important;
-    min-width: auto;
-  }
 }
 .foux-editor-element-badge {
   display: flex;
@@ -917,12 +901,14 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--sp-1) 0;
+  gap: 16px;
 }
 
 .settings-row__info {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  min-width: 0;
 }
 
 .settings-row__label {
@@ -962,7 +948,7 @@
   font-weight: 500;
   outline: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition);
   width: 100%;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2395989f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -995,7 +981,7 @@
   font-size: 0.78rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition);
 }
 
 .settings-row__btn:hover {
@@ -1026,7 +1012,7 @@
   width: 52px;
   text-align: center;
   outline: none;
-  transition: all 0.2s ease;
+  transition: var(--transition);
   -moz-appearance: textfield;
 }
 
@@ -1090,7 +1076,7 @@
   border-radius: 4px;
   background: var(--bg-input);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition);
   flex-shrink: 0;
   position: relative;
 }
@@ -1127,7 +1113,7 @@
   font-size: 0.72rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition);
   margin-top: 4px;
 }
 
@@ -1175,7 +1161,7 @@
   font-size: 0.72rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition);
 }
 
 .activity-header__clear:hover {
@@ -1188,7 +1174,6 @@
   border-color: #ef4444;
   color: #ef4444;
   background: rgba(239, 68, 68, 0.1);
-  animation: pulse-border 0.8s ease infinite alternate;
 }
 
 @keyframes pulse-border {
@@ -1214,7 +1199,7 @@
   font-size: 0.72rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: var(--transition);
   white-space: nowrap;
   user-select: none;
 }
@@ -1303,7 +1288,7 @@
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition);
   flex-shrink: 0;
   opacity: 0;
   margin-left: 4px;
@@ -1337,7 +1322,7 @@
   font-size: 0.76rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: var(--transition);
   text-align: left;
 }
 
@@ -1663,7 +1648,7 @@
   font-size: 0.78rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition);
 }
 
 .foux-config-row__btn:hover {

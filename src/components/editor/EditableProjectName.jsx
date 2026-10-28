@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { activateOnKey } from '../../utils/keyboard';
 
 export default function EditableProjectName({ name, onRename, t }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -47,7 +48,7 @@ export default function EditableProjectName({ name, onRename, t }) {
       onClick={() => setIsEditing(true)}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter') setIsEditing(true); }}
+      onKeyDown={(event) => activateOnKey(event, () => setIsEditing(true))}
       title={t('editor.clickToRename')}
     >
       {name}

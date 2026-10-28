@@ -15,7 +15,7 @@ export default function Profile({
   const { t } = useLanguage();
   const fileInputRef = useRef(null);
 
-  const [name, setName] = useState(() => userProfile.name || 'Usuário FOUX');
+  const [name, setName] = useState(() => userProfile.name || t('profile.defaultName'));
   const [bio, setBio] = useState(() => userProfile.bio || '');
   const [avatar, setAvatar] = useState(() => userProfile.avatar || null);
 
@@ -28,7 +28,7 @@ export default function Profile({
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      if (showToast) showToast('Selecione um arquivo de imagem válido.');
+      if (showToast) showToast(t('profile.invalidImage'));
       return;
     }
 
@@ -44,7 +44,7 @@ export default function Profile({
     };
     reader.readAsDataURL(file);
     e.target.value = '';
-  }, [onUpdateProfile, showToast]);
+  }, [onUpdateProfile, showToast, t]);
 
   const handleRemovePhoto = useCallback(() => {
     setAvatar(null);

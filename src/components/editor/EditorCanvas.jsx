@@ -1,3 +1,4 @@
+import { activateOnKey } from '../../utils/keyboard';
 import { useRef, useMemo, useEffect } from 'react';
 import { Upload } from 'lucide-react';
 import { syncCanvasScrollbars } from '../../utils/canvasScrollbars';
@@ -63,7 +64,7 @@ export default function EditorCanvas({ initialHtml, documentVersion = 0, onFileS
           ref={iframeRef}
           className="editor-canvas__iframe"
           srcDoc={safeHtml}
-          title="HTML Preview Canvas"
+          title={t('editor.previewTitle')}
           sandbox="allow-same-origin"
           onLoad={onIframeLoad}
         />
@@ -75,7 +76,7 @@ export default function EditorCanvas({ initialHtml, documentVersion = 0, onFileS
           onDrop={handleDrop}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleClick(); }}
+          onKeyDown={(event) => activateOnKey(event, () => handleClick())}
         >
           <div className="editor-dropzone__icon-wrapper">
             <Upload size={36} />

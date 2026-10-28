@@ -21,10 +21,11 @@ import AtividadeRecente from '../components/dashboard/AtividadeRecente';
 import FaqModal from '../components/ui/FaqModal';
 import { useLanguage } from '../context/LanguageContext';
 
-
-
-
-
+function menuPosition(event) {
+  if (event.clientX || event.clientY) return { x: event.clientX, y: event.clientY };
+  const bounds = event.currentTarget.getBoundingClientRect();
+  return { x: bounds.left, y: bounds.bottom + 4 };
+}
 function ProjectsEmptyState({ t }) {
   return (
     <div className="empty-state">
@@ -243,8 +244,7 @@ export default function Dashboard({
     e.stopPropagation();
     setFolderContextMenu(null);
     setContextMenu({
-      x: e.clientX,
-      y: e.clientY,
+      ...menuPosition(e),
       project,
     });
   }, []);
@@ -257,8 +257,7 @@ export default function Dashboard({
     e.stopPropagation();
     setContextMenu(null);
     setFolderContextMenu({
-      x: e.clientX,
-      y: e.clientY,
+      ...menuPosition(e),
       folder,
     });
   }, []);
@@ -311,6 +310,7 @@ export default function Dashboard({
               <button
                 className={`view-toggle__btn ${viewMode === 'grid' ? 'view-toggle__btn--active' : 'view-toggle__btn--inactive'}`}
                 onClick={() => setViewMode('grid')}
+                aria-pressed={viewMode === 'grid'}
               >
                 <Grid3X3 size={13} />
                 {t('dashboard.viewGrid')}
@@ -318,6 +318,7 @@ export default function Dashboard({
               <button
                 className={`view-toggle__btn ${viewMode === 'list' ? 'view-toggle__btn--active' : 'view-toggle__btn--inactive'}`}
                 onClick={() => setViewMode('list')}
+                aria-pressed={viewMode === 'list'}
               >
                 <List size={13} />
                 {t('dashboard.viewList')}

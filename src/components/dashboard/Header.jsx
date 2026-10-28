@@ -1,3 +1,4 @@
+import { activateOnKey } from '../../utils/keyboard';
 import { Search, Settings, FolderPlus, HelpCircle, User } from 'lucide-react';
 
 export default function Header({ searchQuery, onSearchChange, onNewFolder, onOpenConfig, onOpenProfile, onOpenFaq, userProfile, t }) {
@@ -12,6 +13,7 @@ export default function Header({ searchQuery, onSearchChange, onNewFolder, onOpe
             className="header__search-input"
             type="text"
             placeholder={t('dashboard.searchPlaceholder')}
+            aria-label={t('dashboard.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
           />
@@ -49,9 +51,7 @@ export default function Header({ searchQuery, onSearchChange, onNewFolder, onOpe
           tabIndex={0}
           aria-label={t('profile.title')}
           title={t('profile.title')}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') onOpenProfile();
-          }}
+          onKeyDown={(event) => activateOnKey(event, () => onOpenProfile())}
         >
           <div className="header__avatar-placeholder">
             {userProfile?.avatar ? (

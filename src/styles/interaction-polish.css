@@ -1,0 +1,390 @@
+/* Shared interaction contract. Theme palettes and the existing layout stay in
+   their own files; these states must behave the same in every palette. */
+:root {
+  --ease-drawer: cubic-bezier(.32, .72, 0, 1);
+  --floating-solid: #17171d;
+  --floating-surface: rgba(23, 23, 29, .92);
+  --floating-edge: rgba(255, 255, 255, .18);
+  --floating-highlight: rgba(255, 255, 255, .075);
+  --floating-shadow: rgba(0, 0, 0, .48);
+}
+[data-theme="light"] {
+  --floating-solid: #fff;
+  --floating-surface: rgba(255, 255, 255, .92);
+  --floating-edge: rgba(91, 96, 111, .24);
+  --floating-highlight: rgba(255, 255, 255, .7);
+  --floating-shadow: rgba(25, 31, 46, .22);
+}
+[data-theme="solarized"] {
+  --floating-solid: #002b36;
+  --floating-surface: rgba(0, 43, 54, .94);
+  --floating-edge: rgba(147, 190, 190, .3);
+  --floating-highlight: rgba(170, 235, 230, .055);
+  --floating-shadow: rgba(0, 13, 20, .55);
+}
+[data-theme="liquid-glass"] {
+  --floating-solid: #24232e;
+  --floating-surface: rgba(31, 30, 40, .86);
+  --floating-edge: rgba(232, 225, 255, .26);
+  --floating-highlight: rgba(232, 225, 255, .09);
+  --floating-shadow: rgba(0, 0, 0, .48);
+}
+
+/* Static material, animated geometry: the blur and shadows never tween. */
+:root :is(.modal-card, .context-menu, .context-menu__submenu, .toast, .tutorial-tour__card, .foux-tooltip) {
+  background: linear-gradient(155deg, var(--floating-highlight), transparent 48%), var(--floating-surface) !important;
+  border: 1px solid var(--floating-edge) !important;
+  box-shadow: 0 24px 72px var(--floating-shadow), 0 6px 18px color-mix(in srgb, var(--floating-shadow) 40%, transparent), inset 0 1px 0 var(--floating-highlight) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.15);
+  backdrop-filter: blur(20px) saturate(1.15);
+}
+:root .foux-tooltip {
+  color: var(--text-primary);
+  box-shadow: 0 6px 20px var(--floating-shadow), inset 0 1px 0 var(--floating-highlight) !important;
+}
+:root .modal-overlay {
+  background: rgba(6, 7, 12, .52) !important;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px) !important;
+}
+[data-theme="light"] .modal-overlay { background: rgba(25, 31, 46, .32) !important; }
+@supports not (backdrop-filter: blur(1px)) {
+  :root :is(.modal-card, .context-menu, .context-menu__submenu, .toast, .tutorial-tour__card, .foux-tooltip) {
+    background: var(--floating-solid) !important;
+  }
+}
+:root .modal-card {
+  transform-origin: center;
+  transition: opacity var(--duration-enter) var(--ease-out), transform 260ms var(--ease-drawer);
+}
+:root .modal-overlay[data-state="closed"] .modal-card {
+  opacity: 0;
+  transform: translateY(8px) scale(.97);
+  transition-duration: var(--duration-exit);
+}
+:root .tutorial-tour__card {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition: opacity var(--duration-enter) var(--ease-out), transform var(--duration-enter) var(--ease-drawer);
+}
+@starting-style {
+  :root .modal-card { opacity: 0; transform: translateY(12px) scale(.96); }
+  :root .tutorial-tour__card { opacity: 0; transform: translateY(8px) scale(.97); }
+}
+
+:root :is(button, a[href], input, select, textarea, summary, [role="button"], [role="slider"]):focus-visible {
+  outline: 2px solid var(--focus-ring) !important;
+  outline-offset: 3px;
+}
+:root :is(input, select, textarea):focus-visible {
+  box-shadow: none !important;
+  outline-offset: 2px;
+}
+
+button, [role="button"], summary {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+button > svg, .context-menu__item > svg { flex-shrink: 0; }
+button:disabled { cursor: not-allowed; }
+
+/* Repeated toolbar actions and static panels should not chase the pointer. */
+:root :is(button, [role="button"], .profile-card, .profile-stat-card, .settings-section, .activity-section, .activity-item):hover {
+  transform: none !important;
+}
+
+/* A clear, quiet edge separates the editor controls from the live document. */
+:root .editor-header {
+  position: relative;
+  z-index: 2;
+  border-bottom-color: var(--editor-divider) !important;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--text-primary) 8%, transparent) !important;
+}
+:root .editor-header::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  content: "";
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--editor-divider) 16%, var(--editor-divider) 84%, transparent);
+  opacity: .9;
+}
+[data-theme="light"] .editor-header { --editor-divider: #a1a1aa; }
+[data-theme="dark"] .editor-header { --editor-divider: rgba(255, 255, 255, .24); }
+[data-theme="solarized"] .editor-header { --editor-divider: rgba(108, 219, 204, .62); }
+[data-theme="liquid-glass"] .editor-header { --editor-divider: rgba(196, 181, 253, .55); }
+
+/* Short, staged entrance gives the editor a sense of depth without delaying use. */
+@keyframes editor-header-enter {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes editor-sidebar-enter {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes editor-canvas-enter {
+  from { opacity: 0; transform: translateY(6px) scale(.995); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.editor-shell > .editor-header {
+  animation: editor-header-enter 220ms var(--ease-out) backwards;
+}
+.editor-layout > .editor-sidebar {
+  animation: editor-sidebar-enter 240ms var(--ease-out) 35ms backwards;
+}
+.editor-layout > .editor-canvas {
+  animation: editor-canvas-enter 280ms var(--ease-out) 55ms backwards;
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .editor-header__right > .editor-header__icon-btn svg {
+    transition: transform 140ms var(--ease-out);
+  }
+  .editor-header__right > .editor-header__icon-btn:hover svg {
+    transform: translateY(-1px) rotate(-3deg);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  :root .project-card:hover { transform: translateY(-2px) scale(1.005) !important; }
+  :root :is(.modal-action-btn, .modal-create-btn, .modal-cancel-btn, .header__new-folder):hover {
+    transform: translateY(-1px) !important;
+  }
+  :root .project-card:has(button:active) { transform: none !important; }
+  :is(.project-card__preview-icon, .new-project__icon svg, .modal-action-btn__icon-wrapper > svg, .modal-close > svg, .toast__close > svg) {
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+  .project-card:hover .project-card__preview-icon { transform: translateY(-2px) scale(1.06); }
+  .project-card--new:hover .new-project__icon svg { transform: rotate(6deg) scale(1.05); }
+  .modal-action-btn:hover .modal-action-btn__icon-wrapper > svg { transform: translateY(-1px) scale(1.06); }
+  :is(.modal-close, .toast__close):hover > svg { transform: rotate(90deg); }
+}
+
+:root[data-input="pointer"] :is(button:not(:disabled), [role="button"]:not(:has(button:active))):active {
+  transform: scale(.97) !important;
+  transition-duration: var(--duration-press) !important;
+}
+
+/* Keep secondary actions discoverable when navigating without a mouse. */
+.list-item:focus-within .list-item__options,
+.list-item__options:focus-visible,
+.activity-item:focus-within .activity-item__delete { opacity: 1; }
+
+@media (hover: none), (pointer: coarse) {
+  .list-item__options, .activity-item__delete { opacity: 1; }
+}
+
+.settings-switch input, .sidebar-gradient-toggle input {
+  display: block;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  clip-path: inset(50%);
+}
+
+.settings-switch { flex-shrink: 0; }
+.sidebar-section__chevron {
+  display: flex;
+  align-items: center;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.sidebar-section--closed .sidebar-section__chevron { transform: rotate(-90deg); }
+/* The grid is the accordion's only layout animation; controls retain their state. */
+.sidebar-section__region {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition: grid-template-rows var(--duration-enter) var(--ease-drawer), opacity var(--duration-fast) ease;
+}
+.sidebar-section--closed .sidebar-section__region { grid-template-rows: 0fr; opacity: 0; }
+.sidebar-section__clip { min-height: 0; overflow: hidden; }
+
+/* Keep native details semantics; animate intrinsic height only where supported. */
+@supports (interpolate-size: allow-keywords) {
+  .faq-item { interpolate-size: allow-keywords; }
+  .faq-item::details-content {
+    block-size: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: block-size var(--duration-enter) var(--ease-drawer), opacity var(--duration-fast) ease, content-visibility var(--duration-enter) allow-discrete;
+  }
+  .faq-item[open]::details-content { block-size: auto; opacity: 1; }
+}
+:root .faq-item summary::after {
+  content: "";
+  width: 10px;
+  height: 1.5px;
+  background: currentColor;
+}
+.faq-item summary::before {
+  position: absolute;
+  top: 50%;
+  right: 20.25px;
+  width: 1.5px;
+  height: 10px;
+  content: "";
+  background: var(--text-muted);
+  transform: translateY(-50%);
+  transition: transform var(--duration-fast) var(--ease-out), opacity var(--duration-fast) ease;
+}
+.faq-item[open] summary::before { transform: translateY(-50%) rotate(90deg); opacity: 0; }
+.sidebar-gradient-toggle { position: relative; }
+.settings-switch input:focus-visible + .settings-switch__slider,
+.sidebar-gradient-toggle input:focus-visible + .sidebar-gradient-toggle__slider {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+:root .sidebar-toggle-checkbox:checked {
+  background: var(--control-accent, var(--accent-gold)) !important;
+  border-color: var(--control-accent, var(--accent-gold)) !important;
+}
+.sidebar-toggle-checkbox:checked::after { color: var(--on-control-accent, var(--on-accent)); }
+[data-theme="light"] .editor-sidebar {
+  --focus-ring: #e4e4e7;
+  --control-accent: #fff;
+  --on-control-accent: #18181b;
+}
+
+:root :is(.modal-confirm__delete-btn, .settings-row__btn--danger, .context-menu__item--danger, .activity-header__clear--confirm) {
+  color: var(--danger-text) !important;
+  border-color: color-mix(in srgb, var(--danger-text) 45%, transparent) !important;
+  background-color: var(--danger-bg) !important;
+}
+:root :is(.modal-confirm__delete-btn, .settings-row__btn--danger, .context-menu__item--danger):hover {
+  color: var(--danger-text) !important;
+  background-color: color-mix(in srgb, var(--danger-text) 16%, var(--bg-card)) !important;
+}
+:root :is(.activity-header__clear:hover, .activity-item__delete:hover, .profile-avatar__remove-btn, .modal-confirm__icon-wrapper, .profile-bio-counter--limit) {
+  color: var(--danger-text) !important;
+}
+:root .modal-create-btn:hover { color: var(--on-accent) !important; }
+[data-theme="liquid-glass"] .modal-create-btn:hover { color: var(--text-primary) !important; }
+
+/* Contain translated labels and real project names without shifting actions. */
+.section-header { gap: 16px; }
+.section-header__left, .profile-hero-info, .context-menu__item span,
+.modal-action-btn__text, .list-item__name-wrapper { min-width: 0; }
+.section-header__left { flex: 1; }
+.section-header__title, .folder-breadcrumb__current {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.view-toggle { flex-shrink: 0; }
+.profile-hero-name, .modal-confirm__message, .modal-folder-preview__name,
+.toast__message, .settings-row__hint, .activity-item__text { overflow-wrap: anywhere; }
+.settings-row__hint { line-height: 1.5; }
+.settings-row__btn { flex-shrink: 0; }
+.profile-bio-counter, .profile-stat-card__value, .sidebar-number-input,
+.sidebar-inline-number, .list-item__date { font-variant-numeric: tabular-nums; }
+
+.project-card, .project-card__info { min-width: 0; }
+.project-card--folder { padding: 0; overflow: hidden; }
+:root .project-card--selected { border-width: 1px !important; }
+.project-card__preview { min-height: 104px; }
+.project-card__info { min-height: 80px; justify-content: center; }
+
+.context-menu { max-width: min(280px, calc(100vw - 16px)); }
+.context-menu__item { min-height: 36px; }
+.context-menu__item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.context-menu__submenu { max-height: min(400px, calc(100dvh - 24px)); overflow-y: auto; max-width: min(260px, calc(100vw - 24px)); }
+.context-menu__submenu[data-side="left"] { left: auto; right: 100%; --submenu-origin: top right; }
+.context-menu__submenu[data-side="right"] { left: 100%; right: auto; }
+.context-menu__submenu[data-side="stacked"] { position: static; min-width: 0; max-width: 100%; width: 100%; margin: 4px 0; }
+.context-menu__submenu-wrapper:has([data-side="left"]) .context-menu__chevron { transform: rotate(180deg); }
+.context-menu__submenu-wrapper:has([data-side="stacked"]) .context-menu__chevron { transform: rotate(90deg); }
+
+@media (max-height: 380px) {
+  .context-menu { overflow-y: auto; }
+  .context-menu__submenu { position: static; min-width: 0; margin: 4px 0; }
+}
+
+.toast-container { max-width: calc(100vw - 32px); max-height: calc(100dvh - 32px); overflow-y: auto; padding: 4px; }
+.toast { max-width: min(380px, calc(100vw - 40px)); flex-shrink: 0; }
+.toast__close {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  margin: -4px -8px -4px 2px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.toast__close:hover { color: var(--text-primary); background: var(--bg-card-hover); }
+.modal-title { line-height: 1.3; }
+.modal-action-btn__title { line-height: 1.4; }
+.modal-footer { gap: 12px; flex-wrap: wrap; }
+
+@media (max-width: 640px) {
+  .header { height: auto; min-height: 60px; padding: 12px 16px; gap: 12px; flex-wrap: wrap; }
+  .header__controls { min-width: 0; flex: 1; justify-content: flex-end; flex-wrap: wrap; }
+  .header__search { flex: 1; min-width: 120px; max-width: 260px; }
+  .header__search-input { width: 100%; min-width: 0; }
+  .main-content { padding: 24px 16px; }
+  .section-header { flex-wrap: wrap; }
+  .section-header__title { font-size: 1.25rem; }
+  .settings-row { align-items: flex-start; }
+  .settings-row__info { flex: 1; }
+  .profile-card--hero { gap: 16px; }
+  .modal-overlay { padding: 12px; }
+  .modal-card { padding: 24px; max-height: calc(100dvh - 24px); }
+  .activity-header { gap: 12px; flex-wrap: wrap; }
+  .activity-header__right { flex-wrap: wrap; gap: 8px; }
+  .context-menu .context-menu__submenu {
+    position: static;
+    left: auto;
+    right: auto;
+    top: auto !important;
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+    margin: 4px 0;
+  }
+  .editor-header { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); height: auto; min-height: 52px; padding: 8px 12px; gap: 8px 6px; }
+  .editor-header__left { display: contents; }
+  .editor-header__back { grid-column: 1; grid-row: 1; padding: 6px; justify-content: center; }
+  .editor-header__logo { grid-column: 2 / span 2; grid-row: 1; margin-left: 0; justify-self: center; }
+  .editor-header .editor-toolbar-btn, .editor-undo-redo-btn, .editor-header__tutorial-btn { grid-row: 1; padding: 6px; justify-content: center; }
+  .editor-header__right { grid-row: 2; grid-column: 5 / -1; margin-left: 0; justify-self: end; }
+  .editor-header__separator, .editor-header__tutorial-text { display: none; }
+  .editor-header__project-name, .editor-header__name-input { grid-row: 2; grid-column: 1 / span 4; max-width: 100%; width: 100%; }
+  .editor-layout { min-height: 0; }
+  .editor-sidebar { width: 100% !important; min-width: 0; max-width: 100%; max-height: 50%; }
+  .sidebar-resize-handle { display: none; }
+  .editor-canvas:has(.editor-dropzone) { padding: 16px; }
+  .editor-dropzone { min-height: 0; padding: 20px; gap: 12px; }
+}
+
+/* Keyboard actions are immediate. Reduced motion retains gentle color/fade
+   feedback and eliminates movement, including animated switch travel. */
+:root[data-input="keyboard"] *, :root[data-input="keyboard"] *::before, :root[data-input="keyboard"] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition-property: opacity, color, background-color, border-color !important;
+    transition-duration: 120ms !important;
+    scroll-behavior: auto !important;
+  }
+  :root :is(button, [role="button"], .project-card, .list-item):is(:hover, :active),
+  :root .modal-card, :root .modal-overlay[data-state="closed"] .modal-card,
+  :root .tutorial-tour__card,
+  .context-menu, .context-menu__submenu, .toast, .toast--exiting { transform: none !important; }
+  @starting-style {
+    :root .modal-card, :root .tutorial-tour__card, .context-menu, .context-menu__submenu, .toast { transform: none; }
+  }
+}

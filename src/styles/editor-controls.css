@@ -24,7 +24,7 @@
   font-weight: 600;
   letter-spacing: 0.2px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition);
   white-space: nowrap;
 }
 

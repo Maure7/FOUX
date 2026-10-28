@@ -1,3 +1,4 @@
+import { activateOnKey } from '../../utils/keyboard';
 import { CheckSquare, FileCode, Pin, MoreHorizontal } from 'lucide-react';
 
 export default function ProjectCard({
@@ -30,7 +31,7 @@ export default function ProjectCard({
         onContextMenu={selectionMode ? undefined : onContextMenu}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter') handleClick(); }}
+        onKeyDown={(event) => activateOnKey(event, () => handleClick())}
       >
         {selectionMode && (
           <div className={`selection-checkbox ${isSelected ? 'selection-checkbox--checked' : ''}`}>
@@ -67,7 +68,7 @@ export default function ProjectCard({
       onContextMenu={selectionMode ? undefined : onContextMenu}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter') handleClick(); }}
+      onKeyDown={(event) => activateOnKey(event, () => handleClick())}
     >
       {isFavorite && (
         <div className="card-pin-badge" title={t('common.pin') || t('common.favorite')}>

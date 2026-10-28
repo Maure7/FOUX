@@ -68,7 +68,7 @@
   border-radius: 9999px !important;
   color: #0a0a0a !important;
   font-size: 0.88rem !important;
-  transition: all 0.2s ease !important;
+  transition: var(--transition) !important;
 }
 
 [data-theme="light"] .header__search-input::placeholder {
@@ -100,7 +100,7 @@
   border-radius: 9999px !important;
   color: #0a0a0a !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition: var(--transition) !important;
 }
 
 [data-theme="light"] .header__icon-btn:hover,
@@ -136,7 +136,7 @@
   color: #ffffff !important;
   font-weight: 600 !important;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition: var(--transition) !important;
 }
 
 [data-theme="light"] .btn-primary:hover,
@@ -156,7 +156,7 @@
   border-radius: 9999px !important;
   color: #0a0a0a !important;
   font-weight: 500 !important;
-  transition: all 0.2s ease !important;
+  transition: var(--transition) !important;
 }
 
 [data-theme="light"] .btn-secondary:hover,
@@ -174,13 +174,13 @@
     0 1px 3px rgba(0, 0, 0, 0.03),
     0 6px 16px rgba(0, 0, 0, 0.02) !important;
   overflow: hidden !important;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease !important;
+  transition: var(--transition) !important;
 }
 
 [data-theme="light"] .project-card:hover {
   background: #ffffff !important;
   border-color: #0a0a0a !important;
-  transform: translateY(-3px) !important;
+  transform: translateY(-1px) !important;
   box-shadow:
     0 10px 25px rgba(0, 0, 0, 0.06),
     0 2px 6px rgba(0, 0, 0, 0.03) !important;
@@ -216,7 +216,7 @@
 [data-theme="light"] .project-card--folder:hover {
   background: #ffffff !important;
   border-color: #0a0a0a !important;
-  transform: translateY(-3px) !important;
+  transform: translateY(-1px) !important;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06) !important;
 }
 
@@ -238,13 +238,13 @@
   border: 2px dashed #d4d4d8 !important;
   border-radius: 20px !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition: var(--transition) !important;
 }
 
 [data-theme="light"] .project-card--new:hover {
   background: #fafafa !important;
   border-color: #0a0a0a !important;
-  transform: translateY(-3px) !important;
+  transform: translateY(-1px) !important;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05) !important;
 }
 
@@ -253,7 +253,7 @@
   color: #0a0a0a !important;
   background: #f4f4f5 !important;
   border-radius: 9999px !important;
-  transition: all 0.2s ease !important;
+  transition: var(--transition) !important;
 }
 
 [data-theme="light"] .project-card--new:hover .new-project__icon {
@@ -290,7 +290,7 @@
   border: 1px solid #eaeaea !important;
   border-radius: 14px !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
-  transition: all 0.2s ease !important;
+  transition: var(--transition) !important;
 }
 
 [data-theme="light"] .list-item:hover {
@@ -318,7 +318,7 @@
 [data-theme="light"] .view-toggle__btn {
   border-radius: 9999px !important;
   color: #71717a !important;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition: var(--transition) !important;
 }
 
 [data-theme="light"] .view-toggle__btn:hover {
@@ -338,7 +338,7 @@
   color: #52525b !important;
   font-weight: 500 !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
-  transition: all 0.2s ease !important;
+  transition: var(--transition) !important;
 }
 
 [data-theme="light"] .folder-tag:hover {
@@ -394,7 +394,7 @@
   border-radius: 12px !important;
   padding: 10px 14px !important;
   margin-bottom: 8px !important;
-  transition: all 0.2s ease !important;
+  transition: var(--transition) !important;
 }
 
 [data-theme="light"] .activity-item:hover {
@@ -418,7 +418,7 @@
   border: 2px dashed #d4d4d8 !important;
   border-radius: 20px !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
-  transition: all 0.2s ease !important;
+  transition: var(--transition) !important;
 }
 
 [data-theme="light"] .editor-dropzone:hover {
@@ -474,7 +474,7 @@
 [data-theme="light"] .sidebar-tab {
   color: #a1a1aa !important;
   font-weight: 500 !important;
-  transition: all 0.2s ease !important;
+  transition: var(--transition) !important;
 }
 
 [data-theme="light"] .sidebar-tab:hover {
@@ -504,7 +504,7 @@
   margin: 4px 8px !important;
   width: calc(100% - 16px);
   color: #d4d4d8 !important;
-  transition: all 0.2s ease !important;
+  transition: var(--transition) !important;
 }
 
 [data-theme="light"] .sidebar-section__header:hover {
@@ -558,7 +558,7 @@
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 10px !important;
   color: #ffffff !important;
-  transition: all 0.2s ease !important;
+  transition: var(--transition) !important;
 }
 
 [data-theme="light"] .sidebar-number-input:focus,
@@ -767,7 +767,7 @@
   border: 1px solid #e4e4e7 !important;
   border-radius: 12px !important;
   color: #0a0a0a !important;
-  transition: all 0.2s ease !important;
+  transition: var(--transition) !important;
 }
 
 [data-theme="light"] .modal-input:focus,
@@ -784,7 +784,7 @@
   border: 1px solid #e4e4e7 !important;
   border-radius: 16px !important;
   color: #0a0a0a !important;
-  transition: all 0.2s ease !important;
+  transition: var(--transition) !important;
 }
 
 [data-theme="light"] .foux-config-theme-card:hover,

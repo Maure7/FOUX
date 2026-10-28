@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import useModal from '../../hooks/useModal';
 import { useLanguage } from '../../context/LanguageContext';
 
 export default function ModalConfirm({
@@ -12,10 +13,21 @@ export default function ModalConfirm({
   cancelLabel,
 }) {
   const { t } = useLanguage();
+  const { modalRef, present } = useModal(isOpen);
 
-  const finalTitle = title || t('common.confirm');
-  const finalConfirmLabel = confirmLabel || t('common.delete');
-  const finalCancelLabel = cancelLabel || t('common.cancel');
+  const content = {
+    title: title || t('common.confirm'),
+    message,
+    confirmLabel: confirmLabel || t('common.delete'),
+    cancelLabel: cancelLabel || t('common.cancel'),
+  };
+  // Parents may clear the selected item immediately. Keep the outgoing dialog
+  // intact until its exit finishes instead of changing its text mid-transition.
+  const [lastOpenContent, setLastOpenContent] = useState(content);
+  if (isOpen && Object.keys(content).some(key => content[key] !== lastOpenContent[key])) {
+    setLastOpenContent(content);
+  }
+  const displayed = isOpen ? content : lastOpenContent;
 
   /* Close on Escape */
   useEffect(() => {
@@ -27,26 +39,19 @@ export default function ModalConfirm({
     return () => window.removeEventListener('keydown', handleKey);
   }, [isOpen, onClose]);
 
-  /* Prevent body scroll */
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!present) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" data-state={isOpen ? 'open' : 'closed'} inert={!isOpen} onClick={onClose}>
       <div
         className="modal-card modal-card--confirm"
         onClick={(e) => e.stopPropagation()}
+        ref={modalRef}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="modal-confirm-title"
+        aria-describedby={displayed.message ? 'modal-confirm-message' : undefined}
       >
         {/* Close */}
         <button className="modal-close" onClick={onClose} aria-label={t('common.close')}>
@@ -59,19 +64,19 @@ export default function ModalConfirm({
         </div>
 
         {/* Content */}
-        <h2 className="modal-title" id="modal-confirm-title">{finalTitle}</h2>
-        {message && <p className="modal-confirm__message">{message}</p>}
+        <h2 className="modal-title" id="modal-confirm-title">{displayed.title}</h2>
+        {displayed.message && <p className="modal-confirm__message" id="modal-confirm-message">{displayed.message}</p>}
 
         {/* Actions */}
         <div className="modal-footer modal-footer--spread">
           <button className="modal-cancel-btn" onClick={onClose}>
-            {finalCancelLabel}
+            {displayed.cancelLabel}
           </button>
           <button
             className="modal-confirm__delete-btn"
             onClick={() => { onConfirm(); onClose(); }}
           >
-            {finalConfirmLabel}
+            {displayed.confirmLabel}
           </button>
         </div>
       </div>

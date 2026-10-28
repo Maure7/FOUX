@@ -11,6 +11,7 @@ import {
   Pin,
   PinOff,
 } from 'lucide-react';
+import useFloatingMenu from '../../hooks/useFloatingMenu';
 import { useLanguage } from '../../context/LanguageContext';
 
 export default function ContextMenu({
@@ -29,6 +30,7 @@ export default function ContextMenu({
 }) {
   const { t } = useLanguage();
   const menuRef = useRef(null);
+  useFloatingMenu(menuRef, x, y);
   const subMenuRef = useRef(null);
 
   /* Close on click outside */
@@ -54,22 +56,6 @@ export default function ContextMenu({
     return () => window.removeEventListener('keydown', handleKey);
   }, [onClose]);
 
-  /* Viewport-aware positioning */
-  const style = {};
-  const menuWidth = 200;
-  const menuHeight = 220;
-
-  if (x + menuWidth > window.innerWidth) {
-    style.right = `${window.innerWidth - x}px`;
-  } else {
-    style.left = `${x}px`;
-  }
-  if (y + menuHeight > window.innerHeight) {
-    style.bottom = `${window.innerHeight - y}px`;
-  } else {
-    style.top = `${y}px`;
-  }
-
   /* Move-to destinations: all folders except the one the project is already in, plus "Raiz" */
   const moveDestinations = [];
   if (currentFolderId !== null) {
@@ -82,23 +68,23 @@ export default function ContextMenu({
   });
 
   return (
-    <div className="context-menu" ref={menuRef} style={style}>
+    <div className="context-menu" ref={menuRef} style={{ left: x, top: y }} role="menu" aria-label={t('common.options')}>
       {/* Open */}
-      <button className="context-menu__item" onClick={() => { onOpen(); onClose(); }}>
+      <button role="menuitem" className="context-menu__item" onClick={() => { onOpen(); onClose(); }}>
         <ExternalLink size={14} />
         <span>{t('common.open')}</span>
       </button>
 
       {/* Fixar / Desafixar Favorito */}
       {onToggleFavorite && (
-        <button className="context-menu__item" onClick={() => { onToggleFavorite(); onClose(); }}>
+        <button role="menuitem" className="context-menu__item" onClick={() => { onToggleFavorite(); onClose(); }}>
           {isFavorite ? <PinOff size={14} /> : <Pin size={14} />}
           <span>{isFavorite ? (t('common.unpin') || t('common.unfavorite')) : (t('common.pin') || t('common.favorite'))}</span>
         </button>
       )}
 
       {/* Rename */}
-      <button className="context-menu__item" onClick={() => { onRename(); onClose(); }}>
+      <button role="menuitem" className="context-menu__item" onClick={() => { onRename(); onClose(); }}>
         <Pencil size={14} />
         <span>{t('common.rename')}</span>
       </button>
@@ -106,18 +92,18 @@ export default function ContextMenu({
       {/* Move to */}
       {moveDestinations.length > 0 && (
         <div className="context-menu__submenu-wrapper">
-          <button className="context-menu__item context-menu__item--submenu">
+          <button role="menuitem" className="context-menu__item context-menu__item--submenu" aria-haspopup="menu">
             <FolderInput size={14} />
             <span>{t('common.moveTo')}</span>
             <ChevronRight size={12} className="context-menu__chevron" />
           </button>
-          <div className="context-menu__submenu" ref={subMenuRef}>
+          <div className="context-menu__submenu" ref={subMenuRef} role="menu">
             {moveDestinations.map((dest) => {
               const Icon = dest.icon;
               return (
                 <button
                   key={dest.id ?? 'root'}
-                  className="context-menu__item"
+                  role="menuitem" className="context-menu__item"
                   onClick={() => { onMoveTo(dest.id); onClose(); }}
                 >
                   <Icon size={14} style={dest.color ? { color: dest.color } : undefined} />
@@ -132,13 +118,13 @@ export default function ContextMenu({
       <div className="context-menu__divider" />
 
       {/* Duplicate */}
-      <button className="context-menu__item" onClick={() => { onDuplicate(); onClose(); }}>
+      <button role="menuitem" className="context-menu__item" onClick={() => { onDuplicate(); onClose(); }}>
         <Copy size={14} />
         <span>{t('common.duplicate')}</span>
       </button>
 
       {/* Delete */}
-      <button className="context-menu__item context-menu__item--danger" onClick={() => { onDelete(); onClose(); }}>
+      <button role="menuitem" className="context-menu__item context-menu__item--danger" onClick={() => { onDelete(); onClose(); }}>
         <Trash2 size={14} />
         <span>{t('common.delete')}</span>
       </button>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, FileUp, BookOpen } from 'lucide-react';
+import useModal from '../../hooks/useModal';
 import { useLanguage } from '../../context/LanguageContext';
 
 export default function ModalNovoProjeto({
@@ -9,6 +10,7 @@ export default function ModalNovoProjeto({
   onOpenTutorial,
 }) {
   const { t } = useLanguage();
+  const { modalRef, present } = useModal(isOpen);
   const [projectName, setProjectName] = useState('');
 
   const [prevOpen, setPrevOpen] = useState(isOpen);
@@ -30,25 +32,17 @@ export default function ModalNovoProjeto({
     return () => window.removeEventListener('keydown', handleKey);
   }, [isOpen, onClose]);
 
-  // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!present) return null;
 
   const finalName = projectName.trim() || t('editor.untitledProject');
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" data-state={isOpen ? 'open' : 'closed'} inert={!isOpen} onClick={onClose}>
       <div
         className="modal-card"
         onClick={(e) => e.stopPropagation()}
+        ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
@@ -87,7 +81,6 @@ export default function ModalNovoProjeto({
             onKeyDown={(e) => {
               if (e.key === 'Enter') onImportHTML(finalName);
             }}
-            autoFocus
           />
         </div>
 

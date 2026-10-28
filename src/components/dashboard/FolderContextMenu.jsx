@@ -7,6 +7,7 @@ import {
   PinOff,
   ChevronRight,
 } from 'lucide-react';
+import useFloatingMenu from '../../hooks/useFloatingMenu';
 import { useLanguage } from '../../context/LanguageContext';
 
 
@@ -31,6 +32,7 @@ export default function FolderContextMenu({
 }) {
   const { t } = useLanguage();
   const menuRef = useRef(null);
+  useFloatingMenu(menuRef, x, y);
   const [showColors, setShowColors] = useState(false);
 
   /* Close on click outside */
@@ -53,29 +55,13 @@ export default function FolderContextMenu({
     return () => window.removeEventListener('keydown', handleKey);
   }, [onClose]);
 
-  /* Viewport-aware positioning */
-  const style = {};
-  const menuWidth = 200;
-  const menuHeight = 200;
-
-  if (x + menuWidth > window.innerWidth) {
-    style.right = `${window.innerWidth - x}px`;
-  } else {
-    style.left = `${x}px`;
-  }
-  if (y + menuHeight > window.innerHeight) {
-    style.bottom = `${window.innerHeight - y}px`;
-  } else {
-    style.top = `${y}px`;
-  }
-
   const isFavorite = !!(folder?.favorite || folder?.isFavorite);
 
   return (
-    <div className="context-menu" ref={menuRef} style={style}>
+    <div className="context-menu" ref={menuRef} style={{ left: x, top: y }} role="menu" aria-label={t('common.options')}>
       {/* Favoritar / Desfavoritar */}
       <button
-        className="context-menu__item"
+        role="menuitem" className="context-menu__item"
         onClick={() => { onToggleFavorite(); onClose(); }}
       >
         {isFavorite ? <PinOff size={14} /> : <Pin size={14} />}
@@ -84,7 +70,7 @@ export default function FolderContextMenu({
 
       {/* Renomear */}
       <button
-        className="context-menu__item"
+        role="menuitem" className="context-menu__item"
         onClick={() => { onRename(); onClose(); }}
       >
         <Pencil size={14} />
@@ -98,7 +84,7 @@ export default function FolderContextMenu({
         onMouseLeave={() => setShowColors(false)}
       >
         <button
-          className="context-menu__item context-menu__item--submenu"
+          role="menuitem" className="context-menu__item context-menu__item--submenu" aria-haspopup="menu"
           onClick={() => setShowColors((prev) => !prev)}
         >
           <Palette size={14} />
@@ -106,7 +92,7 @@ export default function FolderContextMenu({
           <ChevronRight size={12} className="context-menu__chevron" />
         </button>
         {showColors && (
-          <div className="context-menu__submenu context-menu__submenu--colors">
+          <div className="context-menu__submenu context-menu__submenu--colors" role="group" aria-label={t('common.changeColor')}>
             <div className="context-menu__color-grid">
               {COLOR_KEYS.map((c) => {
                 const isSelected = folder?.borderColor === c.value;
@@ -119,6 +105,7 @@ export default function FolderContextMenu({
                     onClick={() => { onChangeColor(c.value); onClose(); }}
                     title={t(`modals.colors.${c.key}`)}
                     aria-label={t(`modals.colors.${c.key}`)}
+                    aria-pressed={isSelected}
                   />
                 );
               })}
@@ -131,7 +118,7 @@ export default function FolderContextMenu({
 
       {/* Excluir */}
       <button
-        className="context-menu__item context-menu__item--danger"
+        role="menuitem" className="context-menu__item context-menu__item--danger"
         onClick={() => { onDelete(); onClose(); }}
       >
         <Trash2 size={14} />

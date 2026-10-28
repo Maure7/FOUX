@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Pencil } from 'lucide-react';
+import useModal from '../../hooks/useModal';
 import { useLanguage } from '../../context/LanguageContext';
 
 export default function ModalRenomear({ isOpen, onClose, onRename, currentName }) {
   const { t } = useLanguage();
+  const { modalRef, present } = useModal(isOpen);
   const [name, setName] = useState('');
-  const inputRef = useRef(null);
 
   const [prevOpen, setPrevOpen] = useState(isOpen);
 
@@ -16,18 +17,6 @@ export default function ModalRenomear({ isOpen, onClose, onRename, currentName }
     setPrevOpen(false);
   }
 
-  /* Auto-focus input when modal opens */
-  useEffect(() => {
-    if (isOpen) {
-      const timer = setTimeout(() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-          inputRef.current.select();
-        }
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen]);
 
   /* Close on Escape */
   useEffect(() => {
@@ -39,15 +28,6 @@ export default function ModalRenomear({ isOpen, onClose, onRename, currentName }
     return () => window.removeEventListener('keydown', handleKey);
   }, [isOpen, onClose]);
 
-  /* Prevent body scroll */
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [isOpen]);
 
   const handleSubmit = () => {
     const trimmed = name.trim();
@@ -57,13 +37,14 @@ export default function ModalRenomear({ isOpen, onClose, onRename, currentName }
     onClose();
   };
 
-  if (!isOpen) return null;
+  if (!present) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" data-state={isOpen ? 'open' : 'closed'} inert={!isOpen} onClick={onClose}>
       <div
         className="modal-card modal-card--rename"
         onClick={(e) => e.stopPropagation()}
+        ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-rename-title"
@@ -88,7 +69,6 @@ export default function ModalRenomear({ isOpen, onClose, onRename, currentName }
             {t('modals.rename.newNameLabel')}
           </label>
           <input
-            ref={inputRef}
             id="modal-rename-input"
             className="modal-name-input"
             type="text"

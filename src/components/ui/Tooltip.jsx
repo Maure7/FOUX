@@ -26,6 +26,7 @@ export function TooltipProvider({ children, delay = 450 }) {
     let active;
     let describedElement;
     let oldDescription;
+    let warmUntil = 0;
     const normalizeTitles = (node) => {
       if (!(node instanceof Element)) return;
       const elements = [...node.querySelectorAll('[title]')];
@@ -54,6 +55,7 @@ export function TooltipProvider({ children, delay = 450 }) {
     });
     const hide = () => {
       clearTimeout(timer);
+      if (describedElement) warmUntil = Date.now() + 400;
       if (describedElement?.isConnected) {
         if (oldDescription === null) describedElement.removeAttribute('aria-describedby');
         else describedElement.setAttribute('aria-describedby', oldDescription);
@@ -71,14 +73,15 @@ export function TooltipProvider({ children, delay = 450 }) {
       const text = tooltipText(element);
       if (!text) return;
       active = element;
+      const instant = event.type === 'focusin' || Date.now() < warmUntil;
       timer = setTimeout(() => {
         if (!element.isConnected) return hide();
         const rect = element.getBoundingClientRect();
         describedElement = element;
         oldDescription = element.getAttribute('aria-describedby');
         element.setAttribute('aria-describedby', `${oldDescription || ''} ${id}`.trim());
-        setTip({ text, rect, host: element.closest('dialog[open]') || document.body });
-      }, event.type === 'focusin' ? 0 : delay);
+        setTip({ text, rect, instant, host: element.closest('dialog[open]') || document.body });
+      }, instant ? 0 : delay);
     };
     const leave = (event) => {
       if (active?.contains(event.relatedTarget)) return;
@@ -112,6 +115,6 @@ export function TooltipProvider({ children, delay = 450 }) {
   const x = tip ? Math.max(12, Math.min(window.innerWidth - width - 12, tip.rect.left + tip.rect.width / 2 - width / 2)) : 12;
   const above = tip && tip.rect.bottom > window.innerHeight - 110;
   return <>{children}{tip && createPortal(
-    <div id={id} role="tooltip" className="foux-tooltip" style={{ left: x, width, top: above ? tip.rect.top - 5 : tip.rect.bottom + 5, transform: above ? 'translateY(-100%)' : undefined }}>{tip.text}</div>, tip.host,
+    <div id={id} role="tooltip" className="foux-tooltip" data-instant={tip.instant || undefined} style={{ left: x, width, top: above ? tip.rect.top - 5 : tip.rect.bottom + 5, transform: above ? 'translateY(-100%)' : undefined }}>{tip.text}</div>, tip.host,
   )}</>;
 }

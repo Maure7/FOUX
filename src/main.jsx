@@ -5,6 +5,7 @@ import './index.css'
 import './styles/Dashboard.css'
 import './styles/LiquidGlass.css'
 import './styles/scrollbars.css'
+import './styles/interaction-polish.css'
 import App from './App.jsx'
 
 function flushPendingChanges() {
