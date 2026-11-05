@@ -158,16 +158,30 @@
   display: flex;
   justify-content: center;
   padding: 6px 0;
+  background: none;
 }
 
 .gradient-angle-disc {
+  --gradient-angle-panel-bg: var(--bg-sidebar);
   width: 80px;
   height: 80px;
   border-radius: 50%;
+  background-clip: padding-box;
+  isolation: isolate;
+  overflow: visible;
   position: relative;
   cursor: pointer;
   border: 2px solid var(--border-light);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  /* Seal the antialiased perimeter without clipping the drag handle. */
+  box-shadow: 0 0 0 1px var(--gradient-angle-panel-bg), 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .gradient-angle-disc {
+  --gradient-angle-panel-bg: #121018;
+}
+
+[data-theme="solarized"] .gradient-angle-disc {
+  --gradient-angle-panel-bg: #002b36;
 }
 
 .gradient-angle-disc__inner {
@@ -318,8 +332,9 @@
 }
 
 [data-theme="light"] .gradient-angle-disc {
+  --gradient-angle-panel-bg: #0f0f13;
   border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 1px var(--gradient-angle-panel-bg), 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 [data-theme="light"] .gradient-angle-disc__inner {

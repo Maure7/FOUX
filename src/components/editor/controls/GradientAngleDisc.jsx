@@ -55,7 +55,7 @@ export default function GradientAngleDisc({ angle, colorStart = '#e59843', color
         ref={discRef}
         onMouseDown={handleMouseDown}
         style={{
-          background: `linear-gradient(${angle}deg, ${colorStart}, ${colorEnd})`,
+          backgroundImage: `linear-gradient(${angle}deg, ${colorStart}, ${colorEnd})`,
         }}
       >
         <div className="gradient-angle-disc__inner" />

@@ -114,24 +114,22 @@ export default function EditorHeader({
         <button className="editor-header__icon-btn" onClick={onOpenFaq} aria-label={t('dashboard.help')} title={t('dashboard.help')}>
           <HelpCircle size={16} />
         </button>
-        <div
+        <button
+          type="button"
           className="header__avatar-wrapper"
           onClick={onOpenProfile}
-          role="button"
-          tabIndex={0}
           aria-label={t('profile.title')}
           title={t('profile.title')}
-          onKeyDown={(event) => activateOnKey(event, () => onOpenProfile())}
         >
-          <div className="header__avatar-placeholder">
+          <span className="header__avatar-placeholder">
             {userProfile?.avatar ? (
               <img src={userProfile.avatar} alt="Avatar" className="header__avatar-img" />
             ) : (
               <User size={15} />
             )}
-          </div>
+          </span>
           <span className="header__avatar-status" />
-        </div>
+        </button>
       </div>
     </header>
   );

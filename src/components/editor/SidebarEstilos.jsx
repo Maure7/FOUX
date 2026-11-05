@@ -63,6 +63,10 @@ function extractAlpha(colorValue) {
   return 1;
 }
 
+function sameComputedColor(first, second) {
+  return !!first && !!second && first.replace(/\s+/g, '').toLowerCase() === second.replace(/\s+/g, '').toLowerCase();
+}
+
 function formatTagName(tag) {
   if (!tag) return '';
   return `<${tag.toLowerCase()}>`;
@@ -298,8 +302,17 @@ export default function SidebarEstilos({
   const handleTextAlphaChange = useCallback((a) => {
     setAlphaColor(a);
     const hex = val('color', '#000000');
-    apply('color', hexAlphaToRgba(hex, a));
-  }, [apply, val]);
+    const borderTracksTextColor = !computedStyles?.borderGradient
+      && sameComputedColor(computedStyles?._rawColor, computedStyles?._rawBorderColor);
+
+    applyStyle?.('color', hexAlphaToRgba(hex, a));
+    if (borderTracksTextColor) {
+      // Pin currentColor borders to their previous color and alpha before
+      // changing the text alpha.
+      applyStyle?.('borderColor', computedStyles._rawBorderColor);
+    }
+    if (onStyleChange) onStyleChange();
+  }, [applyStyle, computedStyles, onStyleChange, val]);
 
   const handleBgColorChange = useCallback((hex) => {
     const value = hexAlphaToRgba(hex, alphaBg);
@@ -396,8 +409,12 @@ export default function SidebarEstilos({
         if (!hoverBgGradientEnabled) rules.push(`background-color: ${hoverBgColor} !important`);
         rules.push(`background-clip: ${background.clip} !important`);
         rules.push(`background-origin: ${background.origin} !important`);
+        rules.push(`background-repeat: ${background.repeat} !important`);
       } else if (hoverBgGradientEnabled) {
         rules.push(`background-image: linear-gradient(${hoverBgGradientAngle}deg, ${hoverBgGradientColor1}, ${hoverBgGradientColor2}) !important`);
+        rules.push('background-clip: padding-box !important');
+        rules.push('background-repeat: no-repeat !important');
+        rules.push('background-size: auto !important');
       } else {
         rules.push(`background-color: ${hoverBgColor} !important`);
       }

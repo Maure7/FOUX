@@ -69,13 +69,19 @@ export function gradientBorderBackground(state, overrides = {}) {
   const content = [...images, `linear-gradient(${color}, ${color})`];
   const border = `linear-gradient(${state.angle}deg, ${state.color1}, ${state.color2})`;
   const count = content.length;
-  const translucent = color === 'transparent' || color.startsWith('rgba(') || color.includes(' / ');
+  const sizes = splitLayers(state.background['background-size'] || 'auto');
+  const repeats = splitLayers(state.background['background-repeat'] || 'repeat');
   return {
     image: [...content, border].join(', '),
-    // When supported, border-area keeps the gradient out of transparent or
-    // translucent content instead of letting it show through the fill layer.
-    clip: [...Array(count).fill('padding-box'), state.borderArea && translucent ? 'border-area' : 'border-box'].join(', '),
+    // Restrict the border layer even with an opaque fill: its antialiased
+    // edge must not reveal the opposite gradient underneath the content.
+    clip: [...Array(count).fill('padding-box'), state.borderArea ? 'border-area' : 'border-box'].join(', '),
     origin: [...Array(count).fill('padding-box'), 'border-box'].join(', '),
+    // Full-size gradients must not wrap a fractional raster pixel onto the
+    // opposite edge. Preserve authored image tiling and explicitly sized tiles.
+    repeat: [...images.map((layer, index) => layer.startsWith('linear-gradient(')
+      && /^auto(?: auto)?$/.test(sizes[index % sizes.length])
+      ? 'no-repeat' : repeats[index % repeats.length]), 'no-repeat', 'no-repeat'].join(', '),
   };
 }
 
@@ -87,15 +93,16 @@ function paint(element, state) {
   element.style.setProperty('background-image', background.image, 'important');
   element.style.setProperty('background-clip', background.clip, 'important');
   element.style.setProperty('background-origin', background.origin, 'important');
+  element.style.setProperty('background-repeat', background.repeat, 'important');
   // Append full-size, non-repeating paint for the solid fill and border,
   // retaining sizing/position/repetition of any authored image layers.
   const imageCount = state.background.image === 'none' ? 0 : splitLayers(state.background.image).length;
   for (const [property, fallback] of [
-    ['background-size', 'auto'], ['background-position', '0% 0%'], ['background-repeat', 'repeat'],
+    ['background-size', 'auto'], ['background-position', '0% 0%'],
   ]) {
     const values = splitLayers(state.background[property] || fallback);
     const original = Array.from({ length: imageCount }, (_, index) => values[index % values.length]);
-    const extra = property === 'background-size' ? 'auto, auto' : property === 'background-repeat' ? 'no-repeat, no-repeat' : '0% 0%, 0% 0%';
+    const extra = property === 'background-size' ? 'auto, auto' : '0% 0%, 0% 0%';
     element.style.setProperty(property, [...original, extra].join(', '), 'important');
   }
 }
@@ -150,6 +157,12 @@ export function updateGradientBorderBackground(element, property, value) {
   } else if (property === 'backgroundImage') {
     state.background.image = value || 'none';
     state.edits['background-image'] = value;
+    if (value?.startsWith('linear-gradient(')) {
+      for (const [property, setting] of [['background-repeat', 'no-repeat'], ['background-size', 'auto']]) {
+        state.background[property] = setting;
+        state.edits[property] = setting;
+      }
+    }
   } else {
     element.style.backgroundColor = value;
     state.background.color = element.ownerDocument.defaultView.getComputedStyle(element).backgroundColor;

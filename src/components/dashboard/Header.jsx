@@ -1,4 +1,3 @@
-import { activateOnKey } from '../../utils/keyboard';
 import { Search, Settings, FolderPlus, HelpCircle, User } from 'lucide-react';
 
 export default function Header({ searchQuery, onSearchChange, onNewFolder, onOpenConfig, onOpenProfile, onOpenFaq, userProfile, t }) {
@@ -44,24 +43,22 @@ export default function Header({ searchQuery, onSearchChange, onNewFolder, onOpe
           <HelpCircle size={17} />
         </button>
 
-        <div
+        <button
+          type="button"
           className="header__avatar-wrapper"
           onClick={onOpenProfile}
-          role="button"
-          tabIndex={0}
           aria-label={t('profile.title')}
           title={t('profile.title')}
-          onKeyDown={(event) => activateOnKey(event, () => onOpenProfile())}
         >
-          <div className="header__avatar-placeholder">
+          <span className="header__avatar-placeholder">
             {userProfile?.avatar ? (
               <img src={userProfile.avatar} alt="Avatar" className="header__avatar-img" />
             ) : (
               <User size={16} />
             )}
-          </div>
+          </span>
           <span className="header__avatar-status" />
-        </div>
+        </button>
       </div>
     </header>
   );

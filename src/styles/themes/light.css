@@ -123,7 +123,7 @@
   font-weight: 700 !important;
 }
 
-[data-theme="light"] .header__avatar-placeholder:hover {
+[data-theme="light"] .header__avatar-wrapper:hover .header__avatar-placeholder {
   background: #27272a !important;
   border-color: #27272a !important;
 }

@@ -1,7 +1,7 @@
 import useHoverStyles from './inspector/useHoverStyles';
 import { SCROLLBAR_STYLE_ID } from '../utils/inspector/constants';
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { setGradientBorder, updateGradientBorderBackground } from '../utils/gradientBorder';
+import { getGradientBorder, setGradientBorder, updateGradientBorderBackground } from '../utils/gradientBorder';
 import { extractComputedStyles, rememberOriginalStyle } from '../utils/inspector/styles';
 import { HOVER_OUTLINE, HOVER_OFFSET, SELECT_OUTLINE, SELECT_OFFSET, ATTR_HOVERED, ATTR_SELECTED, INSPECTOR_STYLE_ID, HOVER_STYLE_ID } from '../utils/inspector/constants';
 
@@ -48,6 +48,13 @@ export default function useIframeInspector(iframeRef) {
       setGradientBorder(el, value);
     } else if (updateGradientBorderBackground(el, cssProperty, value)) {
       // The helper updates the logical background without losing the border layer.
+    } else if (cssProperty === 'backgroundImage') {
+      el.style.backgroundImage = value;
+      if (value?.startsWith('linear-gradient(')) {
+        el.style.setProperty('background-clip', 'padding-box', 'important');
+        el.style.setProperty('background-repeat', 'no-repeat', 'important');
+        el.style.setProperty('background-size', 'auto', 'important');
+      }
     } else if (cssProperty === 'borderRadius') {
       const valStr = typeof value === 'number' ? `${value}px` : String(value);
       el.style.setProperty('border-radius', valStr, 'important');
@@ -174,6 +181,11 @@ export default function useIframeInspector(iframeRef) {
     const win = iframe.contentWindow;
     if (!doc || !win) return;
     doc.querySelectorAll('[style]').forEach(rememberOriginalStyle);
+    // Repaint saved gradient borders with the current clipping and tiling rules.
+    doc.querySelectorAll('[data-foux-gradient-border]').forEach((element) => {
+      const gradient = getGradientBorder(element);
+      if (gradient) setGradientBorder(element, gradient);
+    });
 
     // Limpar listeners anteriores se existirem
     if (cleanupRef.current) {

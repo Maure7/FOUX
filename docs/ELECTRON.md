@@ -21,7 +21,7 @@ Gere o instalador Windows de 64 bits:
 npm run electron:build
 ```
 
-O instalador fica em `release/FOUX-Setup-0.0.2.exe`. A versão vem de
+O instalador fica em `release/FOUX-Setup-0.0.3.exe`. A versão vem de
 `package.json`. Para gerar somente a pasta com o executável, use
 `npm run electron:pack`; o resultado fica em `release/win-unpacked/FOUX.exe`.
 Distribua a pasta completa ao usar essa opção.
@@ -102,8 +102,8 @@ Para publicar uma atualização:
    npm run electron:build
    ```
 
-   Por exemplo, `0.0.2` passa a `0.0.3`, e o novo arquivo será
-   `release/FOUX-Setup-0.0.3.exe`. O comando atualiza `package.json` e
+   Por exemplo, `0.0.3` passa a `0.0.4`, e o novo arquivo será
+   `release/FOUX-Setup-0.0.4.exe`. O comando atualiza `package.json` e
    `package-lock.json` sem criar commit ou tag Git.
 3. No computador de destino, feche o FOUX e execute o novo instalador usando
    a mesma conta e o mesmo diretório da instalação anterior.

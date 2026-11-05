@@ -121,10 +121,18 @@
   transform: scale(0.97);
 }
 .header__avatar-wrapper {
+  appearance: none;
+  display: block;
   position: relative;
   width: 34px;
   height: 34px;
   flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  overflow: visible;
+  user-select: none;
   cursor: pointer;
 }
 
@@ -149,7 +157,7 @@
   border-radius: 50%;
 }
 
-.header__avatar-placeholder:hover {
+.header__avatar-wrapper:hover .header__avatar-placeholder {
   border-color: var(--border-light);
   color: var(--text-primary);
 }

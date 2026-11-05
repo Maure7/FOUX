@@ -17,6 +17,8 @@ export const TUTORIAL_HTML_ES = `<!DOCTYPE html>
     }
     .tutorial-banner {
       background: linear-gradient(135deg, #e59843, #9333ea);
+      background-clip: padding-box;
+      background-repeat: no-repeat;
       color: #fff;
       padding: 28px 32px;
       border-radius: 14px;
