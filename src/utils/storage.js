@@ -1,10 +1,6 @@
-/**
- * Utilitários para medição e gerenciamento de armazenamento local (localStorage)
- * FOUX — Fancy and Organized UX
- */
-
 import { appStorage } from '../services/appStorage.js';
 
+// Every key the app persists (documentation for maintainers and tests).
 export const FOUX_STORAGE_KEYS = [
   'foux_projects',
   'foux_active_project',
@@ -17,91 +13,38 @@ export const FOUX_STORAGE_KEYS = [
   'foux_global_tutorial_tips',
   'foux_tutorial_completed',
   'foux_sidebar_width',
+  'foux_challenge_records',
 ];
 
-/**
- * Calcula a quantidade exata de armazenamento consumido no localStorage em bytes.
- * Percorre todas as chaves e mede os bytes codificados em UTF-8.
- * @returns {number} Quantidade total de bytes consumidos.
- */
+// Removing these clears the student's work; theme, language and profile stay.
+const DATA_KEYS = ['foux_projects', 'foux_active_project', 'foux_folders', 'foux_activities'];
+
+/** UTF-8 size of everything stored, as shown in Settings. */
 export function calculateStorageUsage() {
-  const storage = appStorage;
-  if (!storage) {
-    return 0;
-  }
-
   let totalBytes = 0;
-
   try {
-    for (let i = 0; i < storage.length; i++) {
-      const key = storage.key(i);
-      if (key !== null) {
-        const value = storage.getItem(key) || '';
-        // Medição precisa em bytes utilizando a API Blob padrão
-        totalBytes += new Blob([key, value]).size;
-      }
+    for (let index = 0; index < appStorage.length; index++) {
+      const key = appStorage.key(index);
+      if (key !== null) totalBytes += new Blob([key, appStorage.getItem(key) || '']).size;
     }
   } catch (error) {
-    console.warn('Erro ao calcular uso do localStorage:', error);
-    totalBytes = 0;
-    // Fallback caso a API Blob falhe: estimativa UTF-16 (2 bytes por caractere)
-    try {
-      for (let i = 0; i < storage.length; i++) {
-        const key = storage.key(i);
-        if (key !== null) {
-          const value = storage.getItem(key) || '';
-          totalBytes += (key.length + value.length) * 2;
-        }
-      }
-    } catch {
-      return 0;
-    }
+    console.warn('Erro ao calcular uso do armazenamento:', error);
   }
-
   return totalBytes;
 }
 
-/**
- * Formata um valor numérico em bytes para string legível (ex: 0.0 KB, 142.5 KB, 2.3 MB).
- * @param {number} bytes 
- * @returns {string}
- */
 export function formatBytes(bytes) {
-  if (!bytes || bytes <= 0) {
-    return '0.0 KB';
-  }
-
-  const KILO = 1024;
-  const MEGA = KILO * 1024;
-
-  if (bytes < MEGA) {
-    return `${(bytes / KILO).toFixed(1)} KB`;
-  }
-
-  return `${(bytes / MEGA).toFixed(1)} MB`;
+  const MEGA = 1024 * 1024;
+  if (!bytes || bytes <= 0) return '0.0 KB';
+  return bytes < MEGA ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / MEGA).toFixed(1)} MB`;
 }
 
-/**
- * Executa a limpeza completa de dados do FOUX e/ou do localStorage.
- * Garante que chaves legadas e chaves do app sejam removidas com segurança.
- */
 export function clearAllStorage() {
-  const storage = appStorage;
-  if (!storage) {
-    return;
-  }
-
-  try {
-    // Limpeza de chaves de dados do app (preserva preferências essenciais como tema, idioma e perfil)
-    const DATA_KEYS = ['foux_projects', 'foux_active_project', 'foux_folders', 'foux_activities'];
-    DATA_KEYS.forEach((key) => {
-      try {
-        storage.removeItem(key);
-      } catch {
-        // Ignora erros pontuais
-      }
-    });
-  } catch (error) {
-    console.warn('Erro ao limpar dados locais do FOUX:', error);
+  for (const key of DATA_KEYS) {
+    try {
+      appStorage.removeItem(key);
+    } catch (error) {
+      console.warn('Erro ao limpar dados locais do FOUX:', error);
+    }
   }
 }

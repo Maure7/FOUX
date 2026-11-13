@@ -1,12 +1,13 @@
+import { memo } from 'react';
 import { activateOnKey } from '../../utils/keyboard';
-import { ArrowLeft, FilePlus, Download, Maximize, Settings, HelpCircle, User, Undo2, Redo2, Lightbulb, LightbulbOff } from 'lucide-react';
+import { ArrowLeft, FilePlus, Download, Maximize, Settings, HelpCircle, User, Undo2, Redo2, Lightbulb, LightbulbOff, Trophy } from 'lucide-react';
 import EditableProjectName from './EditableProjectName';
 
-export default function EditorHeader({
-  project, onRename, onNavigate, onOpenFaq, onNewFile,
+function EditorHeader({
+  projectName, onRename, onNavigate, onOpenFaq, onNewFile,
   onOpenConfig, onOpenProfile, userProfile, t,
-  canUndo, canRedo, onUndo, onRedo,
-  isTutorialProject, showTipsLocal, onToggleTips,
+  canUndo, canRedo, onUndo, onRedo, undoLabel, redoLabel,
+  isTutorialProject, showTipsLocal, onToggleTips, challengeActive, onToggleChallenges,
   onExportCss, onExpand, hasLoaded, isExporting,
 }) {
   return (
@@ -52,16 +53,15 @@ export default function EditorHeader({
 
         <div className="editor-header__separator" />
 
-        <EditableProjectName name={project.name} onRename={onRename} t={t} />
+        <EditableProjectName name={projectName} onRename={onRename} t={t} />
 
-        {/* ── Undo / Redo ── */}
         <div className="editor-header__separator" />
         <button
           className="editor-header__icon-btn editor-undo-redo-btn"
           onClick={onUndo}
           disabled={!canUndo}
           aria-label={t('editor.undo')}
-          title={t('editor.undo')}
+          data-tooltip={undoLabel}
         >
           <Undo2 size={16} />
         </button>
@@ -70,12 +70,11 @@ export default function EditorHeader({
           onClick={onRedo}
           disabled={!canRedo}
           aria-label={t('editor.redo')}
-          title={t('editor.redo')}
+          data-tooltip={redoLabel}
         >
           <Redo2 size={16} />
         </button>
 
-        {/* ── Botão de Dicas do Tutorial (exclusivo para TUTORIAL, entre Undo/Redo e Configurações) ── */}
         {isTutorialProject && (
           <>
             <div className="editor-header__separator" />
@@ -93,6 +92,17 @@ export default function EditorHeader({
               <span className="editor-header__tutorial-text">
                 {t('tour.button')}
               </span>
+            </button>
+            <button
+              className={`editor-header__tutorial-btn editor-header__challenge-btn ${challengeActive ? 'is-active' : ''}`}
+              onClick={onToggleChallenges}
+              disabled={!hasLoaded}
+              aria-pressed={challengeActive}
+              aria-label={t(challengeActive ? 'challenges.quit' : 'challenges.start')}
+              data-tooltip={t(challengeActive ? 'challenges.quit' : 'challenges.start')}
+            >
+              <Trophy size={14} className="editor-header__tutorial-icon" />
+              <span className="editor-header__tutorial-text">{t('challenges.button')}</span>
             </button>
           </>
         )}
@@ -135,3 +145,4 @@ export default function EditorHeader({
   );
 }
 
+export default memo(EditorHeader);

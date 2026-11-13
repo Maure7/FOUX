@@ -22,7 +22,6 @@ export default function ModalNovoProjeto({
     setPrevOpen(false);
   }
 
-  // Close on Escape key
   useEffect(() => {
     if (!isOpen) return;
     const handleKey = (e) => {
@@ -47,7 +46,6 @@ export default function ModalNovoProjeto({
         aria-modal="true"
         aria-labelledby="modal-title"
       >
-        {/* Close button */}
         <button
           className="modal-close"
           onClick={onClose}
@@ -56,7 +54,6 @@ export default function ModalNovoProjeto({
           <X size={18} />
         </button>
 
-        {/* Header */}
         <div className="modal-header">
           <h2 className="modal-title" id="modal-title">
             {t('modals.newProject.title')}
@@ -66,7 +63,6 @@ export default function ModalNovoProjeto({
           </p>
         </div>
 
-        {/* Project name input */}
         <div className="modal-name-field">
           <label className="modal-name-label" htmlFor="modal-project-name">
             {t('modals.newProject.projectNameLabel')}
@@ -84,7 +80,6 @@ export default function ModalNovoProjeto({
           />
         </div>
 
-        {/* Actions */}
         <div className="modal-actions">
           <button
             className="modal-action-btn modal-action-btn--primary"
@@ -121,7 +116,6 @@ export default function ModalNovoProjeto({
           </button>
         </div>
 
-        {/* Footer */}
         <div className="modal-footer">
           <button className="modal-cancel-btn" onClick={onClose}>
             {t('common.cancel')}

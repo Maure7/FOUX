@@ -8,8 +8,17 @@ import SidebarEstilos from '../components/editor/SidebarEstilos';
 import TutorialTour from '../components/editor/TutorialTour';
 import { TOUR_STEPS, hasCompletedTutorial, completeTutorial } from '../utils/tutorialTour';
 import FaqModal from '../components/ui/FaqModal';
+import CanvasOverlay from '../components/editor/CanvasOverlay';
+import ChallengeHud from '../components/editor/challenges/ChallengeHud';
+import ChallengeVictory from '../components/editor/challenges/ChallengeVictory';
+import useChallengeMode from '../hooks/useChallengeMode';
+import { findTarget } from '../challenges/engine';
 import { useLanguage } from '../context/LanguageContext';
 import { isTutorialProject as isTutorial, localizeTutorialHtml } from '../utils/tutorialI18n';
+import { describeElement, historyActionLabel } from '../utils/historyLabels';
+import '../styles/learning.css';
+
+const AUTOSAVE_DELAY_MS = 800;
 
 export default function Editor({
   project,
@@ -30,34 +39,33 @@ export default function Editor({
   const [isPreview, setIsPreview] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isFaqOpen, setIsFaqOpen] = useState(false);
+  const openFaq = useCallback(() => setIsFaqOpen(true), []);
+  const closeFaq = useCallback(() => setIsFaqOpen(false), []);
   const isTutorialProject = isTutorial(project);
   const [tourStep, setTourStep] = useState(() => (
     isTutorialProject && globalTutorialTips && project.showTutorialTips !== false && !hasCompletedTutorial() ? 0 : null
   ));
   const [iframeReady, setIframeReady] = useState(false);
   const [documentVersion, setDocumentVersion] = useState(0);
+  // Which box-model area the spacing controls are pointing at ('margin' | 'padding').
+  const [boxFocus, setBoxFocus] = useState(null);
+  // Bumped when the selected element is restored, so stateful controls resync.
+  const [elementRevision, setElementRevision] = useState(0);
+  const [flashKey, setFlashKey] = useState(0);
 
   const [initialHtml, setInitialHtml] = useState(() => isTutorialProject
     ? localizeTutorialHtml(project.htmlContent, language) : project.htmlContent);
+  // App keys <Editor> by project id, and only this screen writes htmlContent,
+  // so the initial project HTML never needs to be re-synchronized from props.
   const [hasLoaded, setHasLoaded] = useState(() => !!project.htmlContent);
-  const [prevProjectId, setPrevProjectId] = useState(project.id);
-  const [prevProjectHtml, setPrevProjectHtml] = useState(project.htmlContent);
-
-  // Sincroniza initialHtml caso o projeto ativo ou seu conteúdo mude externamente
-  if (project.id !== prevProjectId || (project.htmlContent && project.htmlContent !== prevProjectHtml && !hasLoaded)) {
-    setPrevProjectId(project.id);
-    setPrevProjectHtml(project.htmlContent);
-    setInitialHtml(isTutorialProject ? localizeTutorialHtml(project.htmlContent, language) : project.htmlContent);
-    setHasLoaded(!!project.htmlContent);
-  }
 
   const {
     selectedElement,
-    selectedTagName,
     computedStyles,
     applyStyle,
     serializeDocument,
     injectFont,
+    getImportedFonts,
     getElementsWithId,
     selectElementById,
     setupIframeListeners,
@@ -65,7 +73,12 @@ export default function Editor({
     injectHoverStyles,
     getHoverRules,
     setPreviewMode,
+    restoreSelected,
   } = useIframeInspector(iframeRef);
+  const {
+    session: challengeSession, result: challengeResult, start: startChallenges, stop: stopChallenges,
+    skip: skipChallenge, scheduleCheck: checkChallenge, dismissResult: dismissChallengeResult,
+  } = useChallengeMode({ iframeRef, getHoverRules });
 
   const saveTimerRef = useRef(null);
   const onUpdateProjectRef = useRef(onUpdateProject);
@@ -79,7 +92,7 @@ export default function Editor({
     onUpdateProjectRef.current({ htmlContent: html });
   }, []);
   const history = useEditorHistory(iframeRef, serializeDocument, restoreDocument);
-  const { undo: handleUndo, redo: handleRedo, recordChange: pushUndoState,
+  const { undo: handleUndo, redo: handleRedo, recordChange: pushUndoState, recordAction,
     documentLoaded, reset: resetHistory, translate: translateHistory } = history;
 
   const handleExpand = useCallback((event) => {
@@ -154,7 +167,8 @@ export default function Editor({
     pendingDocumentRef.current = null;
     setIframeReady(true);
     documentLoaded();
-  }, [setupIframeListeners, documentLoaded]);
+    checkChallenge();
+  }, [setupIframeListeners, documentLoaded, checkChallenge]);
 
   const tutorialLanguageRef = useRef(null);
   useEffect(() => {
@@ -174,23 +188,53 @@ export default function Editor({
     if (html !== project.htmlContent) onUpdateProjectRef.current({ htmlContent: html });
   }, [isTutorialProject, language, initialHtml, project.htmlContent, serializeDocument, translateHistory]);
 
+  // On desktop every save is a synchronous write to disk, so it waits for a
+  // pause in editing instead of running during a drag.
   const debouncedSave = useCallback(() => {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       const html = serializeDocument();
-      // Salva apenas se houver documento válido e o projeto já tiver arquivo carregado
-      if (html && hasLoaded) {
-        onUpdateProjectRef.current({ htmlContent: html });
-      }
-    }, 800);
+      if (html && hasLoaded) onUpdateProjectRef.current({ htmlContent: html });
+    }, AUTOSAVE_DELAY_MS);
   }, [serializeDocument, hasLoaded]);
 
-  const handleStyleChange = useCallback(() => {
-    pushUndoState();
+  // Called before each edit reaches the document; see useEditorHistory.recordChange.
+  const handleStyleChange = useCallback((meta) => {
+    pushUndoState(meta);
     debouncedSave();
-  }, [debouncedSave, pushUndoState]);
+    checkChallenge();
+  }, [debouncedSave, pushUndoState, checkChallenge]);
 
-  // Cleanup limpo: cancela timers pendentes sem ler do iframe em processo de desmontagem
+  const handleRestoreElement = useCallback(() => {
+    const meta = { labelKey: 'history.props.restore', target: describeElement(selectedElement) };
+    if (!recordAction(meta, restoreSelected)) {
+      showToast(t('sidebar.restoreNothing'));
+      return;
+    }
+    setElementRevision((revision) => revision + 1);
+    debouncedSave();
+    checkChallenge();
+    showToast(t('sidebar.restoreSuccess'));
+  }, [selectedElement, recordAction, restoreSelected, debouncedSave, checkChallenge, showToast, t]);
+
+  const toggleChallenges = useCallback(() => {
+    if (challengeSession) {
+      stopChallenges();
+      return;
+    }
+    if (tourStep !== null) return;
+    if (!startChallenges()) showToast(t('challenges.noneLeft'));
+  }, [challengeSession, stopChallenges, startChallenges, tourStep, showToast, t]);
+
+  const highlightChallengeTarget = useCallback(() => {
+    const challenge = challengeSession?.queue[0];
+    const target = challenge && findTarget(iframeRef.current?.contentDocument, challenge);
+    if (!target) return;
+    selectElementById(target.id);
+    setFlashKey((key) => key + 1);
+  }, [challengeSession, selectElementById]);
+
+  // The iframe is already being torn down here; only cancel pending work.
   useEffect(() => {
     return () => {
       fileReaderRef.current?.abort();
@@ -249,7 +293,9 @@ export default function Editor({
     }
   }, [onRenameProject]);
 
-  // Salva de forma segura antes de navegar
+  // Leaving the editor (or closing the window) unmounts the iframe, so the
+  // live document is persisted first. A document still loading is taken from
+  // pendingDocumentRef instead of the about:blank placeholder.
   const flushCurrentDocument = useCallback(() => {
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
@@ -311,10 +357,10 @@ export default function Editor({
   return (
     <div className="editor-shell">
       <EditorHeader
-        project={project}
+        projectName={project.name}
         onRename={handleRename}
         onNavigate={handleBackToDashboard}
-        onOpenFaq={() => setIsFaqOpen(true)}
+        onOpenFaq={openFaq}
         onNewFile={handleNewFile}
         onOpenConfig={handleOpenConfig}
         onOpenProfile={handleOpenProfile}
@@ -324,9 +370,13 @@ export default function Editor({
         canRedo={history.canRedo}
         onUndo={handleUndo}
         onRedo={handleRedo}
+        undoLabel={history.canUndo ? historyActionLabel('undo', history.undoMeta, t) : undefined}
+        redoLabel={history.canRedo ? historyActionLabel('redo', history.redoMeta, t) : undefined}
         isTutorialProject={isTutorialProject}
         showTipsLocal={tourStep !== null}
         onToggleTips={toggleLocalTips}
+        challengeActive={!!challengeSession}
+        onToggleChallenges={toggleChallenges}
         onExportCss={handleExportCss}
         onExpand={handleExpand}
         hasLoaded={hasLoaded && iframeReady}
@@ -353,17 +403,37 @@ export default function Editor({
           t={t}
         />
 
-        {/* Overlay transparente para evitar que o iframe capture mousemove durante o redimensionamento */}
+        <CanvasOverlay
+          iframeRef={iframeRef}
+          element={selectedElement}
+          boxMode={boxFocus}
+          flashKey={flashKey}
+          values={computedStyles}
+          t={t}
+        />
+
+        {challengeSession && (
+          <ChallengeHud
+            session={challengeSession}
+            language={language}
+            onHighlight={highlightChallengeTarget}
+            onSkip={skipChallenge}
+            onQuit={stopChallenges}
+            t={t}
+          />
+        )}
+
+        {/* The iframe would swallow mousemove events while the sidebar is resized. */}
         {isResizingSidebar && <div className="editor-resize-glass-overlay" />}
 
         <SidebarEstilos
           tourStep={tourStep === null ? null : TOUR_STEPS[tourStep]}
           isLocked={!initialHtml || !iframeReady}
           selectedElement={selectedElement}
-          selectedTagName={selectedTagName}
           computedStyles={computedStyles}
           applyStyle={applyStyle}
           injectFont={injectFont}
+          getImportedFonts={getImportedFonts}
           getElementsWithId={getElementsWithId}
           selectElementById={selectElementById}
           onStyleChange={handleStyleChange}
@@ -373,10 +443,14 @@ export default function Editor({
           width={sidebarWidth}
           isResizing={isResizingSidebar}
           onResizeStart={handleResizeStart}
+          revision={elementRevision}
+          onRestoreElement={handleRestoreElement}
+          onBoxFocus={setBoxFocus}
         />
       </div>
 
-      <FaqModal isOpen={isFaqOpen} onClose={() => setIsFaqOpen(false)} t={t} />
+      <FaqModal isOpen={isFaqOpen} onClose={closeFaq} t={t} />
+      <ChallengeVictory result={challengeResult} onClose={dismissChallengeResult} t={t} />
       {tourStep !== null && iframeReady && hasLoaded && <TutorialTour stepIndex={tourStep} onStepChange={setTourStep} onFinish={finishTour} />}
     </div>
   );

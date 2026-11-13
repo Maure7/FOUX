@@ -1,0 +1,325 @@
+/* Challenge mode: floating HUD over the canvas and the victory dialog. The HUD
+   uses the shared floating material, so each theme supplies its own surface. */
+.challenge-hud {
+  --hud-pass: #16a34a;
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  z-index: 20;
+  width: min(320px, calc(100% - 32px));
+  overflow: hidden;
+  border: 1px solid var(--floating-edge);
+  border-radius: 14px;
+  background: linear-gradient(155deg, var(--floating-highlight), transparent 48%), var(--floating-surface);
+  box-shadow: 0 18px 48px var(--floating-shadow), inset 0 1px 0 var(--floating-highlight);
+  -webkit-backdrop-filter: blur(20px) saturate(1.15);
+  backdrop-filter: blur(20px) saturate(1.15);
+  color: var(--text-primary);
+  font-family: var(--font);
+  animation: hud-enter var(--duration-enter) var(--ease-out);
+}
+
+/* The HUD floats over the student's (often white) page, so the glass needs the
+   denser surface the tour card uses to keep its text readable. */
+[data-theme="liquid-glass"] .challenge-hud {
+  border-color: var(--glass-border);
+  background: linear-gradient(155deg, var(--floating-highlight), transparent 48%), var(--tour-surface);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+@keyframes hud-enter {
+  from { opacity: 0; transform: translateY(8px) scale(.98); }
+}
+
+.challenge-hud__header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 8px 7px 10px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.challenge-hud__header:active { cursor: grabbing; }
+.challenge-hud__grip { flex-shrink: 0; color: var(--text-muted); }
+.challenge-hud__trophy { flex-shrink: 0; color: var(--accent-gold); }
+
+.challenge-hud__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.challenge-hud__timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--border-light);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font: 700 0.74rem 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.challenge-hud__icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.challenge-hud__icon-btn:hover { border-color: var(--border-light); color: var(--text-primary); }
+.challenge-hud__chevron { transition: transform var(--duration-fast) var(--ease-out); }
+.challenge-hud.is-collapsed .challenge-hud__chevron { transform: rotate(180deg); }
+
+.challenge-hud__progress {
+  height: 6px;
+  margin: 0 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-muted) 22%, transparent);
+}
+
+.challenge-hud__bar {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #e59843, #9333ea);
+  transform-origin: left center;
+  transition: transform 420ms var(--ease-out);
+}
+
+.challenge-hud__count {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 12px 9px;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.challenge-hud__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.challenge-hud__category {
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-gold-bg);
+  color: var(--accent-gold-light);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.challenge-hud__statement {
+  color: var(--text-primary);
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.challenge-hud__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.challenge-hud__btn {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 9px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font: 600 0.72rem var(--font);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.challenge-hud__btn:hover:not(:disabled) { border-color: var(--text-muted); color: var(--text-primary); }
+.challenge-hud__btn:disabled { cursor: not-allowed; opacity: 0.45; }
+
+.challenge-hud__btn--primary {
+  border-color: var(--accent-gold);
+  background: var(--accent-gold-bg);
+  color: var(--accent-gold-light);
+}
+
+.challenge-hud__btn--quiet { flex-grow: 0; background: transparent; }
+
+[data-theme="liquid-glass"] .challenge-hud__btn {
+  border-color: rgba(255, 255, 255, .14);
+  background: rgba(255, 255, 255, .06);
+  color: #f5f5f7;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .12);
+}
+
+[data-theme="liquid-glass"] .challenge-hud__btn--primary { border-color: var(--glass-border-focus); }
+
+.challenge-hud__success {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: color-mix(in srgb, var(--floating-solid) 86%, transparent);
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  font-weight: 700;
+  animation: hud-fade 160ms ease-out;
+}
+
+.challenge-hud__check {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--hud-pass);
+  box-shadow: 0 0 0 6px rgba(22, 163, 74, .2);
+  color: #fff;
+  animation: hud-check 420ms cubic-bezier(.34, 1.56, .64, 1);
+}
+
+@keyframes hud-fade { from { opacity: 0; } }
+@keyframes hud-check { from { opacity: 0; transform: scale(.4) rotate(-20deg); } }
+
+/* Victory dialog */
+.modal-card.challenge-victory {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: min(400px, calc(100vw - 32px));
+  overflow: hidden;
+  padding: 40px 28px 28px;
+  text-align: center;
+}
+
+.challenge-victory__countdown {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 4px;
+  background: color-mix(in srgb, var(--text-muted) 18%, transparent);
+}
+
+.challenge-victory__countdown span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #e59843, #9333ea);
+  transform-origin: left center;
+  animation: victory-countdown linear forwards;
+}
+
+@keyframes victory-countdown { to { transform: scaleX(0); } }
+
+.challenge-victory__icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f59e0b, #9333ea);
+  box-shadow: 0 10px 30px rgba(147, 51, 234, .35);
+  color: #fff;
+  animation: victory-pop 520ms cubic-bezier(.34, 1.56, .64, 1);
+}
+
+@keyframes victory-pop { from { opacity: 0; transform: scale(.3) rotate(-25deg); } }
+
+.challenge-victory__label {
+  margin-top: 6px;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.challenge-victory__time {
+  color: var(--text-primary);
+  font: 800 2.1rem/1.1 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.challenge-victory__record {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #b45309, #be185d);
+  box-shadow: 0 6px 20px rgba(190, 24, 93, .35);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  animation: victory-record 1.6s ease-in-out 520ms infinite;
+}
+
+@keyframes victory-record { 50% { transform: scale(1.06); box-shadow: 0 8px 26px rgba(190, 24, 93, .5); } }
+
+.challenge-victory__done { min-width: 160px; margin-top: 18px; justify-content: center; }
+
+.challenge-victory__confetti {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.challenge-victory__confetti i {
+  position: absolute;
+  top: 92px;
+  left: 50%;
+  width: 7px;
+  height: 11px;
+  border-radius: 2px;
+  background: #f59e0b;
+  opacity: 0;
+  animation: victory-confetti 1.2s cubic-bezier(.15, .8, .3, 1) forwards;
+  animation-delay: calc(var(--i) * 18ms);
+}
+
+.challenge-victory__confetti i:nth-child(3n + 1) { background: #a855f7; }
+.challenge-victory__confetti i:nth-child(3n + 2) { background: #22c55e; }
+.challenge-victory__confetti i:nth-child(4n) { background: #ec4899; }
+
+@keyframes victory-confetti {
+  0% { opacity: 1; transform: rotate(calc(var(--i) * 25.7deg)) translateY(0) rotate(0); }
+  100% { opacity: 0; transform: rotate(calc(var(--i) * 25.7deg)) translateY(-120px) rotate(220deg); }
+}

@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 
-export default function NumericInput({ value, onChange, min, max, ...props }) {
+// Keeps incomplete text (empty, "-", "1.") while typing and reports only
+// finite, clamped numbers, so invalid CSS never reaches the canvas.
+function NumericInput({ value, onChange, min, max, ...props }) {
   const [draft, setDraft] = useState(null);
-  const clamp = (number) => Math.max(min ?? -Infinity, Math.min(max ?? Infinity, number));
   return (
     <input
       {...props}
@@ -14,17 +15,14 @@ export default function NumericInput({ value, onChange, min, max, ...props }) {
       onChange={(event) => {
         const text = event.target.value;
         setDraft(text);
-        if (text !== '' && Number.isFinite(Number(text))) {
-          onChange({ target: { value: String(clamp(Number(text))) } });
+        const number = Number(text);
+        if (text !== '' && Number.isFinite(number)) {
+          onChange(Math.max(min ?? -Infinity, Math.min(max ?? Infinity, number)));
         }
       }}
-      onBlur={() => {
-        if (draft !== null && draft !== '' && Number.isFinite(Number(draft))) {
-          onChange({ target: { value: String(clamp(Number(draft))) } });
-        }
-        setDraft(null);
-      }}
+      onBlur={() => setDraft(null)}
     />
   );
 }
 
+export default memo(NumericInput);

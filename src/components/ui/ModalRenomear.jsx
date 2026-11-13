@@ -18,7 +18,6 @@ export default function ModalRenomear({ isOpen, onClose, onRename, currentName }
   }
 
 
-  /* Close on Escape */
   useEffect(() => {
     if (!isOpen) return;
     const handleKey = (e) => {
@@ -49,12 +48,10 @@ export default function ModalRenomear({ isOpen, onClose, onRename, currentName }
         aria-modal="true"
         aria-labelledby="modal-rename-title"
       >
-        {/* Close */}
         <button className="modal-close" onClick={onClose} aria-label={t('common.close')}>
           <X size={18} />
         </button>
 
-        {/* Header */}
         <div className="modal-header">
           <div className="modal-rename__header-row">
             <Pencil size={18} className="modal-rename__icon" />
@@ -63,7 +60,6 @@ export default function ModalRenomear({ isOpen, onClose, onRename, currentName }
           <p className="modal-subtitle">{t('modals.rename.subtitle')}</p>
         </div>
 
-        {/* Input */}
         <div className="modal-name-field">
           <label className="modal-name-label" htmlFor="modal-rename-input">
             {t('modals.rename.newNameLabel')}
@@ -81,7 +77,6 @@ export default function ModalRenomear({ isOpen, onClose, onRename, currentName }
           />
         </div>
 
-        {/* Footer */}
         <div className="modal-footer modal-footer--spread">
           <button className="modal-cancel-btn" onClick={onClose}>{t('common.cancel')}</button>
           <button className="modal-create-btn" onClick={handleSubmit}>

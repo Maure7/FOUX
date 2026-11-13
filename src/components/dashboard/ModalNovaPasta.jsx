@@ -30,7 +30,6 @@ export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFold
     setPrevOpen(false);
   }
 
-  /* Close on Escape */
   useEffect(() => {
     if (!isOpen) return;
     const handleKey = (e) => {
@@ -41,7 +40,6 @@ export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFold
   }, [isOpen, onClose]);
 
 
-  /* Generate fallback name */
   const fallbackName = useMemo(() => {
     const prefix = t('modals.newFolder.defaultNamePrefix');
     if (!existingFolders) return `${prefix} (1)`;
@@ -76,18 +74,15 @@ export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFold
         aria-modal="true"
         aria-labelledby="modal-folder-title"
       >
-        {/* Close */}
         <button className="modal-close" onClick={onClose} aria-label={t('common.close')}>
           <X size={18} />
         </button>
 
-        {/* Header */}
         <div className="modal-header">
           <h2 className="modal-title" id="modal-folder-title">{t('modals.newFolder.title')}</h2>
           <p className="modal-subtitle">{t('modals.newFolder.subtitle')}</p>
         </div>
 
-        {/* Preview */}
         <div className="modal-folder-preview">
           <Folder
             size={48}
@@ -99,7 +94,6 @@ export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFold
           </span>
         </div>
 
-        {/* Name input */}
         <div className="modal-name-field">
           <label className="modal-name-label" htmlFor="modal-folder-name">
             {t('modals.newFolder.folderNameLabel')}
@@ -117,7 +111,6 @@ export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFold
           />
         </div>
 
-        {/* Color picker */}
         <div className="modal-folder-colors">
           <span className="modal-name-label">{t('modals.newFolder.borderColorLabel')}</span>
           <div className="color-picker-grid">
@@ -134,7 +127,6 @@ export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFold
           </div>
         </div>
 
-        {/* Footer */}
         <div className="modal-footer modal-footer--spread">
           <button className="modal-cancel-btn" onClick={onClose}>{t('common.cancel')}</button>
           <button className="modal-create-btn" onClick={handleCreate}>

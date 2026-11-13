@@ -57,9 +57,6 @@ export function LanguageProvider({ children }) {
     document.documentElement.setAttribute('lang', language === 'es' ? 'es-419' : 'pt-BR');
   }, [language]);
 
-  /**
-   * Função t(key, params): recupera a string correspondente ou fallback
-   */
   const t = useCallback((path, params = {}) => {
     const currentDict = translations[language] || translations[DEFAULT_LANGUAGE];
     const fallbackDict = translations[DEFAULT_LANGUAGE];
@@ -82,9 +79,6 @@ export function LanguageProvider({ children }) {
     return result;
   }, [language]);
 
-  /**
-   * Formatação de data localizada
-   */
   const formatDate = useCallback((dateInput, options = { day: '2-digit', month: 'short' }) => {
     if (!dateInput) return '';
     try {
@@ -96,9 +90,6 @@ export function LanguageProvider({ children }) {
     }
   }, [language]);
 
-  /**
-   * Cálculo de tempo relativo internacionalizado
-   */
   const timeAgo = useCallback((date) => {
     if (!date) return '';
     const now = Date.now();
@@ -121,7 +112,6 @@ export function LanguageProvider({ children }) {
       return `Hace ${diffDay} días`;
     }
 
-    // pt-BR
     if (diffSec < 10) return 'Agora mesmo';
     if (diffSec < 60) return `Há ${diffSec} segundos`;
     if (diffMin === 1) return 'Há 1 minuto';
@@ -132,9 +122,6 @@ export function LanguageProvider({ children }) {
     return `Há ${diffDay} dias`;
   }, [language]);
 
-  /**
-   * Formata texto/objeto de atividade dinamicamente de acordo com o idioma corrente
-   */
   const formatActivity = useCallback((activityOrText) => {
     return formatActivityMessage(activityOrText, t, language);
   }, [t, language]);

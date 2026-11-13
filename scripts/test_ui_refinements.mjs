@@ -84,9 +84,10 @@ export async function runUiRefinements({ evaluate, command, eventually }) {
     assert.ok((Math.max(a, b) + .05) / (Math.min(a, b) + .05) >= 4.5, `Tour text contrast: ${theme}`);
     if (theme === 'liquid-glass') {
       const styles = await evaluate(`(() => {const css=getComputedStyle(document.querySelector('.editor-sidebar')); return {blur:css.backdropFilter,bg:css.backgroundColor,canvas:getComputedStyle(document.querySelector('.editor-canvas')).backgroundColor};})()`);
-      assert.match(styles.blur, /blur\(24px\)/);
-      assert.equal(styles.bg, 'rgba(18, 18, 24, 0.45)');
-      assert.equal(styles.canvas, 'rgb(229, 229, 231)');
+      assert.match(styles.blur, /^blur\(10px\) saturate/);
+      assert.equal(styles.bg, 'rgba(0, 0, 0, 0)');
+      assert.equal(styles.canvas, 'rgba(0, 0, 0, 0)');
+      assert.equal(await evaluate('!!document.querySelector("#foux-liquid-refraction feDisplacementMap")'), true);
       const shot = await command('Page.captureScreenshot', { format: 'png' });
       const screenshotPath = path.join(tmpdir(), 'foux-ui-liquid-glass.png');
       await writeFile(screenshotPath, Buffer.from(shot.data, 'base64'));

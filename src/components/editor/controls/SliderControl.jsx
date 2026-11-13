@@ -1,25 +1,30 @@
+import { memo } from 'react';
 import NumericInput from './NumericInput';
+import PropertyLabel from './PropertyLabel';
+import useDraft from '../../../hooks/useDraft';
 
-export default function SliderControl({ label, unit, value, min, max, step, disabled, onChange }) {
-  const numValue = parseFloat(value) || 0;
-  const displayValue = step && step < 1 ? numValue.toFixed(2) : Math.round(numValue);
+function SliderControl({ label, token, hint, unit, value, min, max, step = 1, disabled, onChange }) {
+  const [shown, setShown] = useDraft(parseFloat(value) || 0);
+  const change = (next) => {
+    setShown(next);
+    onChange(next);
+  };
+
+  const fill = max > min ? Math.min(100, Math.max(0, ((shown - min) / (max - min)) * 100)) : 0;
 
   return (
     <div className="sidebar-control">
       <div className="sidebar-control__label-row">
-        <span className="sidebar-control__label">{label}</span>
+        <PropertyLabel label={label} token={token} hint={hint} />
         <NumericInput
           className="sidebar-inline-number"
           aria-label={label}
-          value={displayValue}
+          value={step < 1 ? shown.toFixed(2) : Math.round(shown)}
           min={min}
           max={max}
-          step={step || 1}
+          step={step}
           disabled={disabled}
-          onChange={(e) => {
-            const v = parseFloat(e.target.value);
-            if (Number.isFinite(v)) onChange(v);
-          }}
+          onChange={change}
         />
         {unit && <span className="sidebar-control__unit">{unit}</span>}
       </div>
@@ -29,12 +34,14 @@ export default function SliderControl({ label, unit, value, min, max, step, disa
         aria-label={label}
         min={min}
         max={max}
-        step={step || 1}
-        value={numValue}
+        step={step}
+        value={shown}
+        style={{ '--fill': `${fill}%` }}
         disabled={disabled}
-        onChange={(e) => onChange(parseFloat(e.target.value))}
+        onChange={(event) => change(parseFloat(event.target.value))}
       />
     </div>
   );
 }
 
+export default memo(SliderControl);

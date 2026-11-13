@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback } from 'react';
 import { ArrowLeft, Camera, Trash2, Folder, FileCode, Save, User } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-
+import { imageFileToAvatar } from '../utils/image';
+import ChallengeRecordCard from '../components/profile/ChallengeRecordCard';
 
 export default function Profile({
   onNavigate,
@@ -12,7 +13,7 @@ export default function Profile({
   onUpdateProfile,
   showToast,
 }) {
-  const { t } = useLanguage();
+  const { t, formatDate } = useLanguage();
   const fileInputRef = useRef(null);
 
   const [name, setName] = useState(() => userProfile.name || t('profile.defaultName'));
@@ -23,27 +24,19 @@ export default function Profile({
     onNavigate(previousScreen || 'dashboard');
   };
 
-  const handlePhotoSelect = useCallback((e) => {
+  const handlePhotoSelect = useCallback(async (e) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      if (showToast) showToast(t('profile.invalidImage'));
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result;
-      if (base64) {
-        setAvatar(base64);
-        if (onUpdateProfile) {
-          onUpdateProfile({ avatar: base64 });
-        }
-      }
-    };
-    reader.readAsDataURL(file);
     e.target.value = '';
+    if (!file) return;
+    try {
+      if (!file.type.startsWith('image/')) throw new Error('Not an image');
+      const avatarUrl = await imageFileToAvatar(file);
+      setAvatar(avatarUrl);
+      onUpdateProfile?.({ avatar: avatarUrl });
+    } catch {
+      // Also covers files with an image extension that fail to decode.
+      showToast?.(t('profile.invalidImage'));
+    }
   }, [onUpdateProfile, showToast, t]);
 
   const handleRemovePhoto = useCallback(() => {
@@ -78,7 +71,6 @@ export default function Profile({
 
   return (
     <div className="profile-page">
-      {/* Header */}
       <header className="profile-page__header">
         <button
           className="profile-page__back"
@@ -91,9 +83,7 @@ export default function Profile({
         <h1 className="profile-page__title">{t('profile.title')}</h1>
       </header>
 
-      {/* Body */}
       <main className="profile-page__body">
-        {/* Card do Topo: Avatar e Identificação */}
         <section className="profile-card profile-card--hero">
           <div className="profile-avatar-container">
             <div className="profile-avatar-wrapper">
@@ -108,7 +98,6 @@ export default function Profile({
                   <User size={52} />
                 </div>
               )}
-              {/* Botão de Câmera/Alterar foto */}
               <button
                 className="profile-avatar__upload-badge"
                 onClick={() => fileInputRef.current?.click()}
@@ -141,11 +130,9 @@ export default function Profile({
           </div>
         </section>
 
-        {/* Informações Pessoais */}
         <section className="profile-card">
           <h3 className="profile-card__heading">{t('profile.title')}</h3>
 
-          {/* Nome do Usuário */}
           <div className="profile-field">
             <label className="profile-field__label" htmlFor="profile-name-input">
               {t('profile.nameLabel')}
@@ -161,7 +148,6 @@ export default function Profile({
             />
           </div>
 
-          {/* Biografia com contador estrito de 300 caracteres */}
           <div className="profile-field">
             <div className="profile-field__label-row">
               <label className="profile-field__label" htmlFor="profile-bio-textarea">
@@ -182,7 +168,6 @@ export default function Profile({
             />
           </div>
 
-          {/* Botão Salvar Alterações */}
           <div className="profile-actions">
             <button className="profile-save-btn" onClick={handleSave}>
               <Save size={16} />
@@ -191,11 +176,9 @@ export default function Profile({
           </div>
         </section>
 
-        {/* Painel de Estatísticas da Conta (Métricas Reais) */}
         <section className="profile-card">
           <h3 className="profile-card__heading">{t('profile.statsTitle')}</h3>
           <div className="profile-stats-grid">
-            {/* Card Pastas Criadas */}
             <div className="profile-stat-card profile-stat-card--folders">
               <div className="profile-stat-card__icon-wrap">
                 <Folder size={26} style={{ color: '#e59843' }} />
@@ -206,7 +189,6 @@ export default function Profile({
               </div>
             </div>
 
-            {/* Card Projetos Criados */}
             <div className="profile-stat-card profile-stat-card--projects">
               <div className="profile-stat-card__icon-wrap">
                 <FileCode size={26} style={{ color: '#3b82f6' }} />
@@ -218,6 +200,8 @@ export default function Profile({
             </div>
           </div>
         </section>
+
+        <ChallengeRecordCard t={t} formatDate={formatDate} />
       </main>
     </div>
   );

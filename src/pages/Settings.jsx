@@ -24,7 +24,6 @@ export default function Settings({
   onRestartTutorial,
 }) {
   const { language, setLanguage, t } = useLanguage();
-  // Calcula o tamanho real consumido em bytes no carregamento da tela
   const [storageBytes, setStorageBytes] = useState(() => calculateStorageUsage());
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
@@ -40,7 +39,6 @@ export default function Settings({
   const handleLanguageChange = (e) => {
     const newLang = e.target.value;
     setLanguage(newLang);
-    // Atualiza imediatamente o cálculo de bytes pois a nova chave é salva
     setTimeout(refreshStorageSize, 50);
   };
 
@@ -50,24 +48,19 @@ export default function Settings({
   };
 
   const handleConfirmClear = () => {
-    // 1. Executa a limpeza física do armazenamento local
     clearAllStorage();
 
-    // 2. Notifica a aplicação para redefinir o estado de projetos, pastas e atividades
     if (onClearCache) {
       onClearCache();
     }
 
-    // 3. Zera o contador exibido na tela
     setStorageBytes(0);
 
-    // 4. Exibe o toast discreto de sucesso com o texto no idioma atual
     showToast(t('settings.clearSuccessToast'));
   };
 
   return (
     <div className="settings-page">
-      {/* Header */}
       <header className="settings-page__header">
         <button
           className="settings-page__back"
@@ -81,7 +74,6 @@ export default function Settings({
       </header>
 
       <div className="settings-page__body">
-        {/* ── TEMA DA INTERFACE ── */}
         <section className="settings-section">
           <h2 className="settings-section__title">{t('settings.themeTitle')}</h2>
           <div className="settings-field">
@@ -105,7 +97,6 @@ export default function Settings({
 
         <div className="settings-divider" />
 
-        {/* ── IDIOMA (i18n Interativo) ── */}
         <section className="settings-section">
           <h2 className="settings-section__title">{t('settings.languageTitle')}</h2>
           <div className="settings-field">
@@ -126,7 +117,6 @@ export default function Settings({
 
         <div className="settings-divider" />
 
-        {/* ── TUTORIAL ── */}
         <section className="settings-section">
           <h2 className="settings-section__title">{t('settings.tutorialTitle')}</h2>
           <div className="settings-row">
@@ -156,7 +146,6 @@ export default function Settings({
 
         <div className="settings-divider" />
 
-        {/* ── DADOS LOCAIS & LIMPEZA DE CACHE ── */}
         <section className="settings-section">
           <h2 className="settings-section__title">{t('settings.storageTitle')}</h2>
           <div className="settings-row">
@@ -176,7 +165,6 @@ export default function Settings({
         </section>
       </div>
 
-      {/* Modal de Confirmação para Limpeza de Cache */}
       <ModalConfirm
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}

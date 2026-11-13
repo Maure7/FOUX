@@ -1,5 +1,5 @@
 import { activateOnKey } from '../../utils/keyboard';
-import { useRef, useMemo, useEffect } from 'react';
+import { memo, useRef, useMemo, useEffect } from 'react';
 import { Upload } from 'lucide-react';
 import { syncCanvasScrollbars } from '../../utils/canvasScrollbars';
 
@@ -14,7 +14,7 @@ function neutralizeHtml(html) {
   return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
 }
 
-export default function EditorCanvas({ initialHtml, documentVersion = 0, onFileSelect, iframeRef, onIframeLoad, canvasRef, isPreview, t }) {
+function EditorCanvas({ initialHtml, documentVersion = 0, onFileSelect, iframeRef, onIframeLoad, canvasRef, isPreview, t }) {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -100,3 +100,4 @@ export default function EditorCanvas({ initialHtml, documentVersion = 0, onFileS
   );
 }
 
+export default memo(EditorCanvas);

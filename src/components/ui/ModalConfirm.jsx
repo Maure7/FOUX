@@ -29,7 +29,6 @@ export default function ModalConfirm({
   }
   const displayed = isOpen ? content : lastOpenContent;
 
-  /* Close on Escape */
   useEffect(() => {
     if (!isOpen) return;
     const handleKey = (e) => {
@@ -53,21 +52,17 @@ export default function ModalConfirm({
         aria-labelledby="modal-confirm-title"
         aria-describedby={displayed.message ? 'modal-confirm-message' : undefined}
       >
-        {/* Close */}
         <button className="modal-close" onClick={onClose} aria-label={t('common.close')}>
           <X size={18} />
         </button>
 
-        {/* Icon */}
         <div className="modal-confirm__icon-wrapper">
           <AlertTriangle size={28} />
         </div>
 
-        {/* Content */}
         <h2 className="modal-title" id="modal-confirm-title">{displayed.title}</h2>
         {displayed.message && <p className="modal-confirm__message" id="modal-confirm-message">{displayed.message}</p>}
 
-        {/* Actions */}
         <div className="modal-footer modal-footer--spread">
           <button className="modal-cancel-btn" onClick={onClose}>
             {displayed.cancelLabel}

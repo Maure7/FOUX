@@ -20,7 +20,9 @@ import FolderContextMenu from '../components/dashboard/FolderContextMenu';
 import AtividadeRecente from '../components/dashboard/AtividadeRecente';
 import FaqModal from '../components/ui/FaqModal';
 import { useLanguage } from '../context/LanguageContext';
+import { activateOnKey } from '../utils/keyboard';
 
+// Keyboard-opened menus have no pointer coordinates; anchor them to the trigger.
 function menuPosition(event) {
   if (event.clientX || event.clientY) return { x: event.clientX, y: event.clientY };
   const bounds = event.currentTarget.getBoundingClientRect();
@@ -42,7 +44,7 @@ function ProjectsEmptyState({ t }) {
 
 function FolderEmptyState({ onAddContent, t }) {
   return (
-    <div className="folder-empty-state" onClick={onAddContent} role="button" tabIndex={0}>
+    <div className="folder-empty-state" onClick={onAddContent} role="button" tabIndex={0} onKeyDown={(event) => activateOnKey(event, onAddContent)}>
       <FolderOpen className="folder-empty-state__icon" />
       <span className="folder-empty-state__text">{t('dashboard.emptyFolderTitle')}</span>
       <span className="folder-empty-state__hint">{t('dashboard.emptyFolderHint')}</span>
@@ -92,30 +94,23 @@ export default function Dashboard({
   const [viewMode, setViewMode] = useState('grid');
   const [currentFolderId, setCurrentFolderId] = useState(null);
 
-  /* Selection mode state */
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectionTargetFolderId, setSelectionTargetFolderId] = useState(null);
   const [selectedProjectIds, setSelectedProjectIds] = useState(new Set());
 
-  /* Context menu state */
   const [contextMenu, setContextMenu] = useState(null);
 
-  /* Folder context menu state */
   const [folderContextMenu, setFolderContextMenu] = useState(null);
 
-  /* Confirmation modal state */
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, projectId: null, projectName: '', isFolder: false });
 
-  /* Rename modal state */
   const [renameModal, setRenameModal] = useState({ isOpen: false, targetId: null, currentName: '', isFolder: false });
 
-  /* Current folder object */
   const currentFolder = useMemo(
     () => folders.find((f) => f.id === currentFolderId) || null,
     [folders, currentFolderId]
   );
 
-  /* Pre-compute file counts for each folder */
   const folderFileCounts = useMemo(() => {
     const counts = {};
     folders.forEach((f) => { counts[f.id] = 0; });
@@ -127,7 +122,6 @@ export default function Dashboard({
     return counts;
   }, [projects, folders]);
 
-  /* Filtered and sorted items */
   const { sortedFolders, sortedProjects } = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
@@ -154,7 +148,7 @@ export default function Dashboard({
       );
     }
 
-    // Sort: favoritos primeiro, depois data mais recente
+    // Pinned items first, then the most recent.
     const sf = [...visibleFolders].sort((a, b) => {
       const aFav = !!(a.favorite || a.isFavorite);
       const bFav = !!(b.favorite || b.isFavorite);
@@ -174,7 +168,6 @@ export default function Dashboard({
     return { sortedFolders: sf, sortedProjects: sp };
   }, [projects, folders, searchQuery, currentFolderId, selectionMode]);
 
-  /* Modal handlers */
   const handleOpenModal = useCallback(() => setIsModalOpen(true), []);
   const handleCloseModal = useCallback(() => setIsModalOpen(false), []);
 
@@ -188,7 +181,6 @@ export default function Dashboard({
     if (onCreateTutorialProject) onCreateTutorialProject();
   }, [onCreateTutorialProject]);
 
-  /* Folder navigation */
   const enterFolder = useCallback((folderId) => {
     setCurrentFolderId(folderId);
     setSearchQuery('');
@@ -199,7 +191,6 @@ export default function Dashboard({
     setSearchQuery('');
   }, []);
 
-  /* Selection mode */
   const startSelectionMode = useCallback((targetFolderId) => {
     setSelectionMode(true);
     setSelectionTargetFolderId(targetFolderId);
@@ -238,7 +229,6 @@ export default function Dashboard({
     setSelectedProjectIds(new Set());
   }, [selectedProjectIds, selectionTargetFolderId, onMoveProject, showToast, t]);
 
-  /* Project context menu */
   const handleContextMenu = useCallback((e, project) => {
     e.preventDefault();
     e.stopPropagation();
@@ -251,7 +241,6 @@ export default function Dashboard({
 
   const closeContextMenu = useCallback(() => setContextMenu(null), []);
 
-  /* Folder context menu */
   const handleFolderContextMenu = useCallback((e, folder) => {
     e.preventDefault();
     e.stopPropagation();
@@ -264,12 +253,11 @@ export default function Dashboard({
 
   const closeFolderContextMenu = useCallback(() => setFolderContextMenu(null), []);
 
-  /* Section title */
   const sectionTitle = selectionMode
     ? t('dashboard.selectionTitle')
     : currentFolder
       ? currentFolder.name
-      : t('dashboard.welcome');
+      : null;
 
   const hasItems = sortedProjects.length > 0 || sortedFolders.length > 0;
   const isSearching = searchQuery.trim().length > 0;
@@ -290,7 +278,6 @@ export default function Dashboard({
       />
 
       <main className="main-content" id="main-content">
-        {/* Section header */}
         <div className="section-header">
           <div className="section-header__left">
             {(isInsideFolder || selectionMode) && (
@@ -303,7 +290,7 @@ export default function Dashboard({
                 <span>{t('common.back')}</span>
               </button>
             )}
-            <h1 className="section-header__title">{sectionTitle}</h1>
+            {sectionTitle && <h1 className="section-header__title">{sectionTitle}</h1>}
           </div>
           {!selectionMode && (
             <div className="view-toggle" id="view-toggle">
@@ -327,7 +314,6 @@ export default function Dashboard({
           )}
         </div>
 
-        {/* Projects area */}
         <div className="projects-area">
           {isFolderEmpty ? (
             <FolderEmptyState onAddContent={() => startSelectionMode(currentFolderId)} t={t} />
@@ -337,7 +323,6 @@ export default function Dashboard({
                 <NewProjectCard onClick={handleOpenModal} viewMode={viewMode} t={t} />
               )}
 
-              {/* Folders (sorted: fav first) */}
               {sortedFolders.map((folder) => (
                 <FolderCard
                   key={folder.id}
@@ -351,7 +336,6 @@ export default function Dashboard({
                 />
               ))}
 
-              {/* Projects (sorted: fav first) */}
               {sortedProjects.map((p) => (
                 <ProjectCard
                   key={p.id}
@@ -373,7 +357,6 @@ export default function Dashboard({
           )}
         </div>
 
-        {/* Selection mode floating bar */}
         {selectionMode && (
           <div className="selection-bar">
             <span className="selection-bar__count">
@@ -396,7 +379,6 @@ export default function Dashboard({
           </div>
         )}
 
-        {/* Recent Activity */}
         {!selectionMode && (
           <AtividadeRecente
             activities={activities}
@@ -408,14 +390,12 @@ export default function Dashboard({
 
       <FaqModal isOpen={isFaqOpen} onClose={() => setIsFaqOpen(false)} t={t} />
 
-      {/* Footer */}
       <footer className="footer" id="footer">
         <span className="footer__copyright">
           © 2026 FANCY AND ORGANIZED UX INC
         </span>
       </footer>
 
-      {/* Modal Novo Projeto */}
       <ModalNovoProjeto
         isOpen={isModalOpen}
         onClose={handleCloseModal}
@@ -423,7 +403,6 @@ export default function Dashboard({
         onOpenTutorial={handleOpenTutorial}
       />
 
-      {/* Modal Nova Pasta */}
       <ModalNovaPasta
         isOpen={isFolderModalOpen}
         onClose={() => setIsFolderModalOpen(false)}
@@ -431,7 +410,6 @@ export default function Dashboard({
         existingFolders={folders}
       />
 
-      {/* Project Context Menu */}
       {contextMenu && (
         <ContextMenu
           x={contextMenu.x}
@@ -467,7 +445,6 @@ export default function Dashboard({
         />
       )}
 
-      {/* Folder Context Menu */}
       {folderContextMenu && (
         <FolderContextMenu
           x={folderContextMenu.x}
@@ -499,7 +476,6 @@ export default function Dashboard({
         />
       )}
 
-      {/* Confirmation Modal */}
       <ModalConfirm
         isOpen={confirmModal.isOpen}
         onClose={() => setConfirmModal({ isOpen: false, projectId: null, projectName: '', isFolder: false })}
@@ -516,7 +492,6 @@ export default function Dashboard({
         cancelLabel={t('common.cancel')}
       />
 
-      {/* Rename Modal (projects + folders) */}
       <ModalRenomear
         isOpen={renameModal.isOpen}
         onClose={() => setRenameModal({ isOpen: false, targetId: null, currentName: '', isFolder: false })}

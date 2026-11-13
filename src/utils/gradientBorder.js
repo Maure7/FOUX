@@ -1,3 +1,5 @@
+import { cssColorToHex } from './css/color.js';
+
 // Keep the editable background separate from the two painted box layers.
 // The snapshot lives in the document so save/reopen and undo/redo retain it.
 const STATE_ATTR = 'data-foux-gradient-border';
@@ -46,11 +48,6 @@ function splitLayers(value) {
   }
   layers.push(value.slice(start).trim());
   return layers;
-}
-
-export function cssColorToHex(value) {
-  const match = value.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
-  return match ? '#' + match.slice(1, 4).map((channel) => Number(channel).toString(16).padStart(2, '0')).join('') : value;
 }
 
 export function parseLinearGradient(value) {

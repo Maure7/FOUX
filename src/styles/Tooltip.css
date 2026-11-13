@@ -2,7 +2,7 @@
   position: fixed;
   z-index: 2147483647;
   pointer-events: none;
-  max-width: min(210px, calc(100vw - 24px));
+  max-width: min(260px, calc(100vw - 24px));
   padding: 3px 7px;
   border: 1px solid rgba(255, 255, 255, .1);
   border-radius: 5px;
@@ -24,3 +24,11 @@
   .foux-tooltip { opacity: 0; }
 }
 .foux-tooltip[data-instant] { transition: none; }
+
+.foux-tooltip[data-wrap] {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  text-align: left;
+  padding: 6px 9px;
+}

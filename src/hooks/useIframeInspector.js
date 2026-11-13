@@ -1,98 +1,140 @@
-import useHoverStyles from './inspector/useHoverStyles';
-import { SCROLLBAR_STYLE_ID } from '../utils/inspector/constants';
 import { useState, useCallback, useEffect, useRef } from 'react';
+import useHoverStyles from './inspector/useHoverStyles';
 import { getGradientBorder, setGradientBorder, updateGradientBorderBackground } from '../utils/gradientBorder';
-import { extractComputedStyles, rememberOriginalStyle } from '../utils/inspector/styles';
-import { HOVER_OUTLINE, HOVER_OFFSET, SELECT_OUTLINE, SELECT_OFFSET, ATTR_HOVERED, ATTR_SELECTED, INSPECTOR_STYLE_ID, HOVER_STYLE_ID } from '../utils/inspector/constants';
+import { extractComputedStyles, rememberOriginalStyle, transitionsSettled } from '../utils/inspector/styles';
+import {
+  HOVER_OUTLINE, HOVER_OFFSET, SELECT_OUTLINE, SELECT_OFFSET, ATTR_HOVERED, ATTR_SELECTED,
+  INSPECTOR_STYLE_ID, HOVER_STYLE_ID, SCROLLBAR_STYLE_ID, ORIGINAL_STYLE_ATTR,
+} from '../utils/inspector/constants';
+
+const FONT_STYLE_PREFIX = 'foux-font-';
+const INTERNAL_IDS = new Set([HOVER_STYLE_ID, INSPECTOR_STYLE_ID, SCROLLBAR_STYLE_ID]);
+// Imported stylesheets may declare borders with !important.
+const IMPORTANT_BORDER_PROPERTIES = { borderWidth: 'border-width', borderStyle: 'border-style', borderColor: 'border-color' };
+
+const INSPECTOR_CSS = `
+  [${ATTR_HOVERED}]:not([${ATTR_SELECTED}]) {
+    outline: ${HOVER_OUTLINE} !important;
+    outline-offset: ${HOVER_OFFSET} !important;
+  }
+  [${ATTR_SELECTED}] {
+    outline: ${SELECT_OUTLINE} !important;
+    outline-offset: ${SELECT_OFFSET} !important;
+  }
+`;
+
+function writeStyle(element, cssProperty, value) {
+  if (cssProperty === 'borderGradient') {
+    setGradientBorder(element, value);
+    return;
+  }
+  // With a gradient border, the background lives in painted layers.
+  if (updateGradientBorderBackground(element, cssProperty, value)) return;
+  if (cssProperty === 'backgroundImage') {
+    element.style.backgroundImage = value;
+    if (value?.startsWith('linear-gradient(')) {
+      element.style.setProperty('background-clip', 'padding-box', 'important');
+      element.style.setProperty('background-repeat', 'no-repeat', 'important');
+      element.style.setProperty('background-size', 'auto', 'important');
+    }
+    return;
+  }
+  if (cssProperty === 'borderRadius') {
+    element.style.setProperty('border-radius', typeof value === 'number' ? `${value}px` : String(value), 'important');
+    element.style.setProperty('overflow', 'hidden', 'important');
+    return;
+  }
+  const borderProperty = IMPORTANT_BORDER_PROPERTIES[cssProperty];
+  if (!borderProperty) {
+    element.style[cssProperty] = value;
+    return;
+  }
+  element.style.setProperty(borderProperty, String(value), 'important');
+  if (cssProperty === 'borderWidth' && parseFloat(value) > 0) {
+    // A width alone stays invisible while the live style is none/hidden. Read
+    // it from the element: React state may still be a frame behind.
+    const style = element.ownerDocument.defaultView.getComputedStyle(element).borderTopStyle;
+    if (style === 'none' || style === 'hidden') element.style.setProperty('border-style', 'solid', 'important');
+  }
+}
 
 export default function useIframeInspector(iframeRef) {
   const [selectedElement, setSelectedElement] = useState(null);
-  const [selectedTagName, setSelectedTagName] = useState(null);
   const [computedStyles, setComputedStyles] = useState(null);
 
-  // Refs mutáveis para uso nos listeners (evita stale closures)
+  // Listeners inside the iframe read refs, never render-time state.
   const hoveredRef = useRef(null);
   const selectedRef = useRef(null);
   const cleanupRef = useRef(null);
   const previewModeRef = useRef(false);
+  const refreshFrame = useRef(0);
+  const settling = useRef(null);
 
   const clearHover = useCallback(() => {
-    const el = hoveredRef.current;
-    if (el) {
-      el.removeAttribute(ATTR_HOVERED);
-      hoveredRef.current = null;
-    }
+    hoveredRef.current?.removeAttribute(ATTR_HOVERED);
+    hoveredRef.current = null;
   }, []);
 
-  const clearSelectionOutline = useCallback(() => {
-    const el = selectedRef.current;
-    if (el) {
-      el.removeAttribute(ATTR_SELECTED);
-    }
+  const cancelRefresh = useCallback(() => {
+    cancelAnimationFrame(refreshFrame.current);
+    refreshFrame.current = 0;
   }, []);
 
-  const clearSelection = useCallback(() => {
-    clearSelectionOutline();
-    selectedRef.current = null;
-    setSelectedElement(null);
-    setSelectedTagName(null);
-    setComputedStyles(null);
-  }, [clearSelectionOutline]);
-
-  const applyStyle = useCallback((cssProperty, value) => {
-    const el = selectedRef.current;
-    if (!el?.isConnected) return;
-    rememberOriginalStyle(el);
-
-    if (cssProperty === 'borderGradient') {
-      setGradientBorder(el, value);
-    } else if (updateGradientBorderBackground(el, cssProperty, value)) {
-      // The helper updates the logical background without losing the border layer.
-    } else if (cssProperty === 'backgroundImage') {
-      el.style.backgroundImage = value;
-      if (value?.startsWith('linear-gradient(')) {
-        el.style.setProperty('background-clip', 'padding-box', 'important');
-        el.style.setProperty('background-repeat', 'no-repeat', 'important');
-        el.style.setProperty('background-size', 'auto', 'important');
-      }
-    } else if (cssProperty === 'borderRadius') {
-      const valStr = typeof value === 'number' ? `${value}px` : String(value);
-      el.style.setProperty('border-radius', valStr, 'important');
-      el.style.setProperty('overflow', 'hidden', 'important');
-    } else if (['borderWidth', 'borderStyle', 'borderColor'].includes(cssProperty)) {
-      // Imported stylesheets may declare borders with !important.
-      const property = cssProperty.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
-      el.style.setProperty(property, String(value), 'important');
-    } else {
-      el.style[cssProperty] = value;
-    }
-
-    const iframe = iframeRef.current;
-    if (iframe?.contentWindow) {
-      const updated = extractComputedStyles(el, iframe.contentWindow);
-      if (updated) setComputedStyles(updated);
-    }
+  // Style writes reach the iframe immediately; reading computed styles back
+  // (style recalc + layout) and re-rendering the sidebar happen once per frame.
+  const scheduleRefresh = useCallback(() => {
+    const run = () => {
+      if (refreshFrame.current) return;
+      refreshFrame.current = requestAnimationFrame(() => {
+        refreshFrame.current = 0;
+        const element = selectedRef.current;
+        const win = iframeRef.current?.contentWindow;
+        if (!element?.isConnected || element.ownerDocument !== win?.document) return;
+        setComputedStyles(extractComputedStyles(element, win));
+        // Read again once authored transitions reach the value just written.
+        const settled = settling.current === element ? null : transitionsSettled(element);
+        if (settled) {
+          settling.current = element;
+          settled.then(() => {
+            settling.current = null;
+            run();
+          });
+        }
+      });
+    };
+    run();
   }, [iframeRef]);
 
-  const serializeDocument = useCallback(() => {
-    const iframe = iframeRef.current;
-    if (!iframe?.contentDocument) return null;
-    const doc = iframe.contentDocument;
+  const select = useCallback((element) => {
+    cancelRefresh();
+    clearHover();
+    selectedRef.current?.removeAttribute(ATTR_SELECTED);
+    selectedRef.current = element;
+    element?.setAttribute(ATTR_SELECTED, '');
+    setSelectedElement(element);
+    setComputedStyles(element ? extractComputedStyles(element, iframeRef.current?.contentWindow) : null);
+  }, [iframeRef, cancelRefresh, clearHover]);
 
-    // Blindagem: se o documento ou body estiver vazio (ex: about:blank durante desmontagem), não serializa
-    if (!doc.body || (!doc.body.innerHTML.trim() && doc.body.children.length === 0)) {
-      return null;
-    }
+  const applyStyle = useCallback((cssProperty, value) => {
+    const element = selectedRef.current;
+    if (!element?.isConnected) return;
+    rememberOriginalStyle(element);
+    writeStyle(element, cssProperty, value);
+    scheduleRefresh();
+  }, [scheduleRefresh]);
+
+  const serializeDocument = useCallback(() => {
+    const doc = iframeRef.current?.contentDocument;
+    // about:blank during unmount must never overwrite a saved project.
+    if (!doc?.body || (!doc.body.innerHTML.trim() && doc.body.children.length === 0)) return null;
 
     const clone = doc.documentElement.cloneNode(true);
-    clone.removeAttribute(ATTR_HOVERED);
-    clone.removeAttribute(ATTR_SELECTED);
     clone.querySelector(`#${INSPECTOR_STYLE_ID}`)?.remove();
     clone.querySelector(`#${SCROLLBAR_STYLE_ID}`)?.remove();
-    clone.querySelectorAll(`[${ATTR_HOVERED}], [${ATTR_SELECTED}]`).forEach((el) => {
-      el.removeAttribute(ATTR_HOVERED);
-      el.removeAttribute(ATTR_SELECTED);
-    });
+    for (const element of [clone, ...clone.querySelectorAll(`[${ATTR_HOVERED}], [${ATTR_SELECTED}]`)]) {
+      element.removeAttribute(ATTR_HOVERED);
+      element.removeAttribute(ATTR_SELECTED);
+    }
     return `<!DOCTYPE html>\n${clone.outerHTML}`;
   }, [iframeRef]);
 
@@ -104,15 +146,11 @@ export default function useIframeInspector(iframeRef) {
   }, [iframeRef, clearHover]);
 
   const injectFont = useCallback((fontName, fontUrl) => {
-    const iframe = iframeRef.current;
-    if (!iframe?.contentDocument) return;
-    const doc = iframe.contentDocument;
-
-    // Verificar se já existe
-    const existingId = `foux-font-${fontName.replace(/\s+/g, '-')}`;
-    const existingStyle = doc.getElementById(existingId);
-    const style = existingStyle || doc.createElement('style');
-    style.id = existingId;
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc?.head) return;
+    const id = `${FONT_STYLE_PREFIX}${fontName.replace(/\s+/g, '-')}`;
+    const style = doc.getElementById(id) || doc.head.appendChild(doc.createElement('style'));
+    style.id = id;
     style.textContent = `
       @font-face {
         font-family: '${fontName}';
@@ -121,65 +159,72 @@ export default function useIframeInspector(iframeRef) {
         font-style: normal;
       }
     `;
-    if (!existingStyle) doc.head.appendChild(style);
+  }, [iframeRef]);
+
+  // Fonts are embedded in the document, so the list survives reopening the project.
+  const getImportedFonts = useCallback(() => {
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc) return [];
+    return [...doc.querySelectorAll(`style[id^="${FONT_STYLE_PREFIX}"]`)]
+      .map((style) => style.textContent.match(/font-family:\s*'([^']+)'/)?.[1])
+      .filter(Boolean)
+      .map((name) => ({ label: name, value: `'${name}'` }));
   }, [iframeRef]);
 
   const getElementsWithId = useCallback(() => {
-    const iframe = iframeRef.current;
-    if (!iframe?.contentDocument) return [];
-    const doc = iframe.contentDocument;
-    const elements = doc.querySelectorAll('[id]');
-    const result = [];
-    elements.forEach((el) => {
-      // Filtrar ids de inspeção e internos
-      if (el.id && !el.id.startsWith('foux-font-') && el.id !== HOVER_STYLE_ID && el.id !== INSPECTOR_STYLE_ID && el.id !== SCROLLBAR_STYLE_ID) {
-        result.push({
-          id: el.id,
-          tagName: el.tagName,
-          label: `#${el.id} <${el.tagName.toLowerCase()}>`,
-        });
-      }
-    });
-    return result;
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc) return [];
+    return [...doc.querySelectorAll('[id]')]
+      .filter((element) => element.id && !element.id.startsWith(FONT_STYLE_PREFIX) && !INTERNAL_IDS.has(element.id))
+      .map((element) => ({ id: element.id, tagName: element.tagName }));
   }, [iframeRef]);
 
   const selectElementById = useCallback((elementId) => {
-    const iframe = iframeRef.current;
-    if (!iframe?.contentDocument || !iframe?.contentWindow) return;
-    const doc = iframe.contentDocument;
-    const win = iframe.contentWindow;
-    const element = doc.getElementById(elementId);
+    const element = iframeRef.current?.contentDocument?.getElementById(elementId);
     if (!element) return;
-
-    // Limpar hover e seleção anterior
-    clearHover();
-    clearSelectionOutline();
-
-    // Selecionar
-    element.setAttribute(ATTR_SELECTED, '');
-    selectedRef.current = element;
-
-    const tagName = element.tagName || 'ELEMENT';
-    const styles = extractComputedStyles(element, win);
-
-    setSelectedElement(element);
-    setSelectedTagName(tagName);
-    setComputedStyles(styles);
-
-    // Scroll into view
+    select(element);
     element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [iframeRef, clearHover, clearSelectionOutline]);
+  }, [iframeRef, select]);
 
+  const { assignHoverClass, injectHoverStyles, getHoverRules, clearHoverRules } = useHoverStyles(iframeRef, selectedRef);
 
-  const { assignHoverClass, getHoverClass, injectHoverStyles, getHoverRules } = useHoverStyles(iframeRef, selectedRef);
+  // Returns the selected element to the inline style it had when the document
+  // was first opened (the snapshot the CSS export also compares against).
+  const restoreSelected = useCallback(() => {
+    const element = selectedRef.current;
+    if (!element?.isConnected) return false;
+    let changed = false;
+    if (getGradientBorder(element)) {
+      setGradientBorder(element, null);
+      changed = true;
+    }
+    const original = element.getAttribute(ORIGINAL_STYLE_ATTR);
+    if (original !== null && (element.getAttribute('style') || '') !== original) {
+      if (original) element.setAttribute('style', original);
+      else element.removeAttribute('style');
+      changed = true;
+    }
+    if (clearHoverRules(element)) changed = true;
+    // Read back now, in the same render as the caller's revision bump, so the
+    // gradient toggles resync from the restored styles.
+    if (changed) {
+      cancelRefresh();
+      setComputedStyles(extractComputedStyles(element, iframeRef.current?.contentWindow));
+    }
+    return changed;
+  }, [iframeRef, clearHoverRules, cancelRefresh]);
 
+  // Called on every iframe load (initial file, import, undo/redo, language switch).
   const setupListeners = useCallback(() => {
     const iframe = iframeRef.current;
-    if (!iframe) return;
-
-    const doc = iframe.contentDocument;
-    const win = iframe.contentWindow;
+    const doc = iframe?.contentDocument;
+    const win = iframe?.contentWindow;
     if (!doc || !win) return;
+
+    cleanupRef.current?.();
+    cleanupRef.current = null;
+    cancelRefresh();
+
     doc.querySelectorAll('[style]').forEach(rememberOriginalStyle);
     // Repaint saved gradient borders with the current clipping and tiling rules.
     doc.querySelectorAll('[data-foux-gradient-border]').forEach((element) => {
@@ -187,101 +232,61 @@ export default function useIframeInspector(iframeRef) {
       if (gradient) setGradientBorder(element, gradient);
     });
 
-    // Limpar listeners anteriores se existirem
-    if (cleanupRef.current) {
-      cleanupRef.current();
-      cleanupRef.current = null;
-    }
-
-    // Inspection markers use a separate stylesheet, preserving authored outlines.
+    // A separate stylesheet keeps the inspection outlines from replacing authored outlines.
     let inspectorStyle = doc.getElementById(INSPECTOR_STYLE_ID);
     if (!inspectorStyle) {
       inspectorStyle = doc.createElement('style');
       inspectorStyle.id = INSPECTOR_STYLE_ID;
       doc.head.appendChild(inspectorStyle);
     }
-    inspectorStyle.textContent = `
-      [${ATTR_HOVERED}]:not([${ATTR_SELECTED}]) {
-        outline: ${HOVER_OUTLINE} !important;
-        outline-offset: ${HOVER_OFFSET} !important;
-      }
-      [${ATTR_SELECTED}] {
-        outline: ${SELECT_OUTLINE} !important;
-        outline-offset: ${SELECT_OFFSET} !important;
-      }
-    `;
+    inspectorStyle.textContent = INSPECTOR_CSS;
     inspectorStyle.sheet.disabled = previewModeRef.current;
-    doc.querySelectorAll(`[${ATTR_HOVERED}], [${ATTR_SELECTED}]`).forEach((el) => {
-      el.removeAttribute(ATTR_HOVERED);
-      el.removeAttribute(ATTR_SELECTED);
+    doc.querySelectorAll(`[${ATTR_HOVERED}], [${ATTR_SELECTED}]`).forEach((element) => {
+      element.removeAttribute(ATTR_HOVERED);
+      element.removeAttribute(ATTR_SELECTED);
     });
 
-    // Reset state
     selectedRef.current = null;
     hoveredRef.current = null;
     setSelectedElement(null);
-    setSelectedTagName(null);
     setComputedStyles(null);
 
-    // Blindagem de renderização para o componente #box-unica no tutorial (Design System: rounded-2xl / 16px)
-    try {
-      const boxUnica = doc.getElementById('caja-unica') || doc.getElementById('box-unica');
-      if (boxUnica) {
-        rememberOriginalStyle(boxUnica);
-        boxUnica.style.setProperty('overflow', 'hidden', 'important');
-        boxUnica.style.setProperty('box-sizing', 'border-box', 'important');
-        const computed = win.getComputedStyle(boxUnica);
-        if (!computed.borderRadius || computed.borderRadius === '0px' || computed.borderRadius === '10px') {
-          boxUnica.style.setProperty('border-radius', '16px', 'important');
-        }
+    // The tutorial's single box must keep its rounded clipping while students
+    // experiment with borders (PT and ES templates use different IDs).
+    const tutorialBox = doc.getElementById('caja-unica') || doc.getElementById('box-unica');
+    if (tutorialBox) {
+      rememberOriginalStyle(tutorialBox);
+      tutorialBox.style.setProperty('overflow', 'hidden', 'important');
+      tutorialBox.style.setProperty('box-sizing', 'border-box', 'important');
+      const radius = win.getComputedStyle(tutorialBox).borderRadius;
+      if (!radius || radius === '0px' || radius === '10px') {
+        tutorialBox.style.setProperty('border-radius', '16px', 'important');
       }
-    } catch {
-      // safe fallback
     }
 
-    function onMouseOver(e) {
-      if (previewModeRef.current) return;
-      const target = e.target;
-      if (!target?.style || target === doc.documentElement) return;
+    function onMouseOver(event) {
+      const target = event.target;
+      if (previewModeRef.current || !target?.style || target === doc.documentElement) return;
       clearHover();
       if (target === selectedRef.current) return;
       target.setAttribute(ATTR_HOVERED, '');
       hoveredRef.current = target;
     }
 
-    function onMouseOut(e) {
-      const target = e.target;
-      if (target === hoveredRef.current) {
-        clearHover();
-      }
+    function onMouseOut(event) {
+      if (event.target === hoveredRef.current) clearHover();
     }
 
-    function onClick(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      if (previewModeRef.current) return;
-
-      const target = e.target;
-      if (!target?.style) return;
-
-      clearHover();
-      clearSelectionOutline();
-
-      const element = target;
-      element.setAttribute(ATTR_SELECTED, '');
-      selectedRef.current = element;
-
-      const tagName = element.tagName || 'ELEMENT';
-      const styles = extractComputedStyles(element, win);
-
-      setSelectedElement(element);
-      setSelectedTagName(tagName);
-      setComputedStyles(styles);
+    // Links, buttons and forms inside the student's page must not navigate.
+    function onClick(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!previewModeRef.current && event.target?.style) select(event.target);
     }
 
-    function onSubmit(e) {
-      e.preventDefault();
-      e.stopPropagation();
+    function onSubmit(event) {
+      event.preventDefault();
+      event.stopPropagation();
     }
 
     doc.addEventListener('mouseover', onMouseOver, true);
@@ -295,50 +300,29 @@ export default function useIframeInspector(iframeRef) {
       doc.removeEventListener('click', onClick, true);
       doc.removeEventListener('submit', onSubmit, true);
       clearHover();
-      clearSelectionOutline();
+      selectedRef.current?.removeAttribute(ATTR_SELECTED);
     };
-  }, [iframeRef, clearHover, clearSelectionOutline]);
+  }, [iframeRef, cancelRefresh, clearHover, select]);
 
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-
-    function onLoad() {
-      setupListeners();
-    }
-
-    iframe.addEventListener('load', onLoad);
-
-    if (iframe.contentDocument?.readyState === 'complete') {
-      setupListeners();
-    }
-
-    return () => {
-      iframe.removeEventListener('load', onLoad);
-      if (cleanupRef.current) {
-        cleanupRef.current();
-        cleanupRef.current = null;
-      }
-    };
-  }, [iframeRef, setupListeners]);
+  useEffect(() => () => {
+    cleanupRef.current?.();
+    cancelAnimationFrame(refreshFrame.current);
+  }, []);
 
   return {
     selectedElement,
-    selectedTagName,
     computedStyles,
     applyStyle,
-    clearSelection,
     setPreviewMode,
     serializeDocument,
     injectFont,
+    getImportedFonts,
     getElementsWithId,
     selectElementById,
-    /* FIX #1: Editabilidade imediata */
     setupIframeListeners: setupListeners,
-    /* FIX #6: Hover events */
     assignHoverClass,
-    getHoverClass,
     injectHoverStyles,
     getHoverRules,
+    restoreSelected,
   };
 }

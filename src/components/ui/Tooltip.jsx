@@ -1,14 +1,11 @@
-import { cloneElement, useEffect, useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { createPortal } from 'react-dom';
 import '../../styles/Tooltip.css';
 
 const TOP_BARS = '.header, .editor-header';
 const TRIGGERS = 'button, [role="button"]';
-
-// Use for custom controls; ordinary buttons are covered by TooltipProvider.
-export function Tooltip({ content, children }) {
-  return cloneElement(children, { 'data-tooltip': content });
-}
+// Elsewhere only explicit hints get a tooltip; labelled sidebar buttons stay quiet.
+const HINTS = '.editor-sidebar [data-tooltip], .challenge-hud [data-tooltip]';
 
 function tooltipText(element) {
   const labelledBy = element.getAttribute('aria-labelledby')?.split(/\s+/)
@@ -17,6 +14,8 @@ function tooltipText(element) {
   return (element.dataset.tooltip || element.getAttribute('aria-label') || labelledBy || actionText || '').replace(/\s+/g, ' ').trim();
 }
 
+// One delegated listener serves every toolbar button: native `title` tooltips
+// are converted to data-tooltip so they look the same in every theme.
 export function TooltipProvider({ children, delay = 450 }) {
   const id = useId();
   const [tip, setTip] = useState(null);
@@ -68,7 +67,8 @@ export function TooltipProvider({ children, delay = 450 }) {
       if (event.type === 'pointerover' && event.pointerType === 'touch') return;
       const topBar = event.target.closest?.(TOP_BARS);
       const element = event.target.closest?.(TRIGGERS);
-      if (!topBar || !element || !topBar.contains(element) || element.closest('[role="tooltip"]') || element === active) return;
+      const inScope = element && ((topBar && topBar.contains(element)) || element.matches(HINTS));
+      if (!inScope || element.closest('[role="tooltip"]') || element === active) return;
       hide();
       const text = tooltipText(element);
       if (!text) return;
@@ -111,10 +111,12 @@ export function TooltipProvider({ children, delay = 450 }) {
     };
   }, [delay, id]);
 
-  const width = tip ? Math.min(210, window.innerWidth - 24, Math.max(48, tip.text.length * 6.2 + 16)) : 48;
+  const wanted = tip ? tip.text.length * 6.2 + 16 : 48;
+  const wraps = wanted > 260;
+  const width = tip ? Math.min(260, window.innerWidth - 24, Math.max(48, wanted)) : 48;
   const x = tip ? Math.max(12, Math.min(window.innerWidth - width - 12, tip.rect.left + tip.rect.width / 2 - width / 2)) : 12;
   const above = tip && tip.rect.bottom > window.innerHeight - 110;
   return <>{children}{tip && createPortal(
-    <div id={id} role="tooltip" className="foux-tooltip" data-instant={tip.instant || undefined} style={{ left: x, width, top: above ? tip.rect.top - 5 : tip.rect.bottom + 5, transform: above ? 'translateY(-100%)' : undefined }}>{tip.text}</div>, tip.host,
+    <div id={id} role="tooltip" className="foux-tooltip" data-instant={tip.instant || undefined} data-wrap={wraps || undefined} style={{ left: x, width, top: above ? tip.rect.top - 5 : tip.rect.bottom + 5, transform: above ? 'translateY(-100%)' : undefined }}>{tip.text}</div>, tip.host,
   )}</>;
 }

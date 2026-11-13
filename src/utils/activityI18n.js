@@ -17,7 +17,6 @@
 export function migrateLegacyActivity(item) {
   if (!item) return null;
 
-  // Se já for uma atividade estruturada no novo formato
   if (typeof item === 'object' && item.actionKey) {
     return {
       id: item.id || `act_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
@@ -48,7 +47,6 @@ export function migrateLegacyActivity(item) {
     };
   }
 
-  // 1. Tutorial FOUX
   if (/^(?:Abriu|Abrió) (?:o|el) Tutorial FOUX$/i.test(rawText)) {
     return {
       id,
@@ -59,7 +57,6 @@ export function migrateLegacyActivity(item) {
     };
   }
 
-  // 2. Criar pasta
   let match = rawText.match(/^(?:Criou a pasta|Creó la carpeta) '(.+)'$/);
   if (match) {
     return {
@@ -71,7 +68,6 @@ export function migrateLegacyActivity(item) {
     };
   }
 
-  // 3. Fixar pasta em favoritos
   match = rawText.match(/^(?:Fixou a pasta|Marcou pasta|Fijó la carpeta|Marcó la carpeta) '(.+)' (?:nos favoritos|como favorita|en favoritos)$/);
   if (match) {
     return {
@@ -83,7 +79,6 @@ export function migrateLegacyActivity(item) {
     };
   }
 
-  // 4. Desafixar pasta de favoritos
   match = rawText.match(/^(?:Desafixou a pasta|Removeu pasta|Quitó la carpeta|Desfijó la carpeta) '(.+)' (?:dos favoritos|de favoritos)$/);
   if (match) {
     return {
@@ -95,7 +90,6 @@ export function migrateLegacyActivity(item) {
     };
   }
 
-  // 5. Renomear pasta
   match = rawText.match(/^(?:Renomeou a pasta|Renombró la carpeta) de '(.+)' (?:para|a) '(.+)'$/);
   if (match) {
     return {
@@ -107,7 +101,6 @@ export function migrateLegacyActivity(item) {
     };
   }
 
-  // 6. Alterar cor da pasta
   match = rawText.match(/^(?:Alterou a cor da pasta|Cambió el color de la carpeta) '(.+)'$/);
   if (match) {
     return {
@@ -119,7 +112,6 @@ export function migrateLegacyActivity(item) {
     };
   }
 
-  // 7. Excluir pasta
   match = rawText.match(/^(?:Excluiu a pasta|Eliminó la carpeta) '(.+)'$/);
   if (match) {
     return {
@@ -131,7 +123,6 @@ export function migrateLegacyActivity(item) {
     };
   }
 
-  // 8. Fixar projeto em favoritos
   match = rawText.match(/^(?:Fixou|Marcou|Fijó|Marcó) '(.+)' (?:nos favoritos|como favorito|en favoritos)$/);
   if (match) {
     return {
@@ -143,7 +134,6 @@ export function migrateLegacyActivity(item) {
     };
   }
 
-  // 9. Desafixar projeto de favoritos
   match = rawText.match(/^(?:Desafixou|Removeu|Quitó|Desfijó) '(.+)' (?:dos favoritos|de favoritos)$/);
   if (match) {
     return {
@@ -155,7 +145,6 @@ export function migrateLegacyActivity(item) {
     };
   }
 
-  // 10. Renomear projeto
   match = rawText.match(/^(?:Mudou o nome|Cambió el nombre) de '(.+)' (?:para|a) '(.+)'$/);
   if (match) {
     return {
@@ -167,7 +156,6 @@ export function migrateLegacyActivity(item) {
     };
   }
 
-  // 11. Excluir projeto
   match = rawText.match(/^(?:Excluiu|Eliminó) '(.+)'$/);
   if (match) {
     return {
@@ -179,7 +167,6 @@ export function migrateLegacyActivity(item) {
     };
   }
 
-  // 12. Duplicar projeto
   match = rawText.match(/^(?:Duplicou|Duplicó) '(.+)'$/);
   if (match) {
     return {
@@ -191,7 +178,6 @@ export function migrateLegacyActivity(item) {
     };
   }
 
-  // 13. Abrir projeto
   match = rawText.match(/^(?:Abriu|Abrió) '(.+)'$/);
   if (match) {
     return {

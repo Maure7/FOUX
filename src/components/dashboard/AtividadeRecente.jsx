@@ -1,10 +1,11 @@
 import { appStorage } from '../../services/appStorage';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useReducer, useRef } from 'react';
 import { ClipboardList, Clock, FileCode, Folder, Trash2, X, Eye, EyeOff } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
 const MAX_COLLAPSED = 6;
 const HISTORY_VISIBILITY_KEY = 'foux_history_visibility';
+const RELATIVE_TIME_REFRESH_MS = 30000;
 
 function ActivityEmptyState({ message }) {
   return (
@@ -20,16 +21,7 @@ function ActivityEmptyState({ message }) {
 }
 
 function ActivityItem({ activity, onRemove, timeAgo, formatActivity, t }) {
-  const [timeLabel, setTimeLabel] = useState(() => timeAgo(activity.timestamp));
-
-  // Auto-refresh the relative timestamp every 30s
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTimeLabel(timeAgo(activity.timestamp));
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [activity.timestamp, timeAgo]);
-
+  const timeLabel = timeAgo(activity.timestamp);
   const translatedText = formatActivity ? formatActivity(activity) : (activity.text || activity.actionKey || '');
   const isFolder = activity.type === 'folder' || (activity.actionKey && activity.actionKey.includes('folder'));
   const tagLabel = isFolder ? t('activity.folderTag') : t('activity.projectTag');
@@ -66,8 +58,17 @@ export default function AtividadeRecente({ activities, onClearActivities, onRemo
   const { t, timeAgo, formatActivity } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  const confirmTimer = useRef(null);
+  // One shared clock re-renders the relative times ("2 minutes ago") of every item.
+  const [, tick] = useReducer((count) => count + 1, 0);
+  useEffect(() => {
+    const interval = setInterval(tick, RELATIVE_TIME_REFRESH_MS);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(confirmTimer.current);
+    };
+  }, []);
 
-  /* 1. Inicialização segura com persistência da preferência do usuário */
   const [isHistoryVisible, setIsHistoryVisible] = useState(() => {
     try {
       const saved = appStorage.getItem(HISTORY_VISIBILITY_KEY);
@@ -80,7 +81,6 @@ export default function AtividadeRecente({ activities, onClearActivities, onRemo
     return true; // Resumo padrão visível
   });
 
-  /* Alterna a visibilidade e persiste no localStorage de forma síncrona */
   const toggleHistoryVisibility = () => {
     setIsHistoryVisible((prev) => {
       const next = !prev;
@@ -97,12 +97,14 @@ export default function AtividadeRecente({ activities, onClearActivities, onRemo
   const visibleActivities = expanded ? activities : activities.slice(0, MAX_COLLAPSED);
 
   const handleClearAll = () => {
+    clearTimeout(confirmTimer.current);
     if (confirmClear) {
-      if (onClearActivities) onClearActivities();
+      onClearActivities?.();
       setConfirmClear(false);
     } else {
+      // The destructive second click is only armed for a few seconds.
       setConfirmClear(true);
-      setTimeout(() => setConfirmClear(false), 4000);
+      confirmTimer.current = setTimeout(() => setConfirmClear(false), 4000);
     }
   };
 
@@ -117,7 +119,6 @@ export default function AtividadeRecente({ activities, onClearActivities, onRemo
           <h2 className="activity-header__title">{t('activity.title')}</h2>
         </div>
         <div className="activity-header__right">
-          {/* Botões secundários: ocultos quando o histórico está recolhido */}
           {isHistoryVisible && activities.length > 0 && onClearActivities && (
             <button
               type="button"
@@ -140,7 +141,6 @@ export default function AtividadeRecente({ activities, onClearActivities, onRemo
             </button>
           )}
 
-          {/* Controle de alternância: Ocultar / Mostrar Histórico */}
           <button
             type="button"
             className={`activity-header__toggle ${!isHistoryVisible ? 'activity-header__toggle--collapsed' : ''}`}
@@ -155,7 +155,6 @@ export default function AtividadeRecente({ activities, onClearActivities, onRemo
         </div>
       </div>
 
-      {/* Corpo com transição suave de altura e opacidade */}
       <div
         id="activity-content"
         className={`activity-body ${isHistoryVisible ? 'activity-body--visible' : 'activity-body--hidden'}`}

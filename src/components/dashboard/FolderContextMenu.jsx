@@ -35,7 +35,6 @@ export default function FolderContextMenu({
   useFloatingMenu(menuRef, x, y);
   const [showColors, setShowColors] = useState(false);
 
-  /* Close on click outside */
   useEffect(() => {
     const handleClick = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -46,7 +45,6 @@ export default function FolderContextMenu({
     return () => document.removeEventListener('mousedown', handleClick);
   }, [onClose]);
 
-  /* Close on Escape */
   useEffect(() => {
     const handleKey = (e) => {
       if (e.key === 'Escape') onClose();
@@ -59,7 +57,6 @@ export default function FolderContextMenu({
 
   return (
     <div className="context-menu" ref={menuRef} style={{ left: x, top: y }} role="menu" aria-label={t('common.options')}>
-      {/* Favoritar / Desfavoritar */}
       <button
         role="menuitem" className="context-menu__item"
         onClick={() => { onToggleFavorite(); onClose(); }}
@@ -68,7 +65,6 @@ export default function FolderContextMenu({
         <span>{isFavorite ? (t('common.unpin') || t('common.unfavorite')) : (t('common.pin') || t('common.favorite'))}</span>
       </button>
 
-      {/* Renomear */}
       <button
         role="menuitem" className="context-menu__item"
         onClick={() => { onRename(); onClose(); }}
@@ -77,7 +73,6 @@ export default function FolderContextMenu({
         <span>{t('common.rename')}</span>
       </button>
 
-      {/* Mudar Cor (Submenu moderno com paleta em grid 3x2) */}
       <div
         className="context-menu__submenu-wrapper"
         onMouseEnter={() => setShowColors(true)}
@@ -116,7 +111,6 @@ export default function FolderContextMenu({
 
       <div className="context-menu__divider" />
 
-      {/* Excluir */}
       <button
         role="menuitem" className="context-menu__item context-menu__item--danger"
         onClick={() => { onDelete(); onClose(); }}

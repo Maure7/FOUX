@@ -18,9 +18,9 @@
 }
 
 [data-theme="liquid-glass"] {
-  --foux-scroll-track: #18181e;
-  --foux-scroll-thumb: #686078;
-  --foux-scroll-hover: #c4b5fd;
+  --foux-scroll-track: #17141c;
+  --foux-scroll-thumb: #6b6b74;
+  --foux-scroll-hover: #d4d4d8;
 }
 
 * {

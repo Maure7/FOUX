@@ -1,5 +1,4 @@
-import { INSPECTOR_STYLE_ID, HOVER_STYLE_ID, ORIGINAL_STYLE_ATTR } from './inspector/constants';
-import { SCROLLBAR_STYLE_ID } from './inspector/constants';
+import { INSPECTOR_STYLE_ID, HOVER_STYLE_ID, ORIGINAL_STYLE_ATTR, SCROLLBAR_STYLE_ID } from './inspector/constants';
 import { splitOutsideValues, resolveUrls, copyStyle, formatRule } from './css/format';
 
 export function getElementSelector(element) {

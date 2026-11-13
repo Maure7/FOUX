@@ -28,7 +28,7 @@ npm run test:desktop
 
 `npm test` executa lint, testes unitários, verificações de idioma/armazenamento e três suítes Chromium. `test:desktop` executa o aplicativo de `release/win-unpacked` usando um perfil temporário isolado. Os testes não usam os projetos pessoais do usuário.
 
-O instalador fica em `release/FOUX-Setup-0.0.3.exe`; o SHA-256, em `release/SHA256SUMS-windows.txt`. As capturas da matriz visual ficam em `release/qa/`. O empacotamento não publica releases; a assinatura digital depende de certificado configurado pelo responsável pela distribuição.
+O instalador fica em `release/FOUX-Setup-0.0.4.exe`; o SHA-256, em `release/SHA256SUMS-windows.txt`. As capturas da matriz visual ficam em `release/qa/`. O empacotamento não publica releases; a assinatura digital depende de certificado configurado pelo responsável pela distribuição.
 
 ## Organização
 

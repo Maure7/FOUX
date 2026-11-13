@@ -66,7 +66,6 @@ export default function useWorkspaceState() {
     }
   });
 
-  /* Chave de tema isolada e desacoplada */
   const [theme, setTheme] = useState(() => {
     try {
       return normalizeTheme(appStorage.getItem(THEME_KEY));
@@ -87,13 +86,13 @@ export default function useWorkspaceState() {
     }
   });
 
-  /* Guardas de carregamento para evitar sobrescrever localStorage no mount inicial */
+  // Skip the first effect run: it would only rewrite what was just loaded
+  // (on desktop, a synchronous disk write per key at startup).
   const isProjectsLoadedRef = useRef(false);
   const isFoldersLoadedRef = useRef(false);
   const isActivitiesLoadedRef = useRef(false);
   const isProfileLoadedRef = useRef(false);
 
-  /* Persistência segura no localStorage (evita sobrescrita durante inicialização) */
   useEffect(() => {
     if (!isProjectsLoadedRef.current) {
       isProjectsLoadedRef.current = true;
@@ -130,7 +129,6 @@ export default function useWorkspaceState() {
     saveToStorage(PROFILE_KEY, userProfile);
   }, [userProfile]);
 
-  /* Persistir globalTutorialTips no localStorage */
   useEffect(() => {
     try {
       appStorage.setItem(GLOBAL_TUTORIAL_TIPS_KEY, JSON.stringify(globalTutorialTips));
@@ -139,7 +137,6 @@ export default function useWorkspaceState() {
     }
   }, [globalTutorialTips]);
 
-  /* Apply theme to DOM root — Isolado exclusivamente na chave foux_theme */
   useEffect(() => {
     saveTheme(theme);
     document.documentElement.setAttribute('data-theme', theme);

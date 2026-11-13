@@ -1,0 +1,311 @@
+/* FOUX glass materials. Liquid Glass gets the full lens (refraction, mesh, rim
+   and pointer light); the other palettes borrow the same rim and pointer light at
+   a quieter level so every theme shares one sense of depth. */
+
+@property --glass-mouse-x {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 50%;
+}
+@property --glass-mouse-y {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+.liquid-glass-svg {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+:root {
+  --glass-rim: rgba(255, 255, 255, .07);
+  --glass-sheen: rgba(251, 146, 60, .075);
+  --glass-spot-size: 150px;
+  --glass-lens: url(#foux-liquid-subtle);
+  --glass-float-lens: blur(11.6px) saturate(170%) brightness(1.04) url(#foux-liquid-refraction);
+  --floating-rgb: 23, 23, 29;
+  --floating-glass: rgba(23, 23, 29, .8);
+  --floating-glass-dense: rgba(23, 23, 29, .88);
+}
+[data-theme="light"] {
+  --glass-rim: rgba(255, 255, 255, .95);
+  --glass-sheen: rgba(139, 92, 246, .104);
+  --glass-float-lens: blur(11.6px) saturate(160%) brightness(1.02) url(#foux-liquid-refraction);
+  --floating-rgb: 255, 255, 255;
+  --floating-glass: rgba(255, 255, 255, .78);
+  --floating-glass-dense: rgba(255, 255, 255, .88);
+}
+[data-theme="solarized"] {
+  --glass-rim: rgba(170, 235, 230, .08);
+  --glass-sheen: rgba(170, 235, 230, .07);
+  --floating-rgb: 0, 43, 54;
+  --floating-glass: rgba(0, 43, 54, .8);
+  --floating-glass-dense: rgba(0, 43, 54, .88);
+}
+[data-theme="liquid-glass"] {
+  --glass-rim: rgba(255, 255, 255, .22);
+  --glass-sheen: rgba(255, 255, 255, .1);
+  --glass-lens: url(#foux-liquid-refraction);
+  --glass-accent-rgb: 255, 255, 255;
+  --glass-tint-rgb: 21, 18, 30;
+  --glass-material: blur(7px) saturate(200%) brightness(1.12) contrast(1.05);
+  --glass-material-panel: blur(10px) saturate(180%) brightness(1.08);
+  --glass-rim-light:
+    inset 0 1.5px 2px rgba(255, 255, 255, .6),
+    inset 0 -1.5px 3px rgba(var(--glass-accent-rgb), .28),
+    inset 0 4px 18px rgba(255, 255, 255, .05);
+  --glass-rim-light-soft:
+    inset 0 1px 1.5px rgba(255, 255, 255, .45),
+    inset 0 -1px 2px rgba(var(--glass-accent-rgb), .16);
+}
+
+/* Cards carry a spotlight that follows the cursor. It lives on its own layer above
+   the card's preview, so it is never hidden, and it fades with opacity only. */
+:root :is(.project-card, .list-item, .profile-card, .profile-stat-card, .settings-section, .activity-section, .activity-item, .challenge-record, .modal-action-btn) {
+  position: relative;
+  background-image: linear-gradient(180deg, var(--glass-rim), transparent 2px) !important;
+}
+:root .project-card--new { background-image: none !important; }
+:root :is(.profile-card, .settings-section, .activity-section, .challenge-record) { --glass-spot-size: 240px; }
+:root :is(.project-card, .list-item, .profile-card, .profile-stat-card, .settings-section, .activity-section, .activity-item, .challenge-record, .modal-action-btn)::after {
+  --glass-mouse-x: inherit;
+  --glass-mouse-y: inherit;
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  content: "";
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(circle var(--glass-spot-size) at var(--glass-mouse-x) var(--glass-mouse-y), var(--glass-sheen), transparent 100%);
+  opacity: 0;
+  transition: opacity 320ms var(--ease-out);
+}
+:root :is(.project-card, .list-item, .profile-card, .profile-stat-card, .settings-section, .activity-section, .activity-item, .challenge-record, .modal-action-btn):hover::after { opacity: 1; }
+:root .card-pin-badge { z-index: 2; }
+
+/* Floating layers are real glass in every theme: the page behind them bends at
+   the rim and blurs, while the tint keeps every line of text at AA contrast. */
+:root:not([data-theme="liquid-glass"]) :is(.modal-card, .context-menu, .context-menu__submenu, .toast, .tutorial-tour__card, .foux-tooltip, .challenge-hud) {
+  background: linear-gradient(155deg, var(--floating-highlight), transparent 48%), var(--floating-glass) !important;
+  -webkit-backdrop-filter: blur(11.6px) saturate(170%);
+  backdrop-filter: var(--glass-float-lens);
+}
+:root:not([data-theme="liquid-glass"]) :is(.toast, .tutorial-tour__card, .foux-tooltip, .challenge-hud) { --floating-glass: var(--floating-glass-dense); }
+:root:not([data-theme="liquid-glass"]) .context-menu__submenu { --floating-glass: var(--floating-solid); backdrop-filter: none; }
+/* The scrim only dims; a blurred scrim would leave the dialog nothing to refract. */
+:root .modal-overlay {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none !important;
+}
+
+/* ---------- Liquid Glass ---------- */
+
+/* A fixed layer is composited once, so scrolling never repaints the mesh. */
+[data-theme="liquid-glass"] body {
+  background: #0c0b11;
+}
+[data-theme="liquid-glass"] body::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 52% 46% at 10% 6%, rgba(255, 255, 255, .11), transparent 70%),
+    radial-gradient(ellipse 40% 36% at 92% 14%, rgba(255, 255, 255, .06), transparent 70%),
+    radial-gradient(ellipse 46% 42% at 78% 96%, rgba(255, 255, 255, .07), transparent 72%),
+    radial-gradient(ellipse 44% 40% at 18% 90%, rgba(255, 255, 255, .05), transparent 72%),
+    linear-gradient(160deg, #131119 0%, #0c0b11 55%, #110f17 100%);
+}
+
+/* Top bars are glass without an outline; only buttons and cards carry a rim. */
+:root[data-theme="liquid-glass"] :is(.header, .editor-header, .settings-page__header, .profile-page__header) {
+  background: linear-gradient(135deg, rgba(255, 255, 255, .06) 0%, rgba(var(--glass-tint-rgb), .18) 50%, rgba(var(--glass-tint-rgb), .1) 100%) !important;
+  border: 0 !important;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, .45) !important;
+  -webkit-backdrop-filter: var(--glass-material);
+  backdrop-filter: var(--glass-material) var(--glass-lens);
+}
+
+/* Layers that can float over the white page keep a deeper tint so text stays at
+   AA contrast even when the lens sits on top of the student's document. */
+:root[data-theme="liquid-glass"] :is(.modal-card, .context-menu, .toast, .tutorial-tour__card, .foux-tooltip, .challenge-hud) {
+  --glass-depth: .74;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .08) 0%, transparent 48%, rgba(var(--glass-accent-rgb), .06) 100%),
+    rgba(var(--glass-tint-rgb), var(--glass-depth)) !important;
+  border: 1px solid rgba(255, 255, 255, .22) !important;
+  box-shadow: 0 12px 32px -6px rgba(0, 0, 0, .35), var(--glass-rim-light) !important;
+  -webkit-backdrop-filter: var(--glass-material);
+  backdrop-filter: var(--glass-material) var(--glass-lens);
+}
+:root[data-theme="liquid-glass"] :is(.toast, .tutorial-tour__card, .foux-tooltip, .challenge-hud) { --glass-depth: .86; }
+:root[data-theme="liquid-glass"] .context-menu { --glass-depth: .6; }
+/* The tint thins out toward the rim, where the lens bends the page hardest, and
+   stays dense in the middle where the text sits. Two crossed ramps give a soft
+   rounded falloff without masking the content. */
+:root :is(.modal-card, .context-menu, .toast, .challenge-hud) {
+  --rim-rgb: var(--floating-rgb);
+  --rim-core: .53;
+  --rim-edge: .08;
+  --rim-band: 14px;
+  background:
+    linear-gradient(155deg, var(--floating-highlight), transparent 48%),
+    linear-gradient(90deg, rgba(var(--rim-rgb), var(--rim-edge)), rgba(var(--rim-rgb), var(--rim-core)) var(--rim-band), rgba(var(--rim-rgb), var(--rim-core)) calc(100% - var(--rim-band)), rgba(var(--rim-rgb), var(--rim-edge))),
+    linear-gradient(180deg, rgba(var(--rim-rgb), var(--rim-edge)), rgba(var(--rim-rgb), var(--rim-core)) var(--rim-band), rgba(var(--rim-rgb), var(--rim-core)) calc(100% - var(--rim-band)), rgba(var(--rim-rgb), var(--rim-edge))) !important;
+}
+:root :is(.toast, .challenge-hud) { --rim-core: .65; }
+:root .context-menu { --rim-core: .45; }
+:root[data-theme="liquid-glass"] :is(.modal-card, .context-menu, .toast, .challenge-hud) {
+  --rim-rgb: var(--glass-tint-rgb);
+  --floating-highlight: rgba(255, 255, 255, .08);
+}
+:root[data-theme="liquid-glass"] .modal-card { --rim-core: .49; }
+:root[data-theme="liquid-glass"] .context-menu { --rim-core: .37; }
+
+:root[data-theme="liquid-glass"] .foux-tooltip {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .35), var(--glass-rim-light-soft) !important;
+  backdrop-filter: var(--glass-material) url(#foux-liquid-subtle);
+}
+
+/* A nested backdrop only sees its parent's own paint in Chromium, so the scrim and
+   submenus stay plain and the card on top refracts the real page. */
+:root[data-theme="liquid-glass"] .modal-overlay {
+  background: rgba(6, 6, 10, .55) !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none !important;
+}
+:root[data-theme="liquid-glass"] .context-menu__submenu {
+  background: rgba(var(--glass-tint-rgb), .94) !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* The sidebar repaints on every slider step, so it keeps blur without the lens. */
+:root[data-theme="liquid-glass"] .editor-sidebar {
+  background-color: transparent;
+  background-image:
+    radial-gradient(circle 220px at var(--glass-mouse-x) var(--glass-mouse-y), rgba(255, 255, 255, .045), transparent),
+    linear-gradient(160deg, rgba(255, 255, 255, .07) 0%, rgba(var(--glass-tint-rgb), .12) 45%, rgba(var(--glass-accent-rgb), .04) 100%);
+  border-left: 1px solid rgba(255, 255, 255, .16);
+  box-shadow: inset 1px 0 1.5px rgba(255, 255, 255, .3), -12px 0 32px -10px rgba(0, 0, 0, .4);
+  -webkit-backdrop-filter: var(--glass-material-panel);
+  backdrop-filter: var(--glass-material-panel);
+}
+:root[data-theme="liquid-glass"] .editor-sidebar .sidebar-section {
+  background: rgba(255, 255, 255, .035);
+  border-color: rgba(255, 255, 255, .1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .18), inset 0 1px 1px rgba(255, 255, 255, .14);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root[data-theme="liquid-glass"] :is(.project-card, .folder-card, .list-item, .profile-card, .settings-section, .activity-section) {
+  background-color: transparent !important;
+  background-image:
+    linear-gradient(135deg, rgba(255, 255, 255, .09) 0%, rgba(var(--glass-tint-rgb), .12) 55%, rgba(var(--glass-accent-rgb), .05) 100%) !important;
+  border-color: rgba(255, 255, 255, .16) !important;
+  box-shadow: 0 10px 28px -8px rgba(0, 0, 0, .4), var(--glass-rim-light-soft) !important;
+  -webkit-backdrop-filter: var(--glass-material-panel);
+  backdrop-filter: var(--glass-material-panel) url(#foux-liquid-subtle);
+}
+:root[data-theme="liquid-glass"] :is(.project-card, .folder-card, .list-item):hover {
+  background-image:
+    linear-gradient(135deg, rgba(255, 255, 255, .12) 0%, rgba(var(--glass-tint-rgb), .1) 55%, rgba(var(--glass-accent-rgb), .07) 100%) !important;
+  border-color: rgba(255, 255, 255, .28) !important;
+  box-shadow: 0 16px 36px -10px rgba(0, 0, 0, .5), var(--glass-rim-light) !important;
+}
+:root[data-theme="liquid-glass"] :is(.project-card--new, .project-card--list-new) {
+  border: 1px dashed rgba(255, 255, 255, .4) !important;
+}
+:root[data-theme="liquid-glass"] :is(.project-card--selected, .list-item--selected) {
+  border-color: rgba(var(--glass-accent-rgb), .72) !important;
+  box-shadow: 0 10px 28px -8px rgba(0, 0, 0, .4), var(--glass-rim-light-soft), 0 0 0 1px rgba(255, 255, 255, .35) !important;
+}
+
+/* Pills sit inside glass panels, so they shape light with gradients instead of a second backdrop. */
+:root[data-theme="liquid-glass"] :is(
+  .sidebar-tab, .header__icon-btn, .header__new-folder, .editor-header__icon-btn,
+  .editor-header__back, .editor-toolbar-btn, .editor-header__tutorial-btn, .folder-tag
+) {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, 0) 60%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .18), inset 0 -1px 1px rgba(0, 0, 0, .18);
+}
+:root[data-theme="liquid-glass"] :is(
+  .sidebar-tab, .header__icon-btn, .header__new-folder, .editor-header__icon-btn,
+  .editor-header__back, .editor-toolbar-btn, .editor-header__tutorial-btn, .folder-tag
+):is(:hover, .sidebar-tab--active, .is-active, .folder-tag--active) {
+  background-image:
+    radial-gradient(ellipse 80% 70% at 50% 0%, rgba(255, 255, 255, .2), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, .08), rgba(var(--glass-accent-rgb), .06));
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, .45), inset 0 -1px 2px rgba(var(--glass-accent-rgb), .22);
+}
+
+/* The work table around the student's page shows the mesh through a calm frame. */
+:root[data-theme="liquid-glass"] .editor-canvas:not(:has(.editor-dropzone)) {
+  background: transparent;
+}
+
+/* Choosing Liquid Glass is an explicit request for translucency, so only the
+   quieter glass of the other palettes follows the system transparency setting. */
+@media (prefers-reduced-transparency: reduce) {
+  :root:not([data-theme="liquid-glass"]) :is(.modal-card, .context-menu, .toast, .tutorial-tour__card) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root[data-theme="liquid-glass"] :is(.modal-card, .context-menu, .toast, .tutorial-tour__card, .foux-tooltip, .challenge-hud, .editor-sidebar) {
+    background: #14131b !important;
+    border-color: rgba(255, 255, 255, .5) !important;
+  }
+}
+
+:root[data-theme="liquid-glass"] :is(.card-pin-badge, .list-item__pin-badge) {
+  color: #f5f5f7;
+  background: rgba(255, 255, 255, .1);
+  border-color: rgba(255, 255, 255, .32);
+}
+:root[data-theme="liquid-glass"] .project-card:hover .card-pin-badge {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .35);
+}
+:root[data-theme="liquid-glass"] .foux-editor-element-badge {
+  background: rgba(255, 255, 255, .04);
+}
+:root[data-theme="liquid-glass"] .editor-header::after { content: none; }
+
+/* Tour and Challenge mode are the two learning entry points, so they light up
+   clearly under the pointer instead of staying at their resting dimness. */
+:root .editor-header__tutorial-btn:not(:disabled):hover {
+  opacity: 1;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--accent-gold) 16%, transparent);
+  border-color: color-mix(in srgb, var(--accent-gold) 60%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-gold) 12%, transparent), 0 4px 14px color-mix(in srgb, var(--accent-gold) 22%, transparent);
+}
+:root .editor-header__tutorial-btn:not(:disabled):hover .editor-header__tutorial-icon {
+  color: var(--accent-gold);
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent-gold) 60%, transparent));
+}
+[data-theme="light"] .editor-header__tutorial-btn:not(:disabled):hover {
+  color: #ffffff;
+  background: #0a0a0a;
+  border-color: #0a0a0a;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, .14), 0 4px 14px rgba(15, 23, 42, .18);
+}
+[data-theme="light"] .editor-header__tutorial-btn:not(:disabled):hover .editor-header__tutorial-icon { color: #ffffff; filter: none; }
+[data-theme="liquid-glass"] .editor-header__tutorial-btn:not(:disabled):hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, .14);
+  border-color: rgba(255, 255, 255, .42);
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, .5), 0 0 14px rgba(255, 255, 255, .14);
+}
+[data-theme="liquid-glass"] .editor-header__tutorial-btn:not(:disabled):hover .editor-header__tutorial-icon {
+  color: #ffffff;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, .5));
+}

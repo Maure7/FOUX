@@ -62,7 +62,6 @@ export function useToast() {
     return id;
   }, [resumeToast]);
 
-  // Cleanup on unmount
   useEffect(() => {
     const timers = timersRef.current;
     const onVisibility = () => {

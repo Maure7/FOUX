@@ -1,0 +1,151 @@
+/* Product-level polish shared by every theme: steady numbers, tactile sliders,
+   a sliding segmented control and a framed work table for the edited page. */
+
+:root {
+  --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
+  --slider-track: var(--bg-input);
+  --slider-fill: var(--accent-gold);
+  --segment-fill: var(--accent-gold-bg);
+  --segment-shadow: none;
+}
+[data-theme="light"] {
+  --slider-track: #27272a;
+  --slider-fill: #d4d4d8;
+  --segment-fill: #ffffff;
+  --segment-shadow: 0 1px 3px rgba(15, 23, 42, .1), 0 0 0 .5px rgba(15, 23, 42, .06);
+}
+[data-theme="dark"] {
+  --segment-fill: #221e2c;
+  --segment-shadow: 0 1px 3px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255, 255, 255, .06);
+}
+[data-theme="solarized"] {
+  --segment-fill: #0c4352;
+  --segment-shadow: 0 1px 3px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(170, 235, 230, .06);
+}
+[data-theme="liquid-glass"] {
+  --slider-track: rgba(255, 255, 255, .08);
+  --slider-fill: #f5f5f7;
+  --segment-fill: radial-gradient(ellipse 80% 70% at 50% 0%, rgba(255, 255, 255, .22), transparent 70%), rgba(255, 255, 255, .1);
+  --segment-shadow: inset 0 1px 1.5px rgba(255, 255, 255, .45), inset 0 -1px 2px rgba(0, 0, 0, .25);
+}
+
+/* Digits keep one width, so values never shift sideways while a control is dragged. */
+:is(.editor-sidebar, .challenge-hud, .challenge-victory, .challenge-record, .profile-stat-card, .foux-tooltip) {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Calmer base surfaces ---------- */
+[data-theme="light"] body,
+[data-theme="light"] :is(.dashboard, .settings-page, .profile-page) {
+  background-color: #f4f6f9;
+}
+[data-theme="light"] :is(.project-card, .folder-card, .list-item):not(.project-card--new) {
+  border-color: rgba(15, 23, 42, .08) !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 24px -12px rgba(15, 23, 42, .1) !important;
+}
+[data-theme="light"] :is(.project-card, .folder-card, .list-item):not(.project-card--new):hover {
+  border-color: rgba(15, 23, 42, .22) !important;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, .05), 0 18px 36px -14px rgba(15, 23, 42, .2) !important;
+}
+
+[data-theme="dark"] body,
+[data-theme="dark"] :is(.dashboard, .settings-page, .profile-page) {
+  background-color: #0b0d13;
+}
+[data-theme="dark"] :is(.project-card, .folder-card, .list-item):not(.project-card--new) {
+  background-color: #121620 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .25), inset 0 1px 0 rgba(255, 255, 255, .06) !important;
+}
+[data-theme="dark"] :is(.project-card, .folder-card, .list-item):not(.project-card--new):hover {
+  background-color: #171c28 !important;
+  box-shadow: 0 14px 32px -10px rgba(0, 0, 0, .55), 0 0 12px rgba(245, 158, 11, .08), inset 0 1px 0 rgba(255, 255, 255, .08) !important;
+}
+
+/* ---------- Segmented view switch ---------- */
+:root .view-toggle {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  isolation: isolate;
+}
+:root .view-toggle::before {
+  position: absolute;
+  z-index: -1;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  content: "";
+  border-radius: 999px;
+  background: var(--segment-fill);
+  box-shadow: var(--segment-shadow);
+  transition: transform 300ms var(--ease-settle);
+}
+:root .view-toggle:has(> .view-toggle__btn--active:last-child)::before { transform: translateX(100%); }
+:root .view-toggle .view-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+:root .view-toggle .view-toggle__btn {
+  border-color: transparent !important;
+}
+:root .view-toggle .view-toggle__btn--active {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+/* ---------- Tactile sliders ---------- */
+:root .sidebar-slider {
+  height: 6px;
+  border-color: transparent !important;
+  background: linear-gradient(90deg, var(--slider-fill) var(--fill, 0%), var(--slider-track) var(--fill, 0%)) !important;
+  transition: none;
+}
+:root .sidebar-slider:disabled { opacity: .45; }
+:root .sidebar-slider::-webkit-slider-thumb {
+  transition: transform 180ms var(--ease-settle), box-shadow 180ms var(--ease-settle) !important;
+}
+:root .sidebar-slider:active::-webkit-slider-thumb {
+  transform: scale(1.12) !important;
+}
+
+/* ---------- Gradient angle dial ---------- */
+:root .gradient-angle-disc__inner {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08), inset 0 2px 6px rgba(0, 0, 0, .35);
+}
+
+/* ---------- Work table around the edited page ---------- */
+:root .editor-canvas:not(:has(.editor-dropzone)):not(.editor-canvas--expanded):not(:fullscreen) {
+  padding: 12px;
+}
+:root .editor-canvas:not(.editor-canvas--expanded):not(:fullscreen) .editor-canvas__iframe {
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, .1),
+    0 2px 6px rgba(0, 0, 0, .14),
+    0 22px 48px -16px rgba(0, 0, 0, .5);
+}
+[data-theme="light"] .editor-canvas:not(.editor-canvas--expanded):not(:fullscreen) .editor-canvas__iframe {
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, .08),
+    0 2px 6px rgba(15, 23, 42, .06),
+    0 22px 48px -18px rgba(15, 23, 42, .22);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root .view-toggle::before { transition: none; }
+}
+
+/* ---------- One focus ring per text field ----------
+   The field's own border becomes the ring, so it never doubles with an outline. */
+:root :is(
+  input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),
+  select, textarea
+):focus-visible {
+  outline: none !important;
+  border-color: var(--focus-ring) !important;
+  box-shadow: 0 0 0 1px var(--focus-ring) !important;
+}

@@ -10,9 +10,12 @@ import { useToast, ToastContainer } from './components/ui/ToastNotification';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { TUTORIAL_PROJECT_NAME } from './utils/tutorialTemplate';
 import { getTutorialHtml, isTutorialProject } from './utils/tutorialI18n';
-import { migrateLegacyActivity } from './utils/activityI18n';
 import { TooltipProvider } from './components/ui/Tooltip';
+import LiquidGlassEngine from './components/ui/LiquidGlassEngine';
 import { TUTORIAL_COMPLETED_KEY } from './utils/tutorialTour';
+
+// The dashboard shows the latest entries; older ones only grow the saved workspace.
+const MAX_ACTIVITIES = 100;
 
 let idCounter = Date.now();
 function nextId(prefix = 'id') {
@@ -24,17 +27,15 @@ function AppContent() {
   const { language, t } = useLanguage();
   const [currentScreen, setCurrentScreen] = useState('dashboard');
 
-  /* Inicialização segura e preguiçosa de estado (Lazy State Initialization) */
   const { projects, setProjects, folders, setFolders, activities, setActivities,
     activeProjectId, setActiveProjectId, theme, setTheme, userProfile, setUserProfile,
     globalTutorialTips, setGlobalTutorialTips } = useWorkspaceState();
 
   const { toasts, showToast, dismissToast, pauseToast, resumeToast } = useToast();
 
-  /* Track the previous screen for Settings / Profile "back" navigation */
+  // Settings and Profile return to whichever screen opened them.
   const [previousScreen, setPreviousScreen] = useState('dashboard');
 
-  /* Navigate wrapper: tracks previous screen for Settings and Profile */
   const navigateTo = useCallback((screen) => {
     if (screen === 'settings' || screen === 'profile') {
       setPreviousScreen(currentScreen);
@@ -42,12 +43,10 @@ function AppContent() {
     setCurrentScreen(screen);
   }, [currentScreen]);
 
-  /* Atualização de perfil do usuário */
   const handleUpdateProfile = useCallback((updates) => {
     setUserProfile((prev) => ({ ...prev, ...updates }));
   }, [setUserProfile]);
 
-  /* Limpeza suave de dados locais sem crash */
   const handleClearCache = useCallback(() => {
     setProjects([]);
     setFolders([]);
@@ -55,43 +54,11 @@ function AppContent() {
     setActiveProjectId(null);
   }, [setActiveProjectId, setActivities, setFolders, setProjects]);
 
-  /* Get the active project object */
   const activeProject = projects.find((p) => p.id === activeProjectId) || null;
 
-  const addActivity = useCallback((actionOrConfig, params = {}, type = 'project') => {
-    let activityRecord;
-    if (actionOrConfig && typeof actionOrConfig === 'object') {
-      const actKey = actionOrConfig.actionKey || null;
-      activityRecord = {
-        id: actionOrConfig.id || nextId('act'),
-        actionKey: actKey,
-        params: actionOrConfig.params || {},
-        type: actionOrConfig.type || (actKey && actKey.includes('folder') ? 'folder' : 'project'),
-        timestamp: typeof actionOrConfig.timestamp === 'number'
-          ? actionOrConfig.timestamp
-          : (actionOrConfig.timestamp ? new Date(actionOrConfig.timestamp).getTime() : Date.now()),
-      };
-    } else if (typeof actionOrConfig === 'string') {
-      if (actionOrConfig.startsWith('activity.')) {
-        activityRecord = {
-          id: nextId('act'),
-          actionKey: actionOrConfig,
-          params: params || {},
-          type: type || (actionOrConfig.includes('folder') ? 'folder' : 'project'),
-          timestamp: Date.now(),
-        };
-      } else {
-        activityRecord = migrateLegacyActivity({
-          id: nextId('act'),
-          text: actionOrConfig,
-          timestamp: Date.now(),
-        });
-      }
-    }
-
-    if (activityRecord) {
-      setActivities((prev) => [activityRecord, ...prev]);
-    }
+  const addActivity = useCallback(({ actionKey, params = {}, type }) => {
+    const record = { id: nextId('act'), actionKey, params, type, timestamp: Date.now() };
+    setActivities((prev) => [record, ...prev].slice(0, MAX_ACTIVITIES));
   }, [setActivities]);
 
   const clearActivities = useCallback(() => {
@@ -101,14 +68,6 @@ function AppContent() {
   const removeActivity = useCallback((activityId) => {
     setActivities((prev) => prev.filter((a) => a.id !== activityId));
   }, [setActivities]);
-
-  const handleThemeChange = useCallback((newTheme) => {
-    setTheme(newTheme);
-  }, [setTheme]);
-
-  const handleGlobalTutorialTipsChange = useCallback((enabled) => {
-    setGlobalTutorialTips(enabled);
-  }, [setGlobalTutorialTips]);
 
   const createFolder = useCallback((name, borderColor) => {
     const id = nextId('folder');
@@ -215,7 +174,8 @@ function AppContent() {
       prev.map((p) => {
         if (p.id !== projectId) return p;
 
-        // Blindagem contra sobrescrita com HTML vazio / cerca de tags vazias
+        // An unloading iframe serializes as an empty skeleton; never let it
+        // overwrite a project that already has content.
         if (updates.htmlContent !== undefined && p.htmlContent) {
           const newHtml = updates.htmlContent;
           const isBlank =
@@ -302,9 +262,6 @@ function AppContent() {
           onRenameProject={(newName) => renameProject(activeProject.id, newName)}
           onNavigate={navigateTo}
           showToast={showToast}
-          addActivity={addActivity}
-          currentTheme={theme}
-          onThemeChange={handleThemeChange}
           userProfile={userProfile}
           globalTutorialTips={globalTutorialTips}
         />
@@ -313,11 +270,11 @@ function AppContent() {
           onNavigate={navigateTo}
           previousScreen={previousScreen}
           currentTheme={theme}
-          onThemeChange={handleThemeChange}
+          onThemeChange={setTheme}
           showToast={showToast}
           onClearCache={handleClearCache}
           globalTutorialTips={globalTutorialTips}
-          onGlobalTutorialTipsChange={handleGlobalTutorialTipsChange}
+          onGlobalTutorialTipsChange={setGlobalTutorialTips}
           onRestartTutorial={() => {
             try { appStorage.removeItem(TUTORIAL_COMPLETED_KEY); } catch { /* Continue in memory. */ }
             setGlobalTutorialTips(true);
@@ -343,7 +300,6 @@ function AppContent() {
           userProfile={userProfile}
           onCreateProject={createProject}
           onOpenProject={openProject}
-          onUpdateProject={updateProject}
           onRenameProject={renameProject}
           onDeleteProject={deleteProject}
           onDuplicateProject={duplicateProject}
@@ -355,10 +311,7 @@ function AppContent() {
           onChangeFolderColor={changeFolderColor}
           onToggleProjectFavorite={toggleProjectFavorite}
           onNavigate={navigateTo}
-          addActivity={addActivity}
           showToast={showToast}
-          currentTheme={theme}
-          onThemeChange={handleThemeChange}
           onClearActivities={clearActivities}
           onRemoveActivity={removeActivity}
           onCreateTutorialProject={createTutorialProject}
@@ -366,7 +319,6 @@ function AppContent() {
       )}
 
       </Suspense>
-      {/* Global toast layer */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} onPause={pauseToast} onResume={resumeToast} />
     </>
   );
@@ -376,6 +328,7 @@ export default function App() {
   return (
     <LanguageProvider>
       <TooltipProvider><AppContent /></TooltipProvider>
+      <LiquidGlassEngine />
     </LanguageProvider>
   );
 }
