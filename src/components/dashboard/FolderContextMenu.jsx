@@ -9,16 +9,7 @@ import {
 } from 'lucide-react';
 import useFloatingMenu from '../../hooks/useFloatingMenu';
 import { useLanguage } from '../../context/LanguageContext';
-
-
-const COLOR_KEYS = [
-  { key: 'gold', value: '#e59843' },
-  { key: 'purple', value: '#8b31d9' },
-  { key: 'blue', value: '#3b82f6' },
-  { key: 'green', value: '#22c55e' },
-  { key: 'red', value: '#ef4444' },
-  { key: 'pink', value: '#ec4899' },
-];
+import { FOLDER_COLORS } from '../../utils/folderColors';
 
 export default function FolderContextMenu({
   x,
@@ -89,7 +80,7 @@ export default function FolderContextMenu({
         {showColors && (
           <div className="context-menu__submenu context-menu__submenu--colors" role="group" aria-label={t('common.changeColor')}>
             <div className="context-menu__color-grid">
-              {COLOR_KEYS.map((c) => {
+              {FOLDER_COLORS.map((c) => {
                 const isSelected = folder?.borderColor === c.value;
                 return (
                   <button

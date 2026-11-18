@@ -9,7 +9,7 @@ export function syncCanvasScrollbars(doc, theme) {
     style.id = SCROLLBAR_STYLE_ID;
     doc.head.appendChild(style);
   }
-  // Scope the selected palette to the canvas root without modifying authored attributes.
+  // Aplica a paleta do tema na raiz do canvas sem mexer nos atributos do documento do aluno.
   style.textContent = scrollbarCss.replace(/\[data-theme="([^"]+)"\]/g,
     (_, name) => name === theme ? ':root' : ':root:not(*)');
 }

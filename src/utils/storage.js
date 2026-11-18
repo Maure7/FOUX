@@ -1,6 +1,6 @@
 import { appStorage } from '../services/appStorage.js';
 
-// Every key the app persists (documentation for maintainers and tests).
+// Todas as chaves que o app grava (referência para manutenção e para os testes).
 export const FOUX_STORAGE_KEYS = [
   'foux_projects',
   'foux_active_project',
@@ -14,12 +14,14 @@ export const FOUX_STORAGE_KEYS = [
   'foux_tutorial_completed',
   'foux_sidebar_width',
   'foux_challenge_records',
+  'foux_recent_colors',
+  'foux_sidebar_sections',
 ];
 
-// Removing these clears the student's work; theme, language and profile stay.
-const DATA_KEYS = ['foux_projects', 'foux_active_project', 'foux_folders', 'foux_activities'];
+// Apagar estas limpa o trabalho do aluno; tema, idioma e perfil continuam.
+const DATA_KEYS = ['foux_projects', 'foux_active_project', 'foux_folders', 'foux_activities', 'foux_sidebar_sections'];
 
-/** UTF-8 size of everything stored, as shown in Settings. */
+/** Tamanho em UTF-8 de tudo que está guardado, como aparece em Configurações. */
 export function calculateStorageUsage() {
   let totalBytes = 0;
   try {

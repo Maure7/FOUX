@@ -12,7 +12,6 @@
     "moveTo": "Mover a",
     "close": "Cerrar",
     "options": "Opciones",
-    "color": "Color {color}",
     "notifications": "Notificaciones",
     "root": "Raíz",
     "favorite": "Marcar como favorita",
@@ -42,7 +41,7 @@
     "storageUsage": "Uso actual: {size}",
     "storageClearBtn": "Limpiar",
     "clearConfirmTitle": "Limpiar caché y datos locales",
-    "clearConfirmMessage": "¿Estás seguro de que deseas restablecer los datos locales? Todos los proyectos guardados, carpetas y preferencias se borrarán permanentemente.",
+    "clearConfirmMessage": "¿Estás seguro de que deseas restablecer los datos locales? Todos los proyectos guardados, carpetas, el historial de actividades y las secciones abiertas de la barra lateral se borrarán permanentemente. Se mantienen el tema, el idioma, el perfil y los colores recientes.",
     "clearConfirmBtn": "Limpiar todo",
     "clearSuccessToast": "¡Caché limpiada con éxito!",
     "tutorialTitle": "Tutorial",
@@ -53,6 +52,7 @@
     "searchPlaceholder": "Buscar proyectos...",
     "newFolder": "Nueva Carpeta",
     "help": "Ayuda",
+    "goHome": "Ir al Dashboard",
     "newProject": "Nuevo Proyecto",
     "startFromScratch": "Comenzar desde cero",
     "viewGrid": "Grilla",
@@ -63,13 +63,11 @@
     "editedDate": "Editado {date}",
     "emptyRecentTitle": "No se encontraron proyectos recientes.",
     "emptyRecentHint": "Crea tu primer proyecto haciendo clic al lado.",
-    "emptyFolderTitle": "Carpeta vacía, agregar contenido",
-    "emptyFolderHint": "Haz clic para seleccionar proyectos",
+    "emptyFolderTitle": "Esta carpeta todavía está vacía",
+    "emptyFolderHint": "Crea un proyecto aquí o trae proyectos sueltos del Dashboard.",
     "emptySearchTitle": "No se encontraron elementos para tu búsqueda",
-    "selectionTitle": "Selecciona proyectos para mover",
     "selectionCount": "{count} proyecto seleccionado",
     "selectionCountPlural": "{count} proyectos seleccionados",
-    "confirmAndMove": "Confirmar y Mover",
     "projectMovedSingular": "proyecto movido",
     "projectMovedPlural": "proyectos movidos",
     "movedSuccess": "{count} {entity} con éxito.",
@@ -77,7 +75,62 @@
     "deleteFolderTitle": "Eliminar carpeta",
     "deleteProjectTitle": "Eliminar proyecto",
     "deleteFolderConfirm": "¿Estás seguro de que deseas eliminar \"{name}\"? Los proyectos dentro de ella se moverán a la raíz.",
-    "deleteProjectConfirm": "¿Estás seguro de que deseas eliminar \"{name}\"? Esta acción no se puede deshacer."
+    "deleteProjectConfirm": "¿Estás seguro de que deseas eliminar \"{name}\"? Esta acción no se puede deshacer.",
+    "picker": {
+      "empty": "No hay proyectos disponibles.",
+      "filter": "Filtrar proyectos",
+      "selectAll": "Seleccionar todos",
+      "clearAll": "Limpiar selección",
+      "selectedOne": "1 proyecto seleccionado",
+      "selectedMany": "{count} proyectos seleccionados"
+    },
+    "addExisting": {
+      "button": "Agregar proyectos existentes",
+      "title": "Agregar proyectos existentes",
+      "subtitle": "Elige proyectos sueltos del Dashboard para mover a \"{folder}\".",
+      "empty": "No hay proyectos sueltos en el Dashboard para agregar.",
+      "confirm": "Agregar a la carpeta",
+      "confirmMany": "Agregar {count} proyectos"
+    },
+    "folderView": {
+      "back": "Volver al Dashboard",
+      "breadcrumb": "Ruta de la carpeta",
+      "root": "Dashboard",
+      "renameHint": "Haz clic para renombrar la carpeta",
+      "renameLabel": "Nombre de la carpeta",
+      "colorLabel": "Color de la carpeta",
+      "countNone": "Ningún proyecto en esta carpeta",
+      "countOne": "1 proyecto en esta carpeta",
+      "countMany": "{count} proyectos en esta carpeta"
+    },
+    "batch": {
+      "select": "Seleccionar",
+      "done": "Finalizar selección",
+      "exitHint": "Salir de la selección (Esc)",
+      "exit": "Cancelar selección (Esc)",
+      "label": "Acciones en lote",
+      "hint": "Selecciona proyectos o carpetas",
+      "foldersOne": "1 carpeta seleccionada",
+      "foldersMany": "{count} carpetas seleccionadas",
+      "favorite": "Marcar favorito",
+      "unfavorite": "Quitar favorito",
+      "moveTo": "Mover a carpeta",
+      "moveToRoot": "Dashboard (sin carpeta)",
+      "noFolders": "Crea una carpeta para mover proyectos",
+      "blockedFolder": "Limpia la selección de proyectos para seleccionar carpetas",
+      "blockedProject": "Limpia la selección de carpetas para seleccionar proyectos",
+      "favorited": "Agregado a favoritos.",
+      "unfavorited": "Quitado de favoritos.",
+      "duplicatedOne": "1 proyecto duplicado.",
+      "duplicatedMany": "{count} proyectos duplicados.",
+      "movedOne": "Proyecto movido a \"{folder}\".",
+      "movedMany": "{count} proyectos movidos a \"{folder}\".",
+      "colorChanged": "Color actualizado.",
+      "deleteProjectsTitle": "Eliminar proyectos",
+      "deleteProjectsConfirm": "¿Estás seguro de que deseas eliminar {count} proyectos? Esta acción no se puede deshacer.",
+      "deleteFoldersTitle": "Eliminar carpetas",
+      "deleteFoldersConfirm": "¿Estás seguro de que deseas eliminar {count} carpetas? Los proyectos que contienen volverán al Dashboard."
+    }
   },
   "faq": {
     "title": "Preguntas frecuentes",
@@ -126,7 +179,16 @@
     "dropzoneTitle": "Haz clic aquí para importar tu archivo HTML",
     "dropzoneHint": "o arrastra y suelta el archivo en esta área",
     "undo": "Deshacer cambio (Ctrl+Z)",
-    "redo": "Rehacer cambio (Ctrl+Y)"
+    "redo": "Rehacer cambio (Ctrl+Y)",
+    "clearCanvas": {
+      "button": "Limpiar pantalla",
+      "hint": "Quita todos los estilos aplicados en esta página",
+      "title": "¿Limpiar la pantalla?",
+      "message": "Se quitarán todos los estilos aplicados a los elementos de esta página. Aún puedes deshacerlo con Ctrl+Z.",
+      "confirm": "Sí, limpiar pantalla",
+      "success": "Pantalla limpia. Usa Ctrl+Z para deshacer.",
+      "nothing": "No hay estilos para limpiar."
+    }
   },
   "sidebar": {
     "tabStyles": "Estilos",
@@ -234,11 +296,12 @@
     },
     "newFolder": {
       "title": "Nueva Carpeta",
-      "subtitle": "Elige un nombre y un color de contorno",
+      "subtitle": "Elige un nombre, un color y, si quieres, proyectos para incluir",
       "folderNameLabel": "Nombre de la Carpeta",
       "defaultNamePrefix": "Nueva carpeta",
       "borderColorLabel": "Color del Contorno",
-      "createFolderBtn": "Crear Carpeta"
+      "createFolderBtn": "Crear Carpeta",
+      "projectsLabel": "Incluir proyectos existentes"
     },
     "rename": {
       "title": "Renombrar",
@@ -327,6 +390,21 @@
       }
     }
   },
+  "colorTools": {
+    "recentColors": "Colores recientes",
+    "applyRecent": "Aplicar color reciente {color}",
+    "eyedropper": "Cuentagotas: capturar color del lienzo",
+    "eyedropperCancel": "Cancelar cuentagotas",
+    "eyedropperActive": "Cuentagotas activo: haz clic en un elemento de la página para capturar el color",
+    "eyedropperHint": "Haz clic en un elemento para capturar el color · Esc cancela",
+    "sourceText": "texto",
+    "sourceBorder": "borde",
+    "sourceImage": "imagen",
+    "imageBlocked": "Imagen de otro sitio sin permiso de lectura: se usa el color detrás de ella",
+    "sourceBackground": "fondo",
+    "shiftForBackground": "Shift: fondo",
+    "shiftForText": "Shift: texto"
+  },
   "tooltips": {
     "align": {
       "left": "Alinear texto a la izquierda",
@@ -399,7 +477,8 @@
       "marginLeft": "Margin izquierdo",
       "imageLayout": "Disposición de la imagen",
       "hover": "Efecto :hover",
-      "restore": "Restaurar elemento"
+      "restore": "Restaurar elemento",
+      "clearCanvas": "Limpiar pantalla"
     }
   },
   "challenges": {

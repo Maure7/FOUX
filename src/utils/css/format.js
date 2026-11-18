@@ -1,4 +1,4 @@
-// CSS values can contain semicolons and commas in strings, functions and URLs.
+// Valores CSS podem ter ponto e vírgula e vírgulas em strings, funções e URLs.
 export function splitOutsideValues(text, separator) {
   const parts = [];
   let start = 0;
@@ -22,7 +22,7 @@ export function splitOutsideValues(text, separator) {
 }
 
 function readableValue(value) {
-  // Preserve strings and URLs verbatim; turn opaque browser RGB colors into hex.
+  // Strings e URLs ficam intactas; cores RGB opacas do navegador viram hex.
   return value.replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|url\([^)]*\)|rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*(1(?:\.0*)?))?\s*\)|(?<![\w.-])0(?:px|em|rem|vh|vw|vmin|vmax|cm|mm|in|pt|pc)\b/gi,
     (match, red, green, blue) => {
       if (red !== undefined) return `#${[red, green, blue].map((channel) => Number(channel).toString(16).padStart(2, '0')).join('')}`;
@@ -44,7 +44,7 @@ export function resolveUrls(css, baseUrl) {
 
 export function copyStyle(doc, style, baseUrl) {
   if (style.parentRule && !style.parentRule.selectorText && !style.parentRule.keyText) {
-    // Descriptors such as @font-face's src are not valid inline properties.
+    // Descritores como o src do @font-face não são propriedades inline válidas.
     return { cssText: resolveUrls(style.cssText, baseUrl), length: style.length };
   }
   const copy = doc.createElement('div').style;
@@ -53,7 +53,7 @@ export function copyStyle(doc, style, baseUrl) {
 }
 
 function declarations(style, indent) {
-  // cssText retains standard shorthands such as margin, padding and border.
+  // cssText mantém shorthands padrão como margin, padding e border.
   return splitOutsideValues(style.cssText, ';').map((declaration) => {
     const colon = declaration.indexOf(':');
     const property = declaration.slice(0, colon).trim();

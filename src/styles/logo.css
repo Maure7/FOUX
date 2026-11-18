@@ -1,0 +1,73 @@
+/* Logo FOUX (src/components/ui/FouxLogo.jsx).
+   Cores originais da marca nos temas escuros; no tema claro o "ux" creme
+   sumiria sobre o branco, então usa o roxo-escuro da própria logo. */
+.foux-logo {
+  --foux-logo-mark: #6b47a9;
+  --foux-logo-ear: #ffdebf;
+  --foux-logo-script: #ffdebf;
+  --foux-logo-eye: #2b2237;
+  display: block;
+  height: 100%;
+  width: auto;
+  overflow: visible;
+}
+
+.foux-logo__mark { fill: var(--foux-logo-mark); }
+.foux-logo__ear { fill: var(--foux-logo-ear); }
+.foux-logo__ear-shade { fill: var(--foux-logo-ear); opacity: .44; }
+.foux-logo__eye { fill: var(--foux-logo-eye); }
+.foux-logo__script { fill: var(--foux-logo-script); }
+
+[data-theme="light"] .foux-logo {
+  --foux-logo-script: #2b2237;
+}
+
+/* Botões da logo no cabeçalho do dashboard e do editor: levam à Dashboard. */
+.header__logo,
+.editor-header__logo {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  line-height: 0;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-drag: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.header__logo { height: 30px; }
+
+.editor-header__logo {
+  height: 24px;
+  margin-left: var(--sp-1);
+}
+
+.foux-logo { pointer-events: none; }
+
+:is(.header__logo, .editor-header__logo):hover { opacity: .82; }
+:is(.header__logo, .editor-header__logo):active { transform: scale(.97); }
+
+:root :is(.header__logo, .editor-header__logo):focus-visible {
+  outline: 2px solid var(--focus-ring) !important;
+  outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header__logo,
+  .editor-header__logo { transition: none; }
+  :is(.header__logo, .editor-header__logo):active { transform: none; }
+}
+
+/* Sem moldura arredondada: nenhum tema pinta fundo, borda ou raio no botão da logo. */
+:root :is(.header__logo, .editor-header__logo),
+:root :is(.header__logo, .editor-header__logo):is(:hover, :active, :focus-visible) {
+  border-radius: 0 !important;
+  border-color: transparent !important;
+  background: none !important;
+  box-shadow: none !important;
+}

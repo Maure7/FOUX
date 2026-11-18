@@ -12,20 +12,6 @@
   z-index: 100;
 }
 
-.header__logo {
-  font-size: 1.3rem;
-  font-weight: 800;
-  letter-spacing: 2.5px;
-  color: var(--accent-gold-light);
-  user-select: none;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.header__logo:hover {
-  color: var(--accent-gold);
-}
-
 .header__controls {
   display: flex;
   align-items: center;
@@ -378,13 +364,24 @@
   line-height: 1.5;
 }
 
+/* --text-dark não passa de 2.5:1 em nenhum tema; a dica é informação, não enfeite. */
 .empty-state__hint {
   font-size: 0.72rem;
-  color: var(--text-dark);
+  color: var(--text-muted);
   margin-top: 6px;
 }
+/* Card com respiro interno igual em todos os temas; o Liquid Glass mantém a superfície de vidro própria. */
 .activity-section {
+  box-sizing: border-box;
   margin-top: var(--sp-1);
+  padding: 18px 20px;
+}
+
+:root:not([data-theme="liquid-glass"]) .activity-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--lc-card-shadow, 0 2px 8px rgba(0, 0, 0, .18));
 }
 
 .activity-section--collapsed {
@@ -416,12 +413,15 @@
   color: var(--text-primary);
 }
 
+/* Link de texto, mas com altura de botão: antes a área clicável tinha 15px. */
 .activity-header__link {
   display: inline-flex;
   align-items: center;
+  min-height: 28px;
   background: transparent;
   border: none;
-  padding: 0;
+  border-radius: 8px;
+  padding: 0 4px;
   font-family: inherit;
   font-size: 0.78rem;
   font-weight: 500;
@@ -508,6 +508,8 @@
 }
 
 .activity-item__icon-wrapper {
+  flex-shrink: 0;
+  margin-left: 8px;
   width: 36px;
   height: 36px;
   border-radius: var(--radius-sm);
@@ -561,6 +563,12 @@
   background: rgba(229, 152, 67, 0.08);
 }
 
+/* No fundo claro o laranja da pasta cai para 2:1; o tom queimado mantém a cor e passa AA. */
+[data-theme="light"] .activity-item__tag--folder {
+  color: #a3570f;
+  border-color: rgba(163, 87, 15, 0.3);
+}
+
 .activity-item__icon-wrapper--folder {
   background: rgba(229, 152, 67, 0.12);
 }
@@ -581,29 +589,8 @@
   font-size: 0.68rem;
   font-weight: 500;
   letter-spacing: 0.4px;
-  color: var(--text-dark);
+  color: var(--text-muted);
   text-transform: uppercase;
-}
-
-.footer__links {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-}
-
-.footer__link {
-  font-size: 0.68rem;
-  font-weight: 500;
-  letter-spacing: 0.4px;
-  color: var(--text-dark);
-  text-transform: uppercase;
-  text-decoration: none;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.footer__link:hover {
-  color: var(--text-secondary);
 }
 .toast-container {
   position: fixed;
@@ -659,22 +646,22 @@
     transform: translateY(8px) scale(.98);
   }
 }
+/* O fundo escurecido entra e sai pela cor, não pela opacidade: opacity < 1 no pai
+   faz o backdrop-filter do card enxergar só o próprio fundo, e o vidro "pulava" no
+   fim da animação. Os estados transparentes ficam em glass.css (vencem os temas). */
 .modal-overlay {
   position: fixed;
   inset: 0;
   z-index: 1000;
   background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--sp-3);
-  opacity: 1;
-  transition: opacity var(--duration-enter) var(--ease-out);
+  transition: background-color var(--duration-enter) var(--ease-out);
 }
 
 .modal-overlay[data-state="closed"] {
-  opacity: 0;
   pointer-events: none;
   transition-duration: var(--duration-exit);
 }
@@ -706,7 +693,6 @@
 }
 
 @starting-style {
-  .modal-overlay { opacity: 0; }
   .modal-card {
     opacity: 0;
     transform: translateY(8px) scale(.97);

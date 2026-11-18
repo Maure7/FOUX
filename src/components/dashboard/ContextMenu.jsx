@@ -54,7 +54,7 @@ export default function ContextMenu({
     return () => window.removeEventListener('keydown', handleKey);
   }, [onClose]);
 
-  /* Move-to destinations: all folders except the one the project is already in, plus "Raiz" */
+  // Destinos de "Mover": todas as pastas menos a atual, mais a raiz.
   const moveDestinations = [];
   if (currentFolderId !== null) {
     moveDestinations.push({ id: null, name: t('common.root'), icon: Home });

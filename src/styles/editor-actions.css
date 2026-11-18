@@ -1,0 +1,48 @@
+/* Ações críticas do editor: botão "Limpar tela" e a confirmação compacta. */
+
+:root[data-theme] .editor-header .editor-toolbar-btn--danger:is(:hover, :focus-visible):not(:disabled) {
+  background: rgba(239, 68, 68, .14) !important;
+  background-image: none !important;
+  border-color: #ef4444 !important;
+  color: #f87171 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, .12) !important;
+}
+:root[data-theme="light"] .editor-header .editor-toolbar-btn--danger:is(:hover, :focus-visible):not(:disabled) {
+  background: rgba(239, 68, 68, .1) !important;
+  color: #dc2626 !important;
+}
+:root .editor-header .editor-toolbar-btn--danger:focus-visible { outline-color: #ef4444 !important; }
+.editor-toolbar-btn--danger svg { transition: transform var(--duration-fast) var(--ease-out); }
+.editor-toolbar-btn--danger:hover:not(:disabled) svg { transform: rotate(-12deg); }
+.editor-toolbar-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+.modal-card--compact {
+  max-width: 360px;
+  padding: 26px 24px 22px;
+}
+.modal-card--compact .modal-confirm__icon-wrapper {
+  width: 46px;
+  height: 46px;
+  margin-bottom: 12px;
+}
+.modal-card--compact .modal-confirm__icon-wrapper svg { width: 22px; height: 22px; }
+.modal-card--compact .modal-title { font-size: 1.05rem; }
+.modal-card--compact .modal-confirm__message { font-size: .82rem; line-height: 1.5; }
+.modal-card--compact .modal-footer { margin-top: 20px; }
+
+:root[data-theme] .modal-card--compact .modal-confirm__delete-btn {
+  background-color: #dc2626 !important;
+  background-image: none !important;
+  border: 1px solid #dc2626 !important;
+  color: #fff !important;
+}
+:root[data-theme] .modal-card--compact .modal-confirm__delete-btn:hover {
+  background-color: #b91c1c !important;
+  border-color: #b91c1c !important;
+  color: #fff !important;
+  box-shadow: 0 6px 18px rgba(220, 38, 38, .32) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editor-toolbar-btn--danger:hover:not(:disabled) svg { transform: none; }
+}

@@ -1,14 +1,14 @@
 import { memo } from 'react';
-import { activateOnKey } from '../../utils/keyboard';
-import { ArrowLeft, FilePlus, Download, Maximize, Settings, HelpCircle, User, Undo2, Redo2, Lightbulb, LightbulbOff, Trophy } from 'lucide-react';
+import { ArrowLeft, FilePlus, Download, Maximize, Settings, HelpCircle, User, Undo2, Redo2, Lightbulb, LightbulbOff, Trophy, Eraser } from 'lucide-react';
 import EditableProjectName from './EditableProjectName';
+import FouxLogo from '../ui/FouxLogo';
 
 function EditorHeader({
-  projectName, onRename, onNavigate, onOpenFaq, onNewFile,
+  projectName, onRename, onNavigate, onGoHome, onOpenFaq, onNewFile,
   onOpenConfig, onOpenProfile, userProfile, t,
   canUndo, canRedo, onUndo, onRedo, undoLabel, redoLabel,
   isTutorialProject, showTipsLocal, onToggleTips, challengeActive, onToggleChallenges,
-  onExportCss, onExpand, hasLoaded, isExporting,
+  onExportCss, onExpand, onClearCanvas, hasLoaded, isExporting,
 }) {
   return (
     <header className="editor-header">
@@ -22,16 +22,15 @@ function EditorHeader({
           <span>{t('editor.backToDashboard')}</span>
         </button>
 
-        <span
+        <button
+          type="button"
           className="editor-header__logo"
-          onClick={onNavigate}
-          role="button"
-          tabIndex={0}
-          aria-label={t('editor.backToDashboard')}
-          onKeyDown={(event) => activateOnKey(event, () => onNavigate())}
+          onClick={onGoHome}
+          aria-label={t('dashboard.goHome')}
+          title={t('dashboard.goHome')}
         >
-          FOUX
-        </span>
+          <FouxLogo decorative />
+        </button>
 
         <div className="editor-header__separator" />
 
@@ -109,6 +108,18 @@ function EditorHeader({
       </div>
 
       <div className="editor-header__right">
+        <button
+          type="button"
+          className="editor-toolbar-btn editor-toolbar-btn--danger"
+          onClick={onClearCanvas}
+          disabled={!hasLoaded}
+          aria-label={t('editor.clearCanvas.button')}
+          data-tooltip={t('editor.clearCanvas.hint')}
+        >
+          <Eraser size={14} aria-hidden="true" />
+          <span>{t('editor.clearCanvas.button')}</span>
+        </button>
+        <div className="editor-header__separator" />
         <button
           className="editor-header__icon-btn"
           onClick={onExpand}

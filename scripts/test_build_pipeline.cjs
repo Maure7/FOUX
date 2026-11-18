@@ -28,9 +28,9 @@ function fixture(context) {
     assert.ok(path.basename(root).startsWith('foux-build-test-'));
     fs.rmSync(root, { recursive: true, force: true });
   });
-  for (const directory of ['release', 'public']) fs.mkdirSync(path.join(root, directory));
+  for (const directory of ['release', 'public', 'build']) fs.mkdirSync(path.join(root, directory));
   fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ version: '1.2.3' }));
-  fs.copyFileSync(path.resolve('public/favicon.svg'), path.join(root, 'public/favicon.svg'));
+  fs.copyFileSync(path.resolve('build/icon.svg'), path.join(root, 'build/icon.svg'));
   return root;
 }
 function installer(root) {
@@ -83,9 +83,10 @@ test('SVG-derived icon contains valid Windows ICO frames', context => {
   generateIcons(root);
   const ico = fs.readFileSync(path.join(root, 'build/icon.ico'));
   assert.equal(ico.readUInt16LE(2), 1);
-  assert.equal(ico.readUInt16LE(4), 6);
-  assert.equal(ico[6 + 5 * 16], 0);
-  for (let index = 0; index < 6; index++) {
+  const sizes = [16, 24, 32, 48, 64, 128, 256];
+  assert.equal(ico.readUInt16LE(4), sizes.length);
+  sizes.forEach((size, index) => assert.equal(ico[6 + index * 16], size === 256 ? 0 : size));
+  for (let index = 0; index < sizes.length; index++) {
     const offset = ico.readUInt32LE(6 + index * 16 + 12);
     assert.equal(ico.subarray(offset + 1, offset + 4).toString(), 'PNG');
   }

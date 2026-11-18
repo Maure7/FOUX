@@ -52,21 +52,6 @@
   transform: scale(0.97);
 }
 
-.editor-header__logo {
-  font-size: 1.15rem;
-  font-weight: 800;
-  letter-spacing: 2.5px;
-  color: var(--accent-gold-light);
-  user-select: none;
-  cursor: pointer;
-  transition: var(--transition);
-  margin-left: var(--sp-1);
-}
-
-.editor-header__logo:hover {
-  color: var(--accent-gold);
-}
-
 .editor-header__separator {
   width: 1px;
   height: 24px;
@@ -343,9 +328,16 @@
   user-select: none;
   cursor: col-resize;
 }
+/* Só os controles ficam apagados: o aviso precisa continuar legível. As abas somem
+   porque o aviso ocupa o lugar delas e antes aparecia por cima do texto das abas. */
 .editor-sidebar--locked {
-  opacity: 0.4;
   pointer-events: none;
+}
+.editor-sidebar--locked > :not(.editor-sidebar__locked-overlay) {
+  opacity: 0.4;
+}
+.editor-sidebar--locked .sidebar-tabs {
+  visibility: hidden;
 }
 
 .editor-sidebar__locked-overlay {
@@ -354,8 +346,12 @@
   left: 0;
   right: 0;
   z-index: 10;
-  padding: 10px 14px;
-  background: rgba(23, 20, 28, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 8px 14px;
+  background: rgba(23, 20, 28, 0.94);
   border-bottom: 1px solid var(--border-subtle);
   text-align: center;
 }

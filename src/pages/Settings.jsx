@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { calculateStorageUsage, formatBytes, clearAllStorage } from '../utils/storage';
@@ -32,6 +32,15 @@ export default function Settings({
     setStorageBytes(bytes);
   }, []);
 
+  // O tema é gravado num efeito do App, que roda depois dos desta tela, então a releitura
+  // do tamanho espera um pouco; sair da tela antes cancela o timer.
+  const refreshTimerRef = useRef(null);
+  const scheduleStorageRefresh = () => {
+    clearTimeout(refreshTimerRef.current);
+    refreshTimerRef.current = setTimeout(refreshStorageSize, 50);
+  };
+  useEffect(() => () => clearTimeout(refreshTimerRef.current), []);
+
   const handleBack = () => {
     onNavigate(previousScreen || 'dashboard');
   };
@@ -39,12 +48,12 @@ export default function Settings({
   const handleLanguageChange = (e) => {
     const newLang = e.target.value;
     setLanguage(newLang);
-    setTimeout(refreshStorageSize, 50);
+    scheduleStorageRefresh();
   };
 
   const handleThemeSelect = (newTheme) => {
     onThemeChange(newTheme);
-    setTimeout(refreshStorageSize, 50);
+    scheduleStorageRefresh();
   };
 
   const handleConfirmClear = () => {

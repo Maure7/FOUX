@@ -3,8 +3,8 @@ import { HOVER_STYLE_ID, HOVER_CLASS_PREFIX } from '../../utils/inspector/consta
 
 const findHoverClass = (element) => Array.from(element.classList).find((name) => name.startsWith(HOVER_CLASS_PREFIX));
 
-// :hover cannot be written inline, so each edited element gets a private class
-// and its rules live in one <style> that is saved with the document.
+// :hover não existe em estilo inline, então cada elemento editado ganha uma classe
+// própria e as regras ficam num único <style> salvo junto com o documento.
 export default function useHoverStyles(iframeRef, selectedRef) {
   const assignHoverClass = useCallback((element) => {
     if (!element) return null;
@@ -19,8 +19,8 @@ export default function useHoverStyles(iframeRef, selectedRef) {
     return targetClass;
   }, []);
 
-  // Returns false when nothing was written, e.g. for an element of a document
-  // that undo/redo has already replaced.
+  // Devolve false quando nada foi escrito, ex.: elemento de um documento que
+  // desfazer/refazer já substituiu.
   const injectHoverStyles = useCallback((selector, cssText, element = selectedRef.current) => {
     const doc = iframeRef.current?.contentDocument;
     if (!doc || (element && element.ownerDocument !== doc)) return false;
@@ -32,8 +32,8 @@ export default function useHoverStyles(iframeRef, selectedRef) {
       (doc.head || doc.documentElement)?.appendChild(styleEl);
     }
 
-    // CSSOM ignores comments and normalizes selectors. A regexp treated the
-    // leading FOUX comment as part of the first selector, retaining stale rules.
+    // O CSSOM ignora comentários e normaliza seletores. Uma regexp tratava o
+    // comentário do FOUX como parte do primeiro seletor e mantinha regras velhas.
     const ruleMap = new Map();
     for (const rule of styleEl.sheet?.cssRules || []) {
       if (rule.selectorText && rule.style) ruleMap.set(rule.selectorText, rule.style.cssText);
@@ -41,8 +41,8 @@ export default function useHoverStyles(iframeRef, selectedRef) {
 
     const hoverSelector = selector.includes(':hover') ? selector.trim() : `${selector.trim()}:hover`;
 
-    // Migrate legacy ID/data selectors to the current target class. Otherwise
-    // an old transform could still win after the new class rule is removed.
+    // Migra seletores antigos (ID/data) para a classe atual; senão um transform
+    // antigo ainda venceria depois de a regra da classe ser removida.
     if (element) {
       const escape = doc.defaultView.CSS.escape;
       const id = element.getAttribute('data-foux-id');
@@ -72,7 +72,7 @@ export default function useHoverStyles(iframeRef, selectedRef) {
     return true;
   }, [iframeRef, selectedRef]);
 
-  // Merges every rule that targets the element, including selectors from older versions.
+  // Junta todas as regras que miram o elemento, inclusive seletores de versões antigas.
   const getHoverRules = useCallback((element) => {
     const doc = iframeRef.current?.contentDocument;
     const styleEl = doc?.getElementById(HOVER_STYLE_ID);
@@ -97,7 +97,7 @@ export default function useHoverStyles(iframeRef, selectedRef) {
     return declarations.cssText || null;
   }, [iframeRef]);
 
-  // An empty rule for the element's class also drops its legacy aliases.
+  // Uma regra vazia para a classe do elemento também descarta os aliases antigos.
   const clearHoverRules = useCallback((element) => {
     if (!getHoverRules(element)) return false;
     return injectHoverStyles(`.${findHoverClass(element) || assignHoverClass(element)}`, '', element);

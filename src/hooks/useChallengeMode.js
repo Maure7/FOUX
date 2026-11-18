@@ -6,8 +6,8 @@ import { saveChallengeRun } from '../challenges/records.js';
 const ADVANCE_DELAY_MS = 600;
 
 // session: { queue, done, total, startedAt, passedAt, status: 'playing' | 'passed' }
-// The time is saved only when the last challenge of the round is met; leaving
-// the editor, closing the mode or giving up discards the round.
+// O tempo só é salvo quando o último desafio da rodada é cumprido; sair do editor,
+// fechar o modo ou desistir descarta a rodada.
 export default function useChallengeMode({ iframeRef, getHoverRules }) {
   const [session, setSession] = useState(null);
   const [result, setResult] = useState(null);
@@ -28,8 +28,8 @@ export default function useChallengeMode({ iframeRef, getHoverRules }) {
     clearTimeout(advanceTimer.current);
   }, []);
 
-  // Edits arrive once per input event; validation runs at most once per frame,
-  // after the inspector has already flushed the element's styles.
+  // As edições chegam a cada evento de input; a validação roda no máximo uma vez por
+  // frame, depois de o inspector já ter aplicado os estilos do elemento.
   const scheduleCheck = useCallback(() => {
     if (sessionRef.current?.status !== 'playing' || frame.current) return;
     frame.current = requestAnimationFrame(() => {
@@ -43,7 +43,7 @@ export default function useChallengeMode({ iframeRef, getHoverRules }) {
     if (current?.status !== 'playing') return;
     const doc = iframeRef.current?.contentDocument;
     if (!isComplete(current.queue[0], doc, getHoverRules)) {
-      // A transitioning target still reports its old value; check again at the end.
+      // Com transition, o alvo ainda informa o valor antigo; confere de novo quando ela termina.
       const settled = waiting.current ? null : transitionsSettled(findTarget(doc, current.queue[0]));
       if (settled) {
         waiting.current = true;
@@ -66,7 +66,7 @@ export default function useChallengeMode({ iframeRef, getHoverRules }) {
         return;
       }
       update({ ...passed, queue, done: passed.done + 1, status: 'playing', passedAt: null });
-      // The next challenge may already be met by an earlier edit.
+      // O próximo desafio pode já ter sido cumprido por uma edição anterior.
       scheduleCheck();
     }, ADVANCE_DELAY_MS);
   }, [iframeRef, getHoverRules, update, scheduleCheck]);
@@ -86,7 +86,7 @@ export default function useChallengeMode({ iframeRef, getHoverRules }) {
     update(null);
   }, [cancelPending, update]);
 
-  // A skipped challenge goes to the end of the queue: the round still needs it.
+  // O desafio pulado vai para o fim da fila: a rodada ainda depende dele.
   const skip = useCallback(() => {
     const current = sessionRef.current;
     if (current?.status !== 'playing' || current.queue.length < 2) return;

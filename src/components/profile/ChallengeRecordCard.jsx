@@ -4,7 +4,7 @@ import { formatClock, readChallengeRecords } from '../../challenges/records.js';
 
 const DATE_TIME = { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' };
 
-// Records are written by the editor; the profile only reads them on mount.
+// Os recordes são gravados pelo editor; o perfil só os lê ao montar.
 export default function ChallengeRecordCard({ t, formatDate }) {
   const [{ best, runs }] = useState(readChallengeRecords);
   const [open, setOpen] = useState(false);

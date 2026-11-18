@@ -20,7 +20,7 @@ o instalador Windows x64 com NSIS. A configuração está em `package.json`.
    do aplicativo no pacote `app.asar`, junto ao runtime Electron. Os manuais PDF
    vão em `resources/docs`, fora do arquivo ASAR. O idioma ativo seleciona
    `manual_pt.pdf` ou `manual_es.pdf` para abrir no visualizador padrão.
-   O ícone ICO é gerado de `public/favicon.svg` antes da compilação.
+   O ícone ICO (e os PNGs de 16 a 512 px) é gerado de `build/icon.svg` antes da compilação; esse é o ícone do `.exe`, do instalador e dos atalhos da área de trabalho e do menu Iniciar.
 5. **Instalador:** NSIS gera `release/FOUX-Setup-<versão>.exe`, com assistente e
    escolha do diretório de instalação. O computador de destino não precisa
    instalar Node.js. Os dados ficam no diretório `userData` do Electron,

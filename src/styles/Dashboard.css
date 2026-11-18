@@ -1,4 +1,4 @@
-/* Keep this import order: theme overrides depend on the shared base. */
+/* Mantenha esta ordem de importação: os temas sobrescrevem a base compartilhada. */
 @import './base.css';
 @import './dashboard-layout.css';
 @import './editor.css';

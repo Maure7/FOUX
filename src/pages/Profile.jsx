@@ -34,7 +34,7 @@ export default function Profile({
       setAvatar(avatarUrl);
       onUpdateProfile?.({ avatar: avatarUrl });
     } catch {
-      // Also covers files with an image extension that fail to decode.
+      // Cobre também arquivos com extensão de imagem que não decodificam.
       showToast?.(t('profile.invalidImage'));
     }
   }, [onUpdateProfile, showToast, t]);

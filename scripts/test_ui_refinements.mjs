@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 export async function runUiRefinements({ evaluate, command, eventually }) {
-  // Finish any editor autosave before replacing this test profile's storage.
+  // Sair do editor grava o documento antes de o teste trocar o armazenamento do perfil.
   await evaluate(`document.querySelector('.editor-header__back')?.click()`);
   await eventually(() => evaluate(`!!document.getElementById('card-new-project')`), 'Dashboard did not settle before tutorial fixture');
   await command('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
@@ -32,7 +32,7 @@ export async function runUiRefinements({ evaluate, command, eventually }) {
     })()`);
     assert.ok(bounds.left >= 0 && bounds.right <= 1280 && bounds.top >= 0 && bounds.bottom <= 800, `Card offscreen: ${id}`);
     assert.ok(bounds.spotHeight > 0, `Spotlight empty: ${id}`);
-    // Real input must remain inside the modal, even when focus is requested outside.
+    // O foco fica preso no tour mesmo quando algo fora dele o pede.
     await evaluate('document.querySelector(".editor-header__back").focus()');
     assert.equal(await evaluate('document.activeElement.closest(".tutorial-tour") !== null'), true);
     if (index === 2) {
@@ -51,13 +51,15 @@ export async function runUiRefinements({ evaluate, command, eventually }) {
   await evaluate('document.querySelector(".project-card--saved").click()');
   await eventually(() => evaluate('!!document.querySelector(".editor-sidebar")'), 'Reopen failed');
   assert.equal(await evaluate('!!document.querySelector(".tutorial-tour")'), false);
+  // A marca some com a página velha: nada abaixo roda no DOM anterior ao reload.
+  await evaluate('window.__fouxUiOldDocument = true');
   await command('Page.reload');
-  await eventually(() => evaluate('!!document.querySelector(".project-card--saved")'), 'Reload failed');
+  await eventually(() => evaluate('!window.__fouxUiOldDocument && !!document.querySelector(".project-card--saved")'), 'Reload failed');
   await evaluate('document.querySelector(".project-card--saved").click()');
   await eventually(() => evaluate('!!document.querySelector(".editor-sidebar")'), 'Reloaded editor missing');
   assert.equal(await evaluate('!!document.querySelector(".tutorial-tour")'), false);
 
-  // All available editor action buttons, including disabled actions, have tooltip copy.
+  // Todo botão de ação do editor, inclusive os desabilitados, tem texto de tooltip.
   const missing = await evaluate(`Array.from(document.querySelectorAll('button,[role="button"]')).filter(el => !(el.dataset.tooltip || el.getAttribute('aria-label') || el.textContent.trim())).map(el => el.className)`);
   assert.deepEqual(missing, []);
   const configRect = await evaluate(`(() => { const r = document.querySelector('[aria-label="Configurações"]').getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2}; })()`);
@@ -114,7 +116,7 @@ export async function runUiRefinements({ evaluate, command, eventually }) {
   await evaluate('document.querySelector(".settings-page__back").click()');
   await eventually(() => evaluate('!!document.querySelector(".editor-sidebar")'), 'Settings back failed');
   assert.equal(await evaluate('!!document.querySelector(".tutorial-tour")'), false);
-  // A manual tour remains available when automatic onboarding is disabled.
+  // O tour manual continua disponível com o tour automático desligado.
   await evaluate('document.querySelector(".editor-header__tutorial-btn").click()');
   await eventually(() => evaluate('!!document.querySelector(".tutorial-tour[open]")'), 'Disabled setting prevented manual tour');
   await evaluate('document.querySelector(".tutorial-tour__close").click()');
@@ -122,7 +124,7 @@ export async function runUiRefinements({ evaluate, command, eventually }) {
   await evaluate('Array.from(document.querySelectorAll(".settings-row__btn")).find(el=>el.textContent === "Reiniciar tutorial").click()');
   await eventually(() => evaluate('!!document.querySelector(".tutorial-tour[open]")'), 'Settings restart failed');
   await evaluate('document.querySelector(".tutorial-tour__skip").click()');
-  // Restart remains usable after the example's ID is edited or removed.
+  // Reiniciar continua funcionando depois que o ID do exemplo é editado ou removido.
   await evaluate(`document.querySelector('iframe').contentDocument.getElementById('titulo-exercicio').removeAttribute('id'); document.querySelector('.editor-header__tutorial-btn').click()`);
   await eventually(() => evaluate('!!document.querySelector(".tutorial-tour[open]")'), 'Edited tutorial restart failed');
   for (let i = 0; i < 6; i++) await evaluate('document.querySelector(".tutorial-tour__next").click()');

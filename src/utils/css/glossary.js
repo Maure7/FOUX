@@ -1,6 +1,6 @@
-// Official CSS names shown beside each friendly label, so students can map the
-// visual control to the property they will write by hand. Hints live in the
-// locales under `glossary.<key>`.
+// Nome oficial do CSS ao lado de cada rótulo amigável, para o aluno ligar o
+// controle visual à propriedade que vai escrever à mão. As dicas ficam nos
+// locales em `glossary.<chave>`.
 const TOKENS = {
   width: 'width',
   height: 'height',

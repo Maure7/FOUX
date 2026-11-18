@@ -1,4 +1,4 @@
-/* FOUX Liquid Glass: neutral, translucent surfaces with soft specular edges. */
+/* Liquid Glass do FOUX: superfícies neutras e translúcidas, com bordas de brilho suave. */
 [data-theme="liquid-glass"] {
   color-scheme: dark;
   --focus-ring: #e4e4e7;
@@ -62,7 +62,7 @@
   --radius-xl: 24px;
 }
 
-/* Soft monochrome ambient light gives the translucent panels something to refract. */
+/* Luz ambiente monocromática e suave: dá aos painéis translúcidos algo para refratar. */
 [data-theme="liquid-glass"] body {
   color: var(--text-primary);
   background:
@@ -77,7 +77,7 @@
   background: transparent;
 }
 
-/* Shared glass surface recipe for cards, floating menus, and app panels. */
+/* Receita de vidro comum a cards, menus flutuantes e painéis. */
 [data-theme="liquid-glass"] :is(
   .header, .editor-header, .settings-page__header, .profile-page__header,
   .editor-sidebar, .project-card, .folder-card, .list-item,
@@ -111,7 +111,7 @@
   transition: var(--transition);
 }
 
-/* Keep settings headings and controls comfortably inside the glass edge. */
+/* Títulos e controles das configurações ficam folgados dentro da borda de vidro. */
 [data-theme="liquid-glass"] .settings-section {
   box-sizing: border-box;
   padding: 20px 24px;
@@ -145,13 +145,6 @@
   box-shadow: var(--glass-shadow-soft), var(--glass-halo);
 }
 
-/* The modal scrim dims the page without hiding its blurred colour and detail. */
-[data-theme="liquid-glass"] .modal-overlay {
-  background: rgba(8, 7, 12, .36);
-  -webkit-backdrop-filter: blur(7px) saturate(125%);
-  backdrop-filter: blur(7px) saturate(125%);
-}
-
 [data-theme="liquid-glass"] :is(.modal-card, .modal-content, .faq-modal, .foux-config-modal) {
   background-color: rgba(20, 17, 27, .45);
   border-radius: 24px;
@@ -168,7 +161,7 @@
   backdrop-filter: var(--glass-blur);
 }
 
-/* Actions use only translucent neutral fills. Accents stay on the edge and icon. */
+/* Ações usam só preenchimentos neutros translúcidos; o destaque fica na borda e no ícone. */
 [data-theme="liquid-glass"] :is(
   .header__icon-btn, .header__new-folder, .editor-header__icon-btn,
   .editor-header__back, .editor-toolbar-btn, .editor-header__tutorial-btn,
@@ -233,7 +226,7 @@
   box-shadow: 0 0 9px rgba(255, 255, 255, .42);
 }
 
-/* Give the sidebar tabs breathing room and a continuous rounded track. */
+/* Abas da sidebar com respiro e um trilho arredondado contínuo. */
 [data-theme="liquid-glass"] .sidebar-tabs {
   box-sizing: border-box;
   gap: 6px;
@@ -261,7 +254,7 @@
 
 [data-theme="liquid-glass"] .sidebar-tab--active::after { content: none; }
 
-/* Inputs keep their own denser translucent fill for reliable reading. */
+/* Campos têm preenchimento translúcido mais denso para a leitura não depender do fundo. */
 [data-theme="liquid-glass"] :is(
   input:not([type="range"]):not([type="checkbox"]):not([type="color"]):not([type="file"]):not([type="hidden"]),
   select, textarea
@@ -303,7 +296,7 @@
 [data-theme="liquid-glass"] :is(.sidebar-content, .sidebar-tabs, .sidebar-section__body) { background-color: transparent; }
 [data-theme="liquid-glass"] :is(.sidebar-section__title, .sidebar-control__label, .sidebar-control__unit, .sidebar-section__icon) { color: var(--text-secondary); }
 
-/* Isolated glass cards keep each editor topic visually distinct. */
+/* Cada seção do editor é um card de vidro próprio, para os assuntos não se misturarem. */
 [data-theme="liquid-glass"] .sidebar-content {
   box-sizing: border-box;
   display: flex;
@@ -355,7 +348,7 @@
   background: transparent;
 }
 
-/* High-contrast accordion header content for the dark glass surface. */
+/* Cabeçalho do acordeão com alto contraste sobre o vidro escuro. */
 [data-theme="liquid-glass"] {
   --sidebar-text-color: #f8fafc;
   --sidebar-icon-color: #fff;
@@ -385,7 +378,7 @@
   fill: none !important;
 }
 
-/* Explicit SVG override also covers chevrons and any fixed child attributes. */
+/* Regra explícita para SVG: cobre também os chevrons e atributos fixos dos filhos. */
 [data-theme="liquid-glass"] .editor-sidebar .sidebar-accordion-header svg,
 [data-theme="liquid-glass"] .editor-sidebar .sidebar-accordion-header svg * {
   color: #fff !important;
@@ -422,14 +415,6 @@
   -webkit-text-fill-color: #f5f5f7;
 }
 
-[data-theme="liquid-glass"] :is(.header__logo, .editor-header__logo) {
-  color: #f5f5f7;
-  background: none;
-  -webkit-text-fill-color: #f5f5f7;
-  text-shadow: none;
-  filter: none;
-}
-
 [data-theme="liquid-glass"] .sidebar-slider::-webkit-slider-thumb {
   background: #f5f5f7;
   box-shadow: 0 1px 5px rgba(0, 0, 0, .4), 0 0 8px rgba(255, 255, 255, .18);
@@ -448,7 +433,7 @@
   background-color: #f5f5f7;
 }
 
-/* Recent activity content stays inside the card's rounded glass edge. */
+/* O conteúdo da Atividade Recente fica dentro da borda arredondada do card. */
 [data-theme="liquid-glass"] .activity-section {
   box-sizing: border-box;
   padding: 18px 20px;
@@ -469,7 +454,7 @@
   margin-bottom: 0;
 }
 
-/* Restrained tactile feedback for interactive glass surfaces. */
+/* Resposta tátil contida para superfícies de vidro interativas. */
 [data-theme="liquid-glass"] :is(
   button:not(:disabled), [role="button"], [role="slider"],
   input:not(:disabled), select:not(:disabled), textarea:not(:disabled),
@@ -513,7 +498,7 @@
   box-shadow: 0 1px 6px rgba(0, 0, 0, .6), 0 0 0 1px rgba(255, 255, 255, .8);
 }
 
-/* Preserve the document being inspected; only the editor's chrome is glass. */
+/* O documento inspecionado fica intacto; só a moldura do editor é vidro. */
 [data-theme="liquid-glass"] :is(.editor-canvas, .editor-dropzone) {
   background: #e5e5e7;
   background-image: none;
@@ -521,8 +506,18 @@
   -webkit-backdrop-filter: none;
 }
 [data-theme="liquid-glass"] .editor-canvas__iframe { background: #fff; }
-[data-theme="liquid-glass"] .editor-dropzone { color: #27272a; }
+/* A área de importação fica sobre o cinza claro do documento: os tokens claros do
+   tema (texto #d1d1d8, destaque #e4e4e7) sumiriam, então ela usa tinta escura. */
+[data-theme="liquid-glass"] .editor-dropzone { color: #27272a; border-color: #71717a; }
+[data-theme="liquid-glass"] .editor-dropzone__title { color: #18181b; }
 [data-theme="liquid-glass"] .editor-dropzone__hint { color: #52525b; }
+[data-theme="liquid-glass"] .editor-dropzone__icon-wrapper { border-color: #71717a; color: #52525b; }
+[data-theme="liquid-glass"] .editor-dropzone:hover { border-color: #27272a; background: rgba(0, 0, 0, .03); }
+[data-theme="liquid-glass"] .editor-dropzone:hover .editor-dropzone__icon-wrapper {
+  border-color: #27272a;
+  color: #18181b;
+  background: rgba(0, 0, 0, .05);
+}
 
 [data-theme="liquid-glass"] .tutorial-tour__card {
   background: rgba(29, 26, 38, .96);

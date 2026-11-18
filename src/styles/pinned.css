@@ -18,6 +18,12 @@
   pointer-events: none;
   transition: var(--transition) !important;
 }
+/* No Liquid Glass o card já é vidro; um backdrop-filter aninhado no selo não
+   enxerga a página, só pesa na composição. */
+[data-theme="liquid-glass"] .card-pin-badge {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
 
 .card-pin-icon {
   transform: rotate(35deg);
@@ -100,7 +106,7 @@
 
 [data-theme="light"] .project-card--pinned {
   border: 1.5px solid rgba(229, 152, 67, 0.45) !important;
-  background: linear-gradient(145deg, #fffcf8 0%, #ffffff 55%) !important;
+  background: linear-gradient(145deg, #fffcf8 0%, var(--lc-surface) 55%) !important;
   box-shadow:
     0 4px 16px rgba(229, 152, 67, 0.1),
     0 1px 3px rgba(0, 0, 0, 0.04) !important;
@@ -115,12 +121,12 @@
 
 [data-theme="light"] .list-item--pinned {
   border-left: 3px solid #d97706 !important;
-  background: linear-gradient(90deg, #fff8f0 0%, #ffffff 100%) !important;
+  background: linear-gradient(90deg, #fff8f0 0%, var(--lc-surface) 100%) !important;
   box-shadow: 0 1px 4px rgba(217, 119, 6, 0.08) !important;
 }
 
 [data-theme="light"] .list-item--pinned:hover {
-  background: linear-gradient(90deg, #fef3c7 0%, #ffffff 100%) !important;
+  background: linear-gradient(90deg, #fef3c7 0%, var(--lc-surface) 100%) !important;
   border-color: #d97706 !important;
 }
 

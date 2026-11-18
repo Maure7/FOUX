@@ -11,10 +11,17 @@ export function getTutorialHtml(language) {
 
 const normalizeText = (text) => text.replace(/\s+/g, ' ').trim();
 
-// Translate only authored tutorial text and identifiers. Keep styles, imported
-// fonts, hover rules, inspection metadata and user edits in the saved document.
+// Em tutoriais salvos antes desta regra as seções não continham os floats: a imagem
+// flutuante escapava para a seção seguinte e empurrava os cards para o lado.
+const LEGACY_SECTION_RULE = 'section { margin-bottom: 28px; }';
+const SECTION_RULE = 'section { margin-bottom: 28px; display: flow-root; }';
+export const upgradeTutorialLayout = (html) => html.replace(LEGACY_SECTION_RULE, SECTION_RULE);
+
+// Traduz só o texto e os IDs escritos no tutorial. Estilos, fontes importadas, regras
+// de hover, metadados da inspeção e edições do aluno ficam como estão no documento.
 export function localizeTutorialHtml(html, language) {
   if (!html) return getTutorialHtml(language);
+  html = upgradeTutorialLayout(html);
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
   const targetLanguage = language === 'es' ? 'es' : 'pt';
@@ -58,8 +65,8 @@ export function localizeTutorialHtml(html, language) {
       if (translation !== undefined) element.setAttribute(attribute, translation);
     }
   });
-  // IDs in authored selectors, legacy hover selectors and CSS url(#id) must
-  // follow the same mapping. Classes remain stable in both templates.
+  // IDs nos seletores do tutorial, nos seletores de hover antigos e em url(#id) seguem
+  // o mesmo mapa. As classes são iguais nos dois modelos.
   const replaceIds = (css) => {
     for (const [from, to] of ids) {
       css = css.replace(new RegExp(`(?<=[#"'=])${from}(?![\\w-])`, 'g'), to);

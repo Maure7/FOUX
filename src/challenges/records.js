@@ -1,7 +1,7 @@
 import { appStorage } from '../services/appStorage';
 
 export const CHALLENGE_RECORDS_KEY = 'foux_challenge_records';
-// Every run is rewritten with the workspace file on desktop; keep it small.
+// No desktop o histórico é regravado junto com o arquivo do workspace; por isso fica curto.
 const MAX_RUNS = 50;
 
 const isRun = (run) => Number.isFinite(run?.ms) && run.ms > 0 && Number.isFinite(run.at);
@@ -17,7 +17,7 @@ export function readChallengeRecords() {
   }
 }
 
-/** Saves a fully completed round; partial rounds are never passed here. */
+/** Salva uma rodada completa; rodadas parciais nunca chegam aqui. */
 export function saveChallengeRun(ms) {
   const { best, runs } = readChallengeRecords();
   const isRecord = !best || ms < best.ms;
@@ -26,7 +26,7 @@ export function saveChallengeRun(ms) {
   try {
     appStorage.setItem(CHALLENGE_RECORDS_KEY, JSON.stringify(next));
   } catch {
-    // The result is still shown; only the history is lost when storage is blocked.
+    // O resultado aparece mesmo assim; com o armazenamento bloqueado, só o histórico se perde.
   }
   return { isRecord };
 }

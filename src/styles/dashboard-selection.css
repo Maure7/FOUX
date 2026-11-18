@@ -1,0 +1,732 @@
+/* Dashboard: modo de seleção, barra em lote, pasta aberta e seletor de projetos. */
+
+.section-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.dashboard-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 33px;
+  padding: 0 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: .76rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.dashboard-tool-btn:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--border-light);
+}
+.dashboard-tool-btn:active:not(:disabled) { transform: scale(.97); }
+.dashboard-tool-btn:disabled { opacity: .45; cursor: not-allowed; }
+.dashboard-tool-btn.is-active {
+  border-color: var(--accent-gold);
+  background: var(--accent-gold-bg);
+  color: var(--accent-gold-light);
+  font-weight: 600;
+}
+[data-theme="light"] .dashboard-tool-btn.is-active {
+  background: #0a0a0a;
+  border-color: #0a0a0a;
+  color: #fff;
+}
+[data-theme="liquid-glass"] .dashboard-tool-btn {
+  background: rgba(255, 255, 255, .06);
+  border-color: rgba(255, 255, 255, .16);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  backdrop-filter: blur(10px) saturate(160%);
+}
+[data-theme="liquid-glass"] .dashboard-tool-btn.is-active {
+  background: rgba(255, 255, 255, .16);
+  border-color: rgba(255, 255, 255, .5);
+  color: #fff;
+}
+/* No banner da pasta o botão já está sobre vidro: um segundo backdrop-filter só
+   desfocaria o próprio banner, então ele usa apenas o preenchimento. */
+[data-theme="liquid-glass"] .folder-banner .dashboard-tool-btn {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* ---------- Cards selecionáveis ---------- */
+.is-selectable { cursor: pointer; }
+:root :is(.project-card, .list-item)[role="checkbox"]:focus-visible {
+  outline: 2px solid var(--focus-ring) !important;
+  outline-offset: 3px;
+}
+:root :is(.project-card, .list-item).is-blocked {
+  opacity: .45;
+  cursor: not-allowed;
+  filter: saturate(.55);
+  transition: opacity var(--duration-fast) ease, filter var(--duration-fast) ease;
+}
+:root :is(.project-card, .list-item).is-blocked:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+:root .is-blocked:hover .card-pin-badge { transform: none; }
+
+.selection-checkbox {
+  border-radius: 6px;
+  border-width: 1.5px;
+  background: var(--bg-card);
+  color: var(--on-accent);
+}
+.selection-checkbox--card {
+  top: 10px;
+  left: 10px;
+  right: auto;
+}
+.selection-checkbox--checked {
+  border-color: var(--accent-gold);
+  background: var(--accent-gold);
+  color: var(--on-accent);
+}
+[data-theme="liquid-glass"] .selection-checkbox--checked { color: #211833; }
+.list-item.is-selectable { gap: 12px; }
+
+/* ---------- Barra de ações em lote ---------- */
+.main-content--batch { padding-bottom: 120px; }
+
+.batch-bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100vw - 32px);
+  padding: 8px 8px 8px 18px;
+  border: 1px solid var(--border-light);
+  border-radius: 18px;
+  background: linear-gradient(155deg, var(--floating-highlight, transparent), transparent 48%), var(--floating-glass-dense, var(--bg-card));
+  -webkit-backdrop-filter: blur(14px) saturate(170%);
+  backdrop-filter: blur(14px) saturate(170%);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .38), inset 0 1px 0 rgba(255, 255, 255, .06);
+  transform: translateX(-50%);
+  animation: batch-bar-in var(--duration-enter) var(--ease-out);
+}
+@keyframes batch-bar-in {
+  from { opacity: 0; transform: translate(-50%, 14px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+[data-theme="light"] .batch-bar { box-shadow: 0 18px 44px rgba(0, 0, 0, .12), 0 1px 3px rgba(0, 0, 0, .06); }
+[data-theme="liquid-glass"] .batch-bar {
+  background-color: var(--glass-surface);
+  border-color: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+.batch-bar__count {
+  min-width: 0;
+  margin-right: 8px;
+  color: var(--text-primary);
+  font-size: .8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.batch-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-left: 10px;
+  border-left: 1px solid var(--border-subtle);
+}
+.batch-bar__btn,
+.batch-bar__close,
+.folder-color-picker__trigger--button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: .78rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.batch-bar__btn:hover:not(:disabled),
+.batch-bar__close:hover,
+.folder-color-picker__trigger--button:hover,
+.batch-bar__btn[aria-expanded="true"],
+.folder-color-picker__trigger--button[aria-expanded="true"] {
+  background: var(--bg-card-hover);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+[data-theme="light"] :is(.batch-bar__btn:hover:not(:disabled), .batch-bar__close:hover, .folder-color-picker__trigger--button:hover) { background: #f4f4f5; }
+.batch-bar__btn:active:not(:disabled),
+.batch-bar__close:active { transform: scale(.96); }
+.batch-bar__btn:disabled { opacity: .45; cursor: not-allowed; }
+.batch-bar__btn--danger:hover:not(:disabled),
+.batch-bar__btn--danger:focus-visible {
+  background: rgba(239, 68, 68, .14);
+  border-color: #ef4444;
+  color: var(--danger-text);
+}
+.batch-bar__close {
+  width: 34px;
+  padding: 0;
+  justify-content: center;
+  margin-left: 4px;
+}
+
+.batch-bar__menu { position: relative; }
+.batch-bar__popover,
+.folder-color-picker__popover {
+  position: absolute;
+  z-index: 620;
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  background: linear-gradient(155deg, var(--floating-highlight, transparent), transparent 48%), var(--floating-glass-dense, var(--bg-card));
+  -webkit-backdrop-filter: blur(14px) saturate(170%);
+  backdrop-filter: blur(14px) saturate(170%);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .36);
+  animation: popover-in var(--duration-fast) var(--ease-out);
+}
+[data-theme="light"] :is(.batch-bar__popover, .folder-color-picker__popover) { box-shadow: 0 16px 40px rgba(0, 0, 0, .12); }
+[data-theme="liquid-glass"] :is(.batch-bar__popover, .folder-color-picker__popover) {
+  background-color: var(--glass-surface);
+  border-color: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+/* Dentro de um painel de vidro o backdrop-filter aninhado só enxerga a pintura do
+   pai no Chromium (a página atrás não desfoca e o texto vaza). Os menus da barra
+   em lote — e os do banner no Liquid Glass — ficam sólidos, como os submenus. */
+.batch-bar :is(.batch-bar__popover, .folder-color-picker__popover),
+[data-theme="liquid-glass"] .folder-banner .folder-color-picker__popover {
+  background: var(--floating-solid, var(--bg-card));
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+[data-theme="liquid-glass"] :is(.batch-bar, .folder-banner) .folder-color-picker__popover,
+[data-theme="liquid-glass"] .batch-bar .batch-bar__popover {
+  background: rgba(var(--glass-tint-rgb), .94);
+}
+@keyframes popover-in {
+  from { opacity: 0; transform: translateY(4px) scale(.98); }
+}
+.batch-bar__popover {
+  bottom: calc(100% + 10px);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 210px;
+  max-width: min(300px, calc(100vw - 32px));
+  max-height: 260px;
+  padding: 6px;
+  overflow-y: auto;
+}
+.batch-bar__menu-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: .8rem;
+  text-align: left;
+  cursor: pointer;
+}
+.batch-bar__menu-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.batch-bar__menu-item svg { flex-shrink: 0; }
+.batch-bar__menu-item:hover,
+.batch-bar__menu-item:focus-visible { background: var(--bg-card-hover); }
+[data-theme="light"] .batch-bar__menu-item:hover { background: #f4f4f5; }
+
+/* ---------- Cores das pastas ---------- */
+.folder-color-picker { position: relative; flex-shrink: 0; }
+.folder-color-picker__trigger--dot {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 50%;
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.folder-color-picker__trigger--dot:hover { border-color: var(--border-light); transform: scale(1.06); }
+.folder-color-picker__dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--swatch-color);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .18);
+}
+.folder-color-picker__popover { padding: 10px; }
+.folder-color-picker--bottom .folder-color-picker__popover { top: calc(100% + 8px); left: 0; }
+.folder-color-picker--top .folder-color-picker__popover { bottom: calc(100% + 10px); left: 0; }
+
+.folder-swatches {
+  display: grid;
+  grid-template-columns: repeat(4, 26px);
+  gap: 8px;
+}
+.folder-swatches__swatch {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: var(--swatch-color);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15);
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) ease;
+}
+.folder-swatches__swatch:hover { transform: scale(1.12); }
+.folder-swatches__swatch.is-active {
+  border-color: var(--bg-card);
+  box-shadow: 0 0 0 2px var(--swatch-color);
+}
+[data-theme="liquid-glass"] .folder-swatches__swatch.is-active { border-color: rgba(20, 17, 27, .9); }
+.context-menu__color-grid { grid-template-columns: repeat(4, 28px); }
+
+/* ---------- Banner da pasta aberta ---------- */
+/* Sem overflow: hidden — ele cortava a paleta de cores que abre abaixo do título
+   (só a primeira fileira aparecia). A faixa de cor usa sombra interna, que já
+   acompanha os cantos arredondados sem precisar de recorte. */
+:root .folder-banner {
+  --folder-accent: var(--folder-accent-color, var(--accent-gold));
+  position: relative;
+  /* No Liquid Glass o backdrop-filter faz do banner um contexto de empilhamento; sem
+     z-index, os cards de vidro abaixo pintavam por cima da paleta aberta. */
+  z-index: 2;
+  display: block;
+  margin-bottom: var(--sp-3);
+  padding: 16px 20px 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--folder-accent) 15%, transparent), transparent 60%),
+    var(--bg-card);
+}
+:root .folder-banner::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  border-radius: inherit;
+  box-shadow:
+    inset 0 3px 0 var(--folder-accent),
+    inset 0 14px 18px -12px color-mix(in srgb, var(--folder-accent) 60%, transparent);
+  pointer-events: none;
+}
+[data-theme="light"] .folder-banner {
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--folder-accent) 10%, transparent), transparent 60%),
+    #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .03);
+}
+[data-theme="liquid-glass"] .folder-banner {
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--folder-accent) 18%, transparent), transparent 62%),
+    rgba(20, 17, 27, .42);
+  border-color: rgba(255, 255, 255, .16);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+.folder-banner__top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.folder-banner__back { flex-shrink: 0; }
+.folder-banner__breadcrumb { min-width: 0; }
+.folder-banner__breadcrumb ol {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: .78rem;
+}
+.folder-banner__breadcrumb li { display: flex; align-items: center; min-width: 0; }
+.folder-banner__crumb {
+  min-height: 24px;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+.folder-banner__crumb:hover { color: var(--text-primary); text-decoration: underline; text-underline-offset: 3px; }
+.folder-banner__separator { color: var(--text-muted); opacity: .7; }
+.folder-banner__crumb-current {
+  gap: 5px;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.folder-banner__crumb-current svg { flex-shrink: 0; color: var(--folder-accent); }
+.folder-banner__crumb-current span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.folder-banner__body {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  margin-top: 16px;
+}
+.folder-banner__icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border: 1px solid color-mix(in srgb, var(--folder-accent) 38%, transparent);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--folder-accent) 16%, transparent);
+  color: var(--folder-accent);
+}
+.folder-banner__heading {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  flex: 1 1 260px;
+}
+.folder-banner__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+.folder-banner__title { display: flex; flex: 0 1 auto; min-width: 0; margin: 0; }
+.folder-banner__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 2px 6px;
+  border: 1px dashed transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: text;
+  transition: var(--transition);
+}
+/* Respiro interno: o overflow do ellipsis cortava as bordas das letras do nome. */
+.folder-banner__name-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 2px; line-height: 1.25; }
+.folder-banner__name-icon { flex-shrink: 0; color: var(--text-muted); opacity: .35; transition: opacity var(--duration-fast) ease; }
+.folder-banner__name:hover,
+.folder-banner__name:focus-visible { border-color: var(--border-light); background: color-mix(in srgb, var(--text-primary) 5%, transparent); }
+.folder-banner__name:hover .folder-banner__name-icon,
+.folder-banner__name:focus-visible .folder-banner__name-icon { opacity: .8; }
+.folder-banner__name-input {
+  width: min(100%, 560px);
+  margin-left: -6px;
+  padding: 2px 6px;
+  border: 1px solid var(--folder-accent);
+  border-radius: 9px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font: inherit;
+  letter-spacing: inherit;
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--folder-accent) 25%, transparent);
+}
+.folder-banner__count {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: .8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Pasta vazia ---------- */
+.folder-empty-state { cursor: default; }
+.folder-empty-state:hover { border-color: var(--border-light); background: rgba(255, 255, 255, .012); }
+.folder-empty-state:hover .folder-empty-state__icon { color: var(--text-muted); opacity: .4; }
+.folder-empty-state__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+.folder-empty-state__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: .8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.folder-empty-state__btn:hover:not(:disabled) { border-color: var(--text-muted); }
+.folder-empty-state__btn:active:not(:disabled) { transform: scale(.97); }
+.folder-empty-state__btn:disabled { opacity: .45; cursor: not-allowed; }
+.folder-empty-state__btn--primary {
+  border-color: var(--accent-gold);
+  background: var(--accent-gold-bg);
+  color: var(--accent-gold-light);
+  font-weight: 600;
+}
+[data-theme="light"] .folder-empty-state__btn--primary { background: #0a0a0a; border-color: #0a0a0a; color: #fff; }
+
+/* ---------- Seletor de projetos ---------- */
+.modal-folder-projects {
+  min-width: 0;
+  margin: 20px 0 0;
+  padding: 0;
+  border: 0;
+}
+.modal-folder-projects legend { margin-bottom: 8px; padding: 0; }
+.project-picker { display: flex; flex-direction: column; gap: 8px; }
+.project-picker__toolbar { display: flex; align-items: center; gap: 8px; }
+.project-picker__search {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  background: var(--bg-input);
+  color: var(--text-muted);
+}
+.project-picker__search input {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: .78rem;
+  outline: none;
+}
+.project-picker__all {
+  margin-left: auto;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: .74rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.project-picker__all:hover:not(:disabled) { color: var(--text-primary); background: var(--bg-card-hover); }
+.project-picker__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 210px;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  list-style: none;
+}
+.project-picker__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 9px;
+  color: var(--text-primary);
+  font-size: .8rem;
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease;
+}
+.project-picker__item:hover { background: var(--bg-card-hover); }
+[data-theme="light"] .project-picker__item:hover { background: #f4f4f5; }
+.project-picker__item input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.project-picker__check {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--text-muted);
+  border-radius: 5px;
+  color: var(--on-accent);
+  transition: var(--transition);
+}
+.project-picker__item.is-checked .project-picker__check { border-color: var(--accent-gold); background: var(--accent-gold); }
+[data-theme="liquid-glass"] .project-picker__item.is-checked .project-picker__check { color: #211833; }
+.project-picker__item:has(input:focus-visible) { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.project-picker__icon { flex-shrink: 0; color: var(--text-muted); }
+.project-picker__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.project-picker__location {
+  display: inline-flex;
+  flex-shrink: 1;
+  align-items: center;
+  gap: 4px;
+  max-width: 40%;
+  padding: 2px 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--bg-card-hover);
+  color: var(--text-muted);
+  font-size: .68rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+[data-theme="light"] .project-picker__location { background: #f4f4f5; }
+.project-picker__empty,
+.project-picker__count { margin: 0; color: var(--text-muted); font-size: .74rem; }
+.project-picker__empty { padding: 12px 8px; text-align: center; }
+
+.modal-card--add-projects { max-width: 460px; }
+.modal-create-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+:root .modal-create-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+@media (max-width: 640px) {
+  .section-header__actions { width: 100%; justify-content: space-between; }
+  .folder-banner__top { flex-wrap: wrap; gap: 10px; }
+  .folder-banner__body .section-header__actions { justify-content: flex-start; }
+  .batch-bar {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    max-width: none;
+    padding: 10px;
+    transform: none;
+    animation-name: batch-bar-in-mobile;
+  }
+  .batch-bar__count { order: 1; margin: 0 0 0 6px; }
+  .batch-bar__close { order: 2; }
+  .batch-bar__actions {
+    order: 3;
+    flex-wrap: wrap;
+    width: 100%;
+    padding: 6px 0 0;
+    border-top: 1px solid var(--border-subtle);
+    border-left: 0;
+  }
+  @keyframes batch-bar-in-mobile {
+    from { opacity: 0; transform: translateY(14px); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .batch-bar, .batch-bar__popover, .folder-color-picker__popover { animation: none; }
+}
+
+/* ---------- Cards de pasta: brilho interno e luz do cursor na cor da pasta ---------- */
+:root :is(.project-card--folder, .list-item--folder) {
+  --folder-tone: var(--folder-border-color, var(--accent-gold));
+  --folder-glow: 20%;
+  --glass-sheen: color-mix(in srgb, var(--folder-tone) 30%, transparent);
+}
+[data-theme="light"] :is(.project-card--folder, .list-item--folder) {
+  --folder-glow: 13%;
+  --glass-sheen: color-mix(in srgb, var(--folder-tone) 18%, transparent);
+}
+:root :is(.project-card--folder, .list-item--folder)::before {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  content: "";
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(130% 95% at 50% 0%, color-mix(in srgb, var(--folder-tone) calc(var(--folder-glow) * .6), transparent), transparent 62%);
+  box-shadow:
+    inset 0 0 26px color-mix(in srgb, var(--folder-tone) var(--folder-glow), transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--folder-tone) 40%, transparent);
+  opacity: .75;
+  transition: opacity 320ms var(--ease-out);
+}
+:root :is(.project-card--folder, .list-item--folder):hover::before { opacity: 1; }
+:root .list-item--folder::before {
+  background: radial-gradient(60% 140% at 0% 50%, color-mix(in srgb, var(--folder-tone) calc(var(--folder-glow) * .6), transparent), transparent 70%);
+}
+
+:root[data-theme] :is(.project-card--folder, .list-item--folder):not(.is-selected):not(.is-blocked) {
+  border-color: color-mix(in srgb, var(--folder-tone) 30%, var(--border-subtle)) !important;
+}
+:root[data-theme] :is(.project-card--folder, .list-item--folder):not(.is-selected):not(.is-blocked):hover {
+  border-color: color-mix(in srgb, var(--folder-tone) 72%, transparent) !important;
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, .35),
+    0 0 20px color-mix(in srgb, var(--folder-tone) 22%, transparent) !important;
+}
+:root[data-theme="light"] :is(.project-card--folder, .list-item--folder):not(.is-selected):not(.is-blocked):hover {
+  box-shadow:
+    0 10px 25px rgba(0, 0, 0, .06),
+    0 0 18px color-mix(in srgb, var(--folder-tone) 18%, transparent) !important;
+}
+:root .is-blocked:is(.project-card--folder, .list-item--folder)::before { opacity: .4; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root :is(.project-card--folder, .list-item--folder)::before { transition: none; }
+}
+
+/* O campo é só texto: moldura, fundo e foco pertencem ao contêiner (.project-picker__search),
+   senão os temas desenham uma segunda caixa dentro dele. */
+:root[data-theme] .project-picker__search.project-picker__search input[type]:not([type="x"]):not([type="y"]):not([type="z"]):not([type="w"]):not([type="v"]):not([type="u"]),
+:root[data-theme] .project-picker__search.project-picker__search input[type]:not([type="x"]):not([type="y"]):not([type="z"]):not([type="w"]):not([type="v"]):not([type="u"]):is(:hover, :focus, :focus-visible) {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+:root[data-theme] .project-picker__search:focus-within {
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 1px var(--focus-ring);
+  outline: none;
+}

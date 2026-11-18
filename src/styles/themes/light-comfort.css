@@ -1,0 +1,137 @@
+/* Tema claro "confortável": camada final carregada depois de light.css.
+   O branco puro cansava a vista; aqui a página é cinza-lilás com um brilho
+   roxo/laranja discreto, o cabeçalho é grafite e as ações usam as cores da marca.
+   O prefixo :root aumenta a especificidade para vencer os !important de light.css
+   sem mexer em medidas: só cor, sombra e fundo, então o layout não muda. */
+
+:root[data-theme="light"] {
+  --focus-ring: #6b47a9;
+  --floating-solid: #f7f6fa;
+  --floating-surface: rgba(247, 246, 250, .95);
+  --floating-glass: rgba(247, 246, 250, .82);
+  --floating-glass-dense: rgba(247, 246, 250, .92);
+  --floating-highlight: rgba(255, 255, 255, .55);
+  --floating-shadow: rgba(23, 20, 31, .24);
+  --segment-fill: #fbfafd;
+  --lc-card-shadow: 0 1px 2px rgba(23, 20, 31, .05), 0 10px 28px -16px rgba(43, 32, 64, .28);
+  --lc-card-shadow-hover: 0 2px 4px rgba(23, 20, 31, .06), 0 16px 34px -14px rgba(83, 50, 144, .32);
+}
+
+/* Fundo da página: cinza-lilás com dois halos suaves da marca. */
+:root[data-theme="light"] body,
+:root[data-theme="light"] :is(.dashboard, .settings-page, .profile-page) {
+  background:
+    radial-gradient(1100px 520px at 0% -10%, rgba(107, 71, 169, .12), transparent 60%),
+    radial-gradient(900px 460px at 100% -5%, rgba(232, 130, 12, .07), transparent 55%),
+    linear-gradient(180deg, #ebe9f1 0%, #e4e2ea 100%) #e8e6ee !important;
+  background-attachment: fixed !important;
+}
+
+/* Cabeçalho grafite: ancora a tela e tira o "clarão" do topo. */
+:root[data-theme="light"] :is(.header, .settings-page__header, .profile-page__header) {
+  background: linear-gradient(115deg, #17141f 0%, #211a2e 58%, #2c2142 100%) #1d1830 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, .06) !important;
+  box-shadow: 0 8px 24px -10px rgba(23, 20, 31, .45) !important;
+  color: #f4f2f8;
+}
+:root[data-theme="light"] .header .foux-logo { --foux-logo-script: #ffdebf; }
+:root[data-theme="light"] :is(.settings-page__header, .profile-page__header) :is(.settings-page__title, .profile-page__title, h1, h2) { color: #f7f5fb !important; }
+
+:root[data-theme="light"] .header__search-input {
+  background: rgba(255, 255, 255, .08) !important;
+  border-color: rgba(255, 255, 255, .14) !important;
+  color: #f4f2f8 !important;
+}
+:root[data-theme="light"] .header__search-input::placeholder { color: #bdb8ca !important; }
+:root[data-theme="light"] .header__search-input:focus {
+  background: rgba(255, 255, 255, .12) !important;
+  border-color: #a78bfa !important;
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, .28) !important;
+}
+:root[data-theme="light"] .header__search-icon { color: #bdb8ca !important; }
+:root[data-theme="light"] .header__search:focus-within .header__search-icon { color: #ffffff !important; }
+
+:root[data-theme="light"] :is(.header__icon-btn, .settings-page__back, .profile-page__back) {
+  background: rgba(255, 255, 255, .07) !important;
+  border-color: rgba(255, 255, 255, .14) !important;
+  color: #f4f2f8 !important;
+  box-shadow: none !important;
+}
+:root[data-theme="light"] :is(.header__icon-btn, .settings-page__back, .profile-page__back):is(:hover, :focus-visible) {
+  background: #6b47a9 !important;
+  border-color: #8a6bd1 !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 18px -6px rgba(107, 71, 169, .7) !important;
+}
+:root[data-theme="light"] .header :focus-visible { outline-color: #c4b5fd !important; }
+
+/* "Nova pasta" é a ação do topo: laranja da marca com texto escuro (contraste > 7:1). */
+:root[data-theme="light"] .header__new-folder {
+  background: linear-gradient(135deg, #f8a23a 0%, #e8820c 100%) #ef9122 !important;
+  border-color: #e8820c !important;
+  color: #1f1305 !important;
+  box-shadow: 0 6px 18px -8px rgba(232, 130, 12, .8) !important;
+}
+:root[data-theme="light"] .header__new-folder:is(:hover, :focus-visible) {
+  background: linear-gradient(135deg, #fbb04f 0%, #f08f1c 100%) #f49d34 !important;
+  border-color: #f08f1c !important;
+  color: #1f1305 !important;
+}
+
+:root[data-theme="light"] .header__avatar-placeholder {
+  background: linear-gradient(135deg, #7c5cc4, #533290) #6b47a9 !important;
+  border-color: rgba(255, 255, 255, .22) !important;
+  color: #ffffff !important;
+}
+
+/* Ações principais em roxo com degradê leve, no lugar do preto chapado. */
+:root[data-theme="light"] :is(.btn-primary, .modal-btn--confirm, .settings-btn--primary) {
+  background: linear-gradient(135deg, #7c5cc4 0%, #5b3a99 100%) #6b47a9 !important;
+  border-color: #5b3a99 !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 16px -8px rgba(83, 50, 144, .7) !important;
+}
+:root[data-theme="light"] :is(.btn-primary, .modal-btn--confirm, .settings-btn--primary):is(:hover, :focus-visible) {
+  background: linear-gradient(135deg, #8a6bd1 0%, #6743a8 100%) #7853ba !important;
+  border-color: #6743a8 !important;
+}
+
+/* Cards: off-white sobre o cinza, com sombra profunda e suave em vez de borda dura. */
+:root[data-theme="light"] :is(.project-card, .list-item, .recent-activity, .settings-section, .modal-confirm) {
+  box-shadow: var(--lc-card-shadow) !important;
+}
+:root[data-theme="light"] :is(.project-card, .list-item):not(.is-selected):not(.is-blocked):hover {
+  border-color: rgba(107, 71, 169, .38) !important;
+  box-shadow: var(--lc-card-shadow-hover) !important;
+}
+:root[data-theme="light"] .project-card--new {
+  background: linear-gradient(160deg, #f7f6fa 0%, #efe9f8 100%) #f3f0f8 !important;
+  border-color: rgba(107, 71, 169, .35) !important;
+}
+:root[data-theme="light"] .new-project__icon {
+  background: linear-gradient(135deg, #7c5cc4, #533290) #6b47a9 !important;
+  color: #ffffff !important;
+}
+
+/* Grade/Lista: o botão ativo vira grafite, um ponto escuro de referência na tela. */
+:root[data-theme="light"] .view-toggle__btn--active {
+  background: #17141f !important;
+  color: #ffffff !important;
+}
+
+/* Interruptores e foco em roxo da marca. */
+:root[data-theme="light"] .settings-switch input:checked + .settings-switch__slider {
+  background: linear-gradient(135deg, #7c5cc4, #5b3a99) #6b47a9 !important;
+  border-color: #5b3a99 !important;
+}
+
+/* Editor: cabeçalho claro em degradê sutil e ações com hover roxo; a sidebar já é escura. */
+:root[data-theme="light"] .editor-header {
+  background: linear-gradient(180deg, #f7f6fa 0%, #eeebf3 100%) #f2f0f6 !important;
+  border-bottom-color: var(--lc-border) !important;
+}
+:root[data-theme="light"] :is(.editor-header__icon-btn, .editor-header__back, .editor-toolbar-btn:not(.editor-toolbar-btn--danger)):is(:hover, :focus-visible):not(:disabled) {
+  background: #6b47a9 !important;
+  border-color: #6b47a9 !important;
+  color: #ffffff !important;
+}

@@ -9,13 +9,19 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "test": "npm run lint && npm run test:unit && npm run test:features && npm run test:editor && npm run test:i18n && npm run test:rc && npm run test:ui",
-    "test:unit": "node --test scripts/test_build_pipeline.cjs scripts/test_data_store.cjs scripts/test_manual.cjs scripts/test_workspace_data.mjs",
+    "test": "npm run lint && npm run test:unit && npm run test:features && npm run test:editor && npm run test:user-html && npm run test:color-tools && npm run test:dark-reader && npm run test:i18n && npm run test:rc && npm run test:ui && npm run test:ui-audit",
+    "test:unit": "node --test scripts/test_build_pipeline.cjs scripts/test_data_store.cjs scripts/test_manual.cjs scripts/test_security_desktop.cjs scripts/test_workspace_data.mjs scripts/test_editor_units.mjs",
     "test:features": "node scripts/test_features.mjs",
     "test:editor": "node scripts/test_editor.mjs",
+    "test:user-html": "node scripts/test_editor.mjs --suite=scripts/test_user_html_editing.mjs",
+    "test:dark-reader": "node scripts/test_editor.mjs --suite=scripts/test_dark_reader.mjs",
+    "test:color-tools": "node scripts/test_editor.mjs --suite=scripts/test_color_tools.mjs",
     "test:ui": "node scripts/test_editor.mjs --design",
+    "test:ui-audit": "node scripts/test_editor.mjs --suite=scripts/test_ui_audit.mjs",
     "test:rc": "node scripts/test_editor.mjs --rc",
+    "bench:sidebar": "node scripts/test_editor.mjs --suite=scripts/bench_sidebar.mjs",
     "test:desktop": "node scripts/test_desktop_persistence.mjs",
+    "test:desktop:source": "node scripts/test_desktop_source.mjs",
     "preview": "vite preview",
     "electron:start": "npm run build && node scripts/start-electron.cjs",
     "electron:pack": "npm run build:desktop && electron-builder --win --x64 --dir --publish never",
@@ -38,6 +44,7 @@
     },
     "files": [
       "dist/**/*",
+      "!dist/docs/**",
       "electron/**/*",
       "package.json"
     ],
@@ -65,14 +72,15 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "artifactName": "FOUX-Setup-${version}.${ext}"
+      "artifactName": "FOUX-Setup-${version}.${ext}",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "FOUX"
     },
     "beforePack": "./build/validate-resources.cjs"
-  },
-  "dependencies": {
-    "lucide-react": "^1.31.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -86,6 +94,9 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
     "globals": "^17.7.0",
+    "lucide-react": "^1.31.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "vite": "^8.2.0"
   },
   "author": {

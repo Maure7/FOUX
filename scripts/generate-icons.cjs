@@ -2,19 +2,28 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Resvg } = require('@resvg/resvg-js');
 
+// Fonte oficial do ícone do aplicativo (arte original em build/icon.svg).
+const ICON_SOURCE = 'build/icon.svg';
+// Recorte em torno do quadrado arredondado (x 12.25, y 13.57, 78.56 de lado)
+// com ~3,5% de respiro: a arte original tem ~12% de margem vazia, o que
+// deixaria o ícone pequeno na área de trabalho, no menu Iniciar e na busca.
+const ICON_VIEWBOX = '9.25 10.57 84.56 84.56';
+// Inclui 24 px (barra de tarefas do Windows 11 a 100%) além dos tamanhos padrão.
+const SIZES = [16, 24, 32, 48, 64, 128, 256, 512];
+
+function iconSvg(root) {
+  return fs.readFileSync(path.join(root, ICON_SOURCE), 'utf8')
+    .replace(/<\?xml[^>]*\?>\s*/, '')
+    .replace(/<svg\b[^>]*>/, (tag) => tag
+      .replace(/\sviewBox="[^"]*"/, ` viewBox="${ICON_VIEWBOX}"`)
+      .replace('<svg', '<svg width="512" height="512"'));
+}
+
 function generateIcons(root = path.resolve(__dirname, '..')) {
-  // resvg uses sRGB; retain the authored hexadecimal fallback for P3 fills.
-  const logo = fs.readFileSync(path.join(root, 'public/favicon.svg'), 'utf8')
-    .replace(/fill:color\(display-p3[^)]*\);?/g, '');
-  const insetLogo = logo.replace(/<svg\b[^>]*>/, (tag) => tag
-    .replace(/width="[^"]*"/, 'width="384"')
-    .replace(/height="[^"]*"/, 'height="368"')
-    .replace('<svg', '<svg x="64" y="72"'));
-  const source = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">${insetLogo}</svg>`;
+  const source = iconSvg(root);
   const iconDirectory = path.join(root, 'build/icons');
   fs.mkdirSync(iconDirectory, { recursive: true });
-  const sizes = [16, 32, 48, 64, 128, 256, 512];
-  const pngs = sizes.map((size) => {
+  const pngs = SIZES.map((size) => {
     const rendered = new Resvg(source, { fitTo: { mode: 'width', value: size } }).render();
     if (size === 512) {
       const pixels = rendered.pixels;
@@ -26,7 +35,7 @@ function generateIcons(root = path.resolve(__dirname, '..')) {
     fs.writeFileSync(path.join(iconDirectory, `${size}x${size}.png`), image);
     return { size, image };
   });
-  // ICO supports PNG frames; generate all Windows sizes from the same SVG.
+  // O ICO aceita quadros PNG; todos os tamanhos do Windows saem do mesmo SVG.
   const frames = pngs.filter(({ size }) => size <= 256);
   const header = Buffer.alloc(6 + 16 * frames.length);
   header.writeUInt16LE(1, 2);
@@ -43,8 +52,8 @@ function generateIcons(root = path.resolve(__dirname, '..')) {
     offset += image.length;
   });
   fs.writeFileSync(path.join(root, 'build/icon.ico'), Buffer.concat([header, ...frames.map(({ image }) => image)]));
-  console.log('Ícones PNG e ICO gerados a partir de public/favicon.svg.');
+  console.log(`Ícones PNG e ICO gerados a partir de ${ICON_SOURCE}.`);
 }
 
 if (require.main === module) generateIcons();
-module.exports = { generateIcons };
+module.exports = { generateIcons, iconSvg, ICON_SOURCE };

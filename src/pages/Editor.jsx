@@ -8,7 +8,10 @@ import SidebarEstilos from '../components/editor/SidebarEstilos';
 import TutorialTour from '../components/editor/TutorialTour';
 import { TOUR_STEPS, hasCompletedTutorial, completeTutorial } from '../utils/tutorialTour';
 import FaqModal from '../components/ui/FaqModal';
+import ModalConfirm from '../components/ui/ModalConfirm';
 import CanvasOverlay from '../components/editor/CanvasOverlay';
+import EyedropperOverlay from '../components/editor/EyedropperOverlay';
+import useEyedropper, { EyedropperContext } from '../hooks/useEyedropper';
 import ChallengeHud from '../components/editor/challenges/ChallengeHud';
 import ChallengeVictory from '../components/editor/challenges/ChallengeVictory';
 import useChallengeMode from '../hooks/useChallengeMode';
@@ -17,6 +20,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { isTutorialProject as isTutorial, localizeTutorialHtml } from '../utils/tutorialI18n';
 import { describeElement, historyActionLabel } from '../utils/historyLabels';
 import '../styles/learning.css';
+import '../styles/editor-actions.css';
+import '../styles/color-tools.css';
 
 const AUTOSAVE_DELAY_MS = 800;
 
@@ -25,6 +30,7 @@ export default function Editor({
   onUpdateProject,
   onRenameProject,
   onNavigate,
+  onGoHome,
   showToast,
   userProfile = {},
   globalTutorialTips = true,
@@ -39,6 +45,7 @@ export default function Editor({
   const [isPreview, setIsPreview] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isFaqOpen, setIsFaqOpen] = useState(false);
+  const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
   const openFaq = useCallback(() => setIsFaqOpen(true), []);
   const closeFaq = useCallback(() => setIsFaqOpen(false), []);
   const isTutorialProject = isTutorial(project);
@@ -47,16 +54,18 @@ export default function Editor({
   ));
   const [iframeReady, setIframeReady] = useState(false);
   const [documentVersion, setDocumentVersion] = useState(0);
-  // Which box-model area the spacing controls are pointing at ('margin' | 'padding').
+  // Conta cada documento carregado no iframe (inclui a troca de idioma, que não muda documentVersion).
+  const [loadCount, setLoadCount] = useState(0);
+  // Área do box model apontada pelos controles de espaçamento ('margin' | 'padding').
   const [boxFocus, setBoxFocus] = useState(null);
-  // Bumped when the selected element is restored, so stateful controls resync.
+  // Incrementado ao restaurar o elemento, para os controles com estado se ressincronizarem.
   const [elementRevision, setElementRevision] = useState(0);
   const [flashKey, setFlashKey] = useState(0);
 
   const [initialHtml, setInitialHtml] = useState(() => isTutorialProject
     ? localizeTutorialHtml(project.htmlContent, language) : project.htmlContent);
-  // App keys <Editor> by project id, and only this screen writes htmlContent,
-  // so the initial project HTML never needs to be re-synchronized from props.
+  // O App usa o id do projeto como key do <Editor> e só esta tela grava htmlContent,
+  // então o HTML inicial nunca precisa ser ressincronizado a partir das props.
   const [hasLoaded, setHasLoaded] = useState(() => !!project.htmlContent);
 
   const {
@@ -74,6 +83,7 @@ export default function Editor({
     getHoverRules,
     setPreviewMode,
     restoreSelected,
+    restoreAll,
   } = useIframeInspector(iframeRef);
   const {
     session: challengeSession, result: challengeResult, start: startChallenges, stop: stopChallenges,
@@ -100,7 +110,7 @@ export default function Editor({
     expandButtonRef.current = event.currentTarget;
     setPreviewMode(true);
     setIsPreview(true);
-    // The fixed canvas also provides a fallback when native fullscreen is unavailable.
+    // O canvas fixo também serve de alternativa quando a tela cheia nativa não existe.
     const request = canvasRef.current?.requestFullscreen?.();
     request?.catch(() => {});
     iframeRef.current.focus();
@@ -165,6 +175,7 @@ export default function Editor({
   const handleIframeLoad = useCallback(() => {
     setupIframeListeners();
     pendingDocumentRef.current = null;
+    setLoadCount((count) => count + 1);
     setIframeReady(true);
     documentLoaded();
     checkChallenge();
@@ -175,8 +186,8 @@ export default function Editor({
     if (!isTutorialProject || tutorialLanguageRef.current === language) return;
     const previousLanguage = tutorialLanguageRef.current;
     tutorialLanguageRef.current = language;
-    // On first load initialHtml already uses the active language. For a live
-    // switch, translate the current document before the autosave can run.
+    // Na primeira carga o initialHtml já está no idioma ativo. Numa troca ao vivo,
+    // traduz o documento atual antes que o salvamento automático rode.
     const html = previousLanguage === null ? initialHtml : localizeTutorialHtml(serializeDocument() || initialHtml, language);
     if (previousLanguage !== null) {
       clearTimeout(saveTimerRef.current);
@@ -188,8 +199,9 @@ export default function Editor({
     if (html !== project.htmlContent) onUpdateProjectRef.current({ htmlContent: html });
   }, [isTutorialProject, language, initialHtml, project.htmlContent, serializeDocument, translateHistory]);
 
-  // On desktop every save is a synchronous write to disk, so it waits for a
-  // pause in editing instead of running during a drag.
+  // Serializar o documento inteiro é caro (fontes em base64) e regrava a lista de projetos,
+  // que no desktop ainda cruza um IPC síncrono; o autosave espera uma pausa na edição em
+  // vez de rodar durante um arraste.
   const debouncedSave = useCallback(() => {
     clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
@@ -198,7 +210,7 @@ export default function Editor({
     }, AUTOSAVE_DELAY_MS);
   }, [serializeDocument, hasLoaded]);
 
-  // Called before each edit reaches the document; see useEditorHistory.recordChange.
+  // Chamado antes de cada edição chegar ao documento; ver useEditorHistory.recordChange.
   const handleStyleChange = useCallback((meta) => {
     pushUndoState(meta);
     debouncedSave();
@@ -217,6 +229,21 @@ export default function Editor({
     showToast(t('sidebar.restoreSuccess'));
   }, [selectedElement, recordAction, restoreSelected, debouncedSave, checkChallenge, showToast, t]);
 
+  const openClearConfirm = useCallback(() => setIsClearConfirmOpen(true), []);
+  const closeClearConfirm = useCallback(() => setIsClearConfirmOpen(false), []);
+
+  // Um único passo no histórico, para o Ctrl+Z trazer a página inteira de volta.
+  const handleClearCanvas = useCallback(() => {
+    if (!recordAction({ labelKey: 'history.props.clearCanvas' }, restoreAll)) {
+      showToast(t('editor.clearCanvas.nothing'));
+      return;
+    }
+    setElementRevision((revision) => revision + 1);
+    debouncedSave();
+    checkChallenge();
+    showToast(t('editor.clearCanvas.success'));
+  }, [recordAction, restoreAll, debouncedSave, checkChallenge, showToast, t]);
+
   const toggleChallenges = useCallback(() => {
     if (challengeSession) {
       stopChallenges();
@@ -234,7 +261,7 @@ export default function Editor({
     setFlashKey((key) => key + 1);
   }, [challengeSession, selectElementById]);
 
-  // The iframe is already being torn down here; only cancel pending work.
+  // Aqui o iframe já está sendo desmontado; só cancela o trabalho pendente.
   useEffect(() => {
     return () => {
       fileReaderRef.current?.abort();
@@ -293,9 +320,9 @@ export default function Editor({
     }
   }, [onRenameProject]);
 
-  // Leaving the editor (or closing the window) unmounts the iframe, so the
-  // live document is persisted first. A document still loading is taken from
-  // pendingDocumentRef instead of the about:blank placeholder.
+  // Sair do editor (ou fechar a janela) desmonta o iframe, então o documento vivo
+  // é salvo antes. Um documento ainda carregando vem de pendingDocumentRef, não
+  // do about:blank provisório.
   const flushCurrentDocument = useCallback(() => {
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
@@ -329,7 +356,12 @@ export default function Editor({
     onNavigate('dashboard');
   }, [flushCurrentDocument, onNavigate]);
 
-  /* Completion and dismissal both suppress automatic tours on later visits. */
+  const handleGoHome = useCallback(() => {
+    flushCurrentDocument();
+    onGoHome();
+  }, [flushCurrentDocument, onGoHome]);
+
+  // Concluir ou dispensar o tour impede que ele abra sozinho nas próximas visitas.
   const finishTour = useCallback(() => {
     completeTutorial();
     setTourStep(null);
@@ -353,6 +385,8 @@ export default function Editor({
   }, [tourStep, iframeReady, selectedElement, selectTourExample]);
 
   const { width: sidebarWidth, isResizing: isResizingSidebar, onResizeStart: handleResizeStart } = useSidebarResize();
+  // Conta-gotas: os ColorFields pedem a cor, a camada sobre o canvas amostra o documento do aluno.
+  const eyedropper = useEyedropper();
 
   return (
     <div className="editor-shell">
@@ -360,6 +394,7 @@ export default function Editor({
         projectName={project.name}
         onRename={handleRename}
         onNavigate={handleBackToDashboard}
+        onGoHome={handleGoHome}
         onOpenFaq={openFaq}
         onNewFile={handleNewFile}
         onOpenConfig={handleOpenConfig}
@@ -379,6 +414,7 @@ export default function Editor({
         onToggleChallenges={toggleChallenges}
         onExportCss={handleExportCss}
         onExpand={handleExpand}
+        onClearCanvas={openClearConfirm}
         hasLoaded={hasLoaded && iframeReady}
         isExporting={isExporting}
       />
@@ -391,65 +427,82 @@ export default function Editor({
         onChange={handleNewFileChange}
       />
 
-      <div className={`editor-layout ${isResizingSidebar ? 'is-resizing' : ''}`}>
-        <EditorCanvas
-          documentVersion={documentVersion}
-          initialHtml={initialHtml}
-          onFileSelect={handleFileSelect}
-          iframeRef={iframeRef}
-          onIframeLoad={handleIframeLoad}
-          canvasRef={canvasRef}
-          isPreview={isPreview}
-          t={t}
-        />
-
-        <CanvasOverlay
-          iframeRef={iframeRef}
-          element={selectedElement}
-          boxMode={boxFocus}
-          flashKey={flashKey}
-          values={computedStyles}
-          t={t}
-        />
-
-        {challengeSession && (
-          <ChallengeHud
-            session={challengeSession}
-            language={language}
-            onHighlight={highlightChallengeTarget}
-            onSkip={skipChallenge}
-            onQuit={stopChallenges}
+      <EyedropperContext.Provider value={eyedropper.context}>
+        <div className={`editor-layout ${isResizingSidebar ? 'is-resizing' : ''}`}>
+          <EditorCanvas
+            documentVersion={documentVersion}
+            initialHtml={initialHtml}
+            onFileSelect={handleFileSelect}
+            iframeRef={iframeRef}
+            onIframeLoad={handleIframeLoad}
+            canvasRef={canvasRef}
+            isPreview={isPreview}
             t={t}
           />
+
+          <CanvasOverlay
+            iframeRef={iframeRef}
+            element={selectedElement}
+            boxMode={boxFocus}
+            flashKey={flashKey}
+            values={computedStyles}
+            t={t}
+          />
+
+          {challengeSession && (
+            <ChallengeHud
+              session={challengeSession}
+              language={language}
+              onHighlight={highlightChallengeTarget}
+              onSkip={skipChallenge}
+              onQuit={stopChallenges}
+              t={t}
+            />
+          )}
+
+          {/* O iframe engoliria os eventos de mousemove enquanto a sidebar é redimensionada. */}
+          {isResizingSidebar && <div className="editor-resize-glass-overlay" />}
+
+          <SidebarEstilos
+            tourStep={tourStep === null ? null : TOUR_STEPS[tourStep]}
+            isLocked={!initialHtml || !iframeReady}
+            selectedElement={selectedElement}
+            computedStyles={computedStyles}
+            applyStyle={applyStyle}
+            injectFont={injectFont}
+            getImportedFonts={getImportedFonts}
+            getElementsWithId={getElementsWithId}
+            selectElementById={selectElementById}
+            onStyleChange={handleStyleChange}
+            assignHoverClass={assignHoverClass}
+            injectHoverStyles={injectHoverStyles}
+            getHoverRules={getHoverRules}
+            width={sidebarWidth}
+            isResizing={isResizingSidebar}
+            onResizeStart={handleResizeStart}
+            revision={elementRevision}
+            documentKey={loadCount}
+            onRestoreElement={handleRestoreElement}
+            onBoxFocus={setBoxFocus}
+            projectId={project.id}
+          />
+        </div>
+        {eyedropper.active && iframeReady && !isPreview && (
+          <EyedropperOverlay iframeRef={iframeRef} onPick={eyedropper.pick} onCancel={eyedropper.cancel} t={t} />
         )}
-
-        {/* The iframe would swallow mousemove events while the sidebar is resized. */}
-        {isResizingSidebar && <div className="editor-resize-glass-overlay" />}
-
-        <SidebarEstilos
-          tourStep={tourStep === null ? null : TOUR_STEPS[tourStep]}
-          isLocked={!initialHtml || !iframeReady}
-          selectedElement={selectedElement}
-          computedStyles={computedStyles}
-          applyStyle={applyStyle}
-          injectFont={injectFont}
-          getImportedFonts={getImportedFonts}
-          getElementsWithId={getElementsWithId}
-          selectElementById={selectElementById}
-          onStyleChange={handleStyleChange}
-          assignHoverClass={assignHoverClass}
-          injectHoverStyles={injectHoverStyles}
-          getHoverRules={getHoverRules}
-          width={sidebarWidth}
-          isResizing={isResizingSidebar}
-          onResizeStart={handleResizeStart}
-          revision={elementRevision}
-          onRestoreElement={handleRestoreElement}
-          onBoxFocus={setBoxFocus}
-        />
-      </div>
+      </EyedropperContext.Provider>
 
       <FaqModal isOpen={isFaqOpen} onClose={closeFaq} t={t} />
+      <ModalConfirm
+        isOpen={isClearConfirmOpen}
+        onClose={closeClearConfirm}
+        onConfirm={handleClearCanvas}
+        title={t('editor.clearCanvas.title')}
+        message={t('editor.clearCanvas.message')}
+        confirmLabel={t('editor.clearCanvas.confirm')}
+        cancelLabel={t('common.cancel')}
+        variant="compact"
+      />
       <ChallengeVictory result={challengeResult} onClose={dismissChallengeResult} t={t} />
       {tourStep !== null && iframeReady && hasLoaded && <TutorialTour stepIndex={tourStep} onStepChange={setTourStep} onFinish={finishTour} />}
     </div>

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
 export async function runI18n({ evaluate, command, eventually }) {
-  // Both templates must have exactly the same elements, classes and CSS.
+  // Os dois modelos precisam ter exatamente os mesmos elementos, classes e CSS.
   const parity = await evaluate(String.raw`(async () => {
     const {getTutorialHtml, localizeTutorialHtml} = await import('/src/utils/tutorialI18n.js');
     const parser = new DOMParser();
@@ -64,7 +64,7 @@ export async function runI18n({ evaluate, command, eventually }) {
   }
   await eventually(() => evaluate(`!document.querySelector('.tutorial-tour')`), 'Spanish tour did not finish');
 
-  // Use the real Spanish inspector, hover controls and CSS exporter.
+  // Inspector, controles de hover e exportação de CSS reais, em espanhol.
   await evaluate(`document.querySelector('iframe').contentDocument.getElementById('boton-primario').click()`);
   await evaluate(`Array.from(document.querySelectorAll('.sidebar-tab')).find(button => button.textContent.trim() === 'Eventos').click()`);
   await evaluate(`Array.from(document.querySelectorAll('.sidebar-toggle-row')).find(row => row.textContent.toLowerCase().includes('escala')).querySelector('input').click()`);

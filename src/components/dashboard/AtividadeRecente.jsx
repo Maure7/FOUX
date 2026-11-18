@@ -59,7 +59,7 @@ export default function AtividadeRecente({ activities, onClearActivities, onRemo
   const [expanded, setExpanded] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const confirmTimer = useRef(null);
-  // One shared clock re-renders the relative times ("2 minutes ago") of every item.
+  // Um único relógio atualiza o tempo relativo ("há 2 minutos") de todos os itens.
   const [, tick] = useReducer((count) => count + 1, 0);
   useEffect(() => {
     const interval = setInterval(tick, RELATIVE_TIME_REFRESH_MS);
@@ -78,7 +78,7 @@ export default function AtividadeRecente({ activities, onClearActivities, onRemo
     } catch (e) {
       console.error('Erro ao ler foux_history_visibility:', e);
     }
-    return true; // Resumo padrão visível
+    return true;
   });
 
   const toggleHistoryVisibility = () => {
@@ -102,7 +102,7 @@ export default function AtividadeRecente({ activities, onClearActivities, onRemo
       onClearActivities?.();
       setConfirmClear(false);
     } else {
-      // The destructive second click is only armed for a few seconds.
+      // O segundo clique (o que apaga) só fica armado por alguns segundos.
       setConfirmClear(true);
       confirmTimer.current = setTimeout(() => setConfirmClear(false), 4000);
     }

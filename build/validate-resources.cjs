@@ -7,9 +7,9 @@ module.exports = (context) => {
   }
   const required = [
     'dist/index.html', 'electron/main.cjs', 'electron/preload.cjs',
-    'electron/data-store.cjs', 'electron/manual.cjs',
+    'electron/data-store.cjs', 'electron/manual.cjs', 'electron/app-url.cjs',
     'public/docs/manual_pt.pdf', 'public/docs/manual_es.pdf',
-    'build/icon.ico', 'build/icons/512x512.png',
+    'build/icon.svg', 'build/icon.ico', 'build/icons/512x512.png',
   ];
   for (const filename of required) {
     if (!fs.existsSync(path.join(context.packager.projectDir, filename))) {

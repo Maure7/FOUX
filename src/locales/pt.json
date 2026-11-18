@@ -12,7 +12,6 @@
     "moveTo": "Mover para",
     "close": "Fechar",
     "options": "Opções",
-    "color": "Cor {color}",
     "notifications": "Notificações",
     "root": "Raiz",
     "favorite": "Favoritar",
@@ -42,7 +41,7 @@
     "storageUsage": "Uso atual: {size}",
     "storageClearBtn": "Limpar",
     "clearConfirmTitle": "Limpar cache e dados locais",
-    "clearConfirmMessage": "Tem certeza que deseja redefinir os dados locais? Todos os projetos salvos, pastas e preferências serão apagados permanentemente.",
+    "clearConfirmMessage": "Tem certeza que deseja redefinir os dados locais? Todos os projetos salvos, pastas, o histórico de atividades e as seções abertas da barra lateral serão apagados permanentemente. Tema, idioma, perfil e cores recentes são mantidos.",
     "clearConfirmBtn": "Limpar tudo",
     "clearSuccessToast": "Cache limpo com sucesso!",
     "tutorialTitle": "Tutorial",
@@ -53,6 +52,7 @@
     "searchPlaceholder": "Pesquisar projetos...",
     "newFolder": "Nova Pasta",
     "help": "Ajuda",
+    "goHome": "Ir para a Dashboard",
     "newProject": "Novo Projeto",
     "startFromScratch": "Começar do zero",
     "viewGrid": "Grade",
@@ -63,13 +63,11 @@
     "editedDate": "Editado {date}",
     "emptyRecentTitle": "Nenhum projeto recente encontrado.",
     "emptyRecentHint": "Crie seu primeiro projeto clicando ao lado.",
-    "emptyFolderTitle": "Pasta vazia, adicionar conteúdo",
-    "emptyFolderHint": "Clique para selecionar projetos",
+    "emptyFolderTitle": "Esta pasta ainda está vazia",
+    "emptyFolderHint": "Crie um projeto aqui ou traga projetos que estão soltos na Dashboard.",
     "emptySearchTitle": "Nenhum item encontrado para sua pesquisa",
-    "selectionTitle": "Selecione projetos para mover",
     "selectionCount": "{count} projeto selecionado",
     "selectionCountPlural": "{count} projetos selecionados",
-    "confirmAndMove": "Confirmar e Mover",
     "projectMovedSingular": "projeto movido",
     "projectMovedPlural": "projetos movidos",
     "movedSuccess": "{count} {entity} com sucesso.",
@@ -77,7 +75,62 @@
     "deleteFolderTitle": "Excluir pasta",
     "deleteProjectTitle": "Excluir projeto",
     "deleteFolderConfirm": "Tem certeza que deseja excluir \"{name}\"? Os projetos dentro dela serão movidos para a raiz.",
-    "deleteProjectConfirm": "Tem certeza que deseja excluir \"{name}\"? Esta ação não pode ser desfeita."
+    "deleteProjectConfirm": "Tem certeza que deseja excluir \"{name}\"? Esta ação não pode ser desfeita.",
+    "picker": {
+      "empty": "Nenhum projeto disponível.",
+      "filter": "Filtrar projetos",
+      "selectAll": "Selecionar todos",
+      "clearAll": "Limpar seleção",
+      "selectedOne": "1 projeto selecionado",
+      "selectedMany": "{count} projetos selecionados"
+    },
+    "addExisting": {
+      "button": "Adicionar projetos existentes",
+      "title": "Adicionar projetos existentes",
+      "subtitle": "Escolha projetos soltos na Dashboard para mover para \"{folder}\".",
+      "empty": "Não há projetos soltos na Dashboard para adicionar.",
+      "confirm": "Adicionar à pasta",
+      "confirmMany": "Adicionar {count} projetos"
+    },
+    "folderView": {
+      "back": "Voltar à Dashboard",
+      "breadcrumb": "Caminho da pasta",
+      "root": "Dashboard",
+      "renameHint": "Clique para renomear a pasta",
+      "renameLabel": "Nome da pasta",
+      "colorLabel": "Cor da pasta",
+      "countNone": "Nenhum projeto nesta pasta",
+      "countOne": "1 projeto nesta pasta",
+      "countMany": "{count} projetos nesta pasta"
+    },
+    "batch": {
+      "select": "Selecionar",
+      "done": "Concluir seleção",
+      "exitHint": "Sair da seleção (Esc)",
+      "exit": "Cancelar seleção (Esc)",
+      "label": "Ações em lote",
+      "hint": "Selecione projetos ou pastas",
+      "foldersOne": "1 pasta selecionada",
+      "foldersMany": "{count} pastas selecionadas",
+      "favorite": "Favoritar",
+      "unfavorite": "Desfavoritar",
+      "moveTo": "Mover para pasta",
+      "moveToRoot": "Dashboard (sem pasta)",
+      "noFolders": "Crie uma pasta para mover projetos",
+      "blockedFolder": "Limpe a seleção de projetos para selecionar pastas",
+      "blockedProject": "Limpe a seleção de pastas para selecionar projetos",
+      "favorited": "Adicionado aos favoritos.",
+      "unfavorited": "Removido dos favoritos.",
+      "duplicatedOne": "1 projeto duplicado.",
+      "duplicatedMany": "{count} projetos duplicados.",
+      "movedOne": "Projeto movido para \"{folder}\".",
+      "movedMany": "{count} projetos movidos para \"{folder}\".",
+      "colorChanged": "Cor atualizada.",
+      "deleteProjectsTitle": "Excluir projetos",
+      "deleteProjectsConfirm": "Tem certeza que deseja excluir {count} projetos? Esta ação não pode ser desfeita.",
+      "deleteFoldersTitle": "Excluir pastas",
+      "deleteFoldersConfirm": "Tem certeza que deseja excluir {count} pastas? Os projetos dentro delas voltarão para a Dashboard."
+    }
   },
   "faq": {
     "title": "Perguntas frequentes",
@@ -126,7 +179,16 @@
     "dropzoneTitle": "Clique aqui para importar seu arquivo HTML",
     "dropzoneHint": "ou arraste e solte o arquivo nesta área",
     "undo": "Desfazer alteração (Ctrl+Z)",
-    "redo": "Refazer alteração (Ctrl+Y)"
+    "redo": "Refazer alteração (Ctrl+Y)",
+    "clearCanvas": {
+      "button": "Limpar tela",
+      "hint": "Remove todas as estilizações feitas nesta página",
+      "title": "Limpar a tela?",
+      "message": "Todas as estilizações aplicadas aos elementos desta página serão removidas. Você ainda pode desfazer com Ctrl+Z.",
+      "confirm": "Sim, limpar tela",
+      "success": "Tela limpa. Use Ctrl+Z para desfazer.",
+      "nothing": "Não há estilizações para limpar."
+    }
   },
   "sidebar": {
     "tabStyles": "Estilos",
@@ -234,11 +296,12 @@
     },
     "newFolder": {
       "title": "Nova Pasta",
-      "subtitle": "Escolha um nome e uma cor de contorno",
+      "subtitle": "Escolha um nome, uma cor e, se quiser, projetos para incluir",
       "folderNameLabel": "Nome da Pasta",
       "defaultNamePrefix": "Pasta nova",
       "borderColorLabel": "Cor do Contorno",
-      "createFolderBtn": "Criar Pasta"
+      "createFolderBtn": "Criar Pasta",
+      "projectsLabel": "Incluir projetos existentes"
     },
     "rename": {
       "title": "Renomear",
@@ -327,6 +390,21 @@
       }
     }
   },
+  "colorTools": {
+    "recentColors": "Cores recentes",
+    "applyRecent": "Aplicar cor recente {color}",
+    "eyedropper": "Conta-gotas: capturar cor do canvas",
+    "eyedropperCancel": "Cancelar conta-gotas",
+    "eyedropperActive": "Conta-gotas ativo: clique em um elemento da página para capturar a cor",
+    "eyedropperHint": "Clique em um elemento para capturar a cor · Esc cancela",
+    "sourceText": "texto",
+    "sourceBorder": "borda",
+    "sourceImage": "imagem",
+    "imageBlocked": "Imagem de outro site sem permissão de leitura: usando a cor por trás dela",
+    "sourceBackground": "fundo",
+    "shiftForBackground": "Shift: fundo",
+    "shiftForText": "Shift: texto"
+  },
   "tooltips": {
     "align": {
       "left": "Alinhar texto à esquerda",
@@ -399,7 +477,8 @@
       "marginLeft": "Margin esquerda",
       "imageLayout": "Disposição da imagem",
       "hover": "Efeito :hover",
-      "restore": "Restaurar elemento"
+      "restore": "Restaurar elemento",
+      "clearCanvas": "Limpar tela"
     }
   },
   "challenges": {

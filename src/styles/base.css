@@ -68,30 +68,45 @@
   --radius-lg: 20px;
 }
 [data-theme="light"] {
-  color-scheme: light;
+  /* "only": o escurecimento automático do navegador também respeita o tema claro. */
+  color-scheme: only light;
   --focus-ring: #52525b;
   --on-accent: #fff;
   --danger-text: #b91c1c;
   --danger-bg: #fef2f2;
-  --bg-app: #fafafa;
-  --bg-card: #ffffff;
-  --bg-card-hover: #ffffff;
-  --bg-input: #ffffff;
-  --bg-header: #ffffff;
+  /* Tema claro "confortável": nada de branco puro. A página é um cinza-lilás,
+     os cards um off-white levemente frio, e o contraste vem de roxo, grafite e laranja. */
+  --lc-page: #e8e6ee;
+  --lc-surface: #f7f6fa;
+  --lc-surface-hover: #fbfafd;
+  --lc-sunken: #efedf3;
+  --lc-muted: #e6e3ec;
+  --lc-border: #dbd7e3;
+  --lc-border-strong: #cfcad9;
+  --lc-ink: #17141f;
+  --lc-ink-2: #241f30;
+  --lc-purple: #6b47a9;
+  --lc-purple-deep: #533290;
+  --lc-orange: #e8820c;
+  --bg-app: var(--lc-page);
+  --bg-card: var(--lc-surface);
+  --bg-card-hover: var(--lc-surface-hover);
+  --bg-input: var(--lc-sunken);
+  --bg-header: var(--lc-ink);
   --bg-sidebar: #0a0a0c;
-  --accent-gold: #0a0a0a;
-  --accent-gold-light: #27272a;
-  --accent-gold-bg: #f4f4f5;
-  --accent-purple: #18181b;
-  --accent-purple-light: #3f3f46;
-  --accent-purple-bg: #f4f4f5;
-  --text-primary: #0a0a0a;
-  --text-secondary: #52525b;
-  --text-muted: #64646f;
-  --text-dark: #a1a1aa;
-  --border-subtle: #eaeaea;
-  --border-light: #e4e4e7;
-  --border-color: #eaeaea;
+  --accent-gold: #b45309;
+  --accent-gold-light: #e8820c;
+  --accent-gold-bg: rgba(232, 130, 12, .14);
+  --accent-purple: #6b47a9;
+  --accent-purple-light: #7c5cc4;
+  --accent-purple-bg: rgba(107, 71, 169, .12);
+  --text-primary: #17141f;
+  --text-secondary: #4a4657;
+  --text-muted: #5c5868;
+  --text-dark: #8e8a99;
+  --border-subtle: var(--lc-border);
+  --border-light: var(--lc-border-strong);
+  --border-color: var(--lc-border);
   --pastel-yellow: #fef9c3;
   --pastel-yellow-text: #854d0e;
   --pastel-blue: #e0f2fe;

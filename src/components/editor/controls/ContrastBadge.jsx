@@ -5,8 +5,8 @@ import { HintButton } from './PropertyLabel';
 
 const TONES = { AAA: 'pass', AA: 'pass', large: 'warn', fail: 'fail' };
 
-// `contrast.ratio` arrives floored to one decimal, so a 4.46:1 pair is shown
-// (and judged) as 4.4:1 instead of rounding up into a passing grade.
+// `contrast.ratio` chega arredondado para baixo em uma casa: um par de 4,46:1
+// aparece (e é julgado) como 4,4:1, sem subir para uma nota de aprovação.
 function ContrastBadge({ contrast }) {
   const { t } = useLanguage();
   if (!contrast) return null;

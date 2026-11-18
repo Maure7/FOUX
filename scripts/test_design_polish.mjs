@@ -3,12 +3,13 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
+import { openSidebarSections } from './sidebar_sections.mjs';
 
 export async function runDesignPolish({ evaluate, command, eventually }) {
   const output = path.join(tmpdir(), 'foux-design-audit');
   await mkdir(output, { recursive: true });
   const screenshot = async name => {
-    // Allow the finite entrance to settle before checking the final composition.
+    // Espera a animação de entrada terminar antes de registrar a composição final.
     await delay(260);
     const shot = await command('Page.captureScreenshot', { format: 'png' });
     await writeFile(path.join(output, `${name}.png`), Buffer.from(shot.data, 'base64'));
@@ -162,13 +163,17 @@ export async function runDesignPolish({ evaluate, command, eventually }) {
       await evaluate('document.querySelector("iframe").contentDocument.getElementById("example").click()');
       await screenshot(`editor-${label}`);
       assert.equal(await evaluate('document.querySelector("iframe").contentDocument.getElementById("example").style.color'), 'rgb(35, 69, 103)', 'Polish altered authored document');
-      await evaluate('window.__section=document.querySelector(".sidebar-section--open");window.__section.querySelector(".sidebar-section__header").click()');
+      // As seções iniciam fechadas: abre a primeira pelo cabeçalho antes de testar o recolhimento.
+      await evaluate('window.__section=document.querySelector(".sidebar-content .sidebar-section");if(window.__section.classList.contains("sidebar-section--closed"))window.__section.querySelector(".sidebar-section__header").click()');
+      await eventually(() => evaluate('window.__section.getBoundingClientRect().height>window.__section.querySelector(".sidebar-section__header").getBoundingClientRect().height+20'), 'Editor section did not open');
+      await evaluate('window.__section.querySelector(".sidebar-section__header").click()');
       await eventually(() => evaluate('(() => {const header=window.__section.querySelector(".sidebar-section__header"),style=getComputedStyle(header);return window.__section.getBoundingClientRect().height<=header.getBoundingClientRect().height+parseFloat(style.marginTop)+parseFloat(style.marginBottom)+3})()'), 'Editor section did not collapse');
       await evaluate('window.__section.querySelector("input,select,button:not(.sidebar-section__header)")?.focus()');
       assert.equal(await evaluate('!!document.activeElement.closest(".sidebar-section__body")'), false, 'Collapsed editor controls received focus');
       await evaluate('window.__section.querySelector(".sidebar-section__header").click()');
       await eventually(() => evaluate('window.__section.getBoundingClientRect().height>window.__section.querySelector(".sidebar-section__header").getBoundingClientRect().height+20'), 'Editor section did not reopen');
       await evaluate(`Array.from(document.querySelectorAll('.sidebar-tab')).find(el=>el.textContent.trim()==='Eventos').click()`);
+      await openSidebarSections(evaluate);
       await evaluate('document.querySelector(".sidebar-toggle-checkbox").click()');
       await delay(180);
       await contrast('.sidebar-toggle-checkbox:checked', `${label} selected checkbox`, '::after');

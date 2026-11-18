@@ -1,5 +1,5 @@
-/* Shared interaction contract. Theme palettes and the existing layout stay in
-   their own files; these states must behave the same in every palette. */
+/* Contrato de interação comum. Paletas e layout ficam nos próprios arquivos;
+   estes estados precisam se comportar igual em todos os temas. */
 :root {
   --ease-drawer: cubic-bezier(.32, .72, 0, 1);
   --floating-solid: #17171d;
@@ -30,7 +30,7 @@
   --floating-shadow: rgba(0, 0, 0, .48);
 }
 
-/* Static material, animated geometry: the blur and shadows never tween. */
+/* Material estático, geometria animada: desfoque e sombras nunca são interpolados. */
 :root :is(.modal-card, .context-menu, .context-menu__submenu, .toast, .tutorial-tour__card, .foux-tooltip) {
   background: linear-gradient(155deg, var(--floating-highlight), transparent 48%), var(--floating-surface) !important;
   border: 1px solid var(--floating-edge) !important;
@@ -44,8 +44,6 @@
 }
 :root .modal-overlay {
   background: rgba(6, 7, 12, .52) !important;
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px) !important;
 }
 [data-theme="light"] .modal-overlay { background: rgba(25, 31, 46, .32) !important; }
 @supports not (backdrop-filter: blur(1px)) {
@@ -89,12 +87,12 @@ button, [role="button"], summary {
 button > svg, .context-menu__item > svg { flex-shrink: 0; }
 button:disabled { cursor: not-allowed; }
 
-/* Repeated toolbar actions and static panels should not chase the pointer. */
+/* Ações repetidas da barra e painéis fixos não devem "perseguir" o cursor. */
 :root :is(button, [role="button"], .profile-card, .profile-stat-card, .settings-section, .activity-section, .activity-item):hover {
   transform: none !important;
 }
 
-/* A clear, quiet edge separates the editor controls from the live document. */
+/* Uma borda nítida e discreta separa os controles do editor do documento ao vivo. */
 :root .editor-header {
   position: relative;
   z-index: 2;
@@ -117,13 +115,14 @@ button:disabled { cursor: not-allowed; }
 [data-theme="solarized"] .editor-header { --editor-divider: rgba(108, 219, 204, .62); }
 [data-theme="liquid-glass"] .editor-header { --editor-divider: rgba(255, 255, 255, .3); }
 
-/* Short, staged entrance gives the editor a sense of depth without delaying use. */
+/* Entrada curta e escalonada: dá profundidade ao editor sem atrasar o uso. */
 @keyframes editor-header-enter {
   from { opacity: 0; transform: translateY(-6px); }
   to { opacity: 1; transform: translateY(0); }
 }
+/* A sidebar está presa à direita, então entra vindo da borda direita. */
 @keyframes editor-sidebar-enter {
-  from { opacity: 0; transform: translateX(-8px); }
+  from { opacity: 0; transform: translateX(8px); }
   to { opacity: 1; transform: translateX(0); }
 }
 @keyframes editor-canvas-enter {
@@ -169,13 +168,14 @@ button:disabled { cursor: not-allowed; }
   transition-duration: var(--duration-press) !important;
 }
 
-/* Keep secondary actions discoverable when navigating without a mouse. */
+/* Ações secundárias continuam à vista para quem navega sem mouse ou por toque. */
 .list-item:focus-within .list-item__options,
 .list-item__options:focus-visible,
+.project-card:focus-within .project-card__options,
 .activity-item:focus-within .activity-item__delete { opacity: 1; }
 
 @media (hover: none), (pointer: coarse) {
-  .list-item__options, .activity-item__delete { opacity: 1; }
+  .list-item__options, .project-card__options, .activity-item__delete { opacity: 1; }
 }
 
 .settings-switch input, .sidebar-gradient-toggle input {
@@ -194,7 +194,7 @@ button:disabled { cursor: not-allowed; }
   transition: transform var(--duration-fast) var(--ease-out);
 }
 .sidebar-section--closed .sidebar-section__chevron { transform: rotate(-90deg); }
-/* The grid is the accordion's only layout animation; controls retain their state. */
+/* O grid é a única animação de layout do acordeão; os controles mantêm o estado. */
 .sidebar-section__region {
   display: grid;
   grid-template-rows: 1fr;
@@ -204,7 +204,7 @@ button:disabled { cursor: not-allowed; }
 .sidebar-section--closed .sidebar-section__region { grid-template-rows: 0fr; opacity: 0; }
 .sidebar-section__clip { min-height: 0; overflow: hidden; }
 
-/* Keep native details semantics; animate intrinsic height only where supported. */
+/* Mantém a semântica nativa do <details>; a altura intrínseca só anima onde há suporte. */
 @supports (interpolate-size: allow-keywords) {
   .faq-item { interpolate-size: allow-keywords; }
   .faq-item::details-content {
@@ -266,7 +266,7 @@ button:disabled { cursor: not-allowed; }
 :root .modal-create-btn:hover { color: var(--on-accent) !important; }
 [data-theme="liquid-glass"] .modal-create-btn:hover { color: var(--text-primary) !important; }
 
-/* Contain translated labels and real project names without shifting actions. */
+/* Rótulos traduzidos e nomes reais de projeto cabem sem empurrar as ações. */
 .section-header { gap: 16px; }
 .section-header__left, .profile-hero-info, .context-menu__item span,
 .modal-action-btn__text, .list-item__name-wrapper { min-width: 0; }
@@ -366,8 +366,8 @@ button:disabled { cursor: not-allowed; }
   .editor-dropzone { min-height: 0; padding: 20px; gap: 12px; }
 }
 
-/* Keyboard actions are immediate. Reduced motion retains gentle color/fade
-   feedback and eliminates movement, including animated switch travel. */
+/* Ações por teclado são imediatas. Com movimento reduzido ficam só as mudanças
+   suaves de cor/opacidade; todo deslocamento sai, inclusive o do switch. */
 :root[data-input="keyboard"] *, :root[data-input="keyboard"] *::before, :root[data-input="keyboard"] *::after {
   animation: none !important;
   transition: none !important;

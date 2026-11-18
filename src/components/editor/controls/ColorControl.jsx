@@ -8,8 +8,8 @@ import { cssInfo } from '../../../utils/css/glossary.js';
 import useDraft from '../../../hooks/useDraft';
 import { useLanguage } from '../../../context/LanguageContext';
 
-// Solid color + opacity, optionally switchable to a two-stop linear gradient
-// when `gradient` is provided ({ enabled, color1, color2, angle }).
+// Cor sólida + opacidade; com `gradient` ({ enabled, color1, color2, angle }),
+// pode alternar para um gradiente linear de duas cores.
 function ColorControl({
   label, token, hint, color, alpha = 1, disabled, onColorChange, onAlphaChange, gradient, onGradientChange, contrast,
 }) {

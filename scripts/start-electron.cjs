@@ -1,7 +1,7 @@
 const { spawn } = require('node:child_process');
 const electron = require('electron');
 
-// Some editor terminals inherit this flag, which makes Electron run as Node.
+// Alguns terminais de editor herdam esta variável, e com ela o Electron roda como Node.
 const env = { ...process.env };
 delete env.ELECTRON_RUN_AS_NODE;
 

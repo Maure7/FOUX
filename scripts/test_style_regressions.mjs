@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
+import { openSidebarSections } from './sidebar_sections.mjs';
 
-// Runs through the editor's real React controls in the Chromium test harness.
+// Usa os controles React reais do editor, no Chromium do test_editor.mjs.
 export async function runStyleRegressions({ evaluate, command, eventually }) {
   console.log('Background border-area support:', await evaluate(`CSS.supports('background-clip', 'border-area')`));
   await evaluate(`document.querySelector('.editor-canvas__iframe').contentDocument.getElementById('secao-titulos').click()`);
@@ -30,12 +31,12 @@ export async function runStyleRegressions({ evaluate, command, eventually }) {
   await command('Input.dispatchMouseEvent', { type: 'mouseMoved', ...point });
   await eventually(() => evaluate(`document.querySelector('.editor-canvas__iframe').contentWindow.getComputedStyle(document.querySelector('.editor-canvas__iframe').contentDocument.getElementById('secao-titulos')).transform === 'none'`), 'Scale stayed active after disabling');
 
-  // Reenable with the stored slider value and retain unrelated effects on removal.
+  // Religar volta com o valor guardado do slider, e remover um efeito não leva os outros.
   await evaluate(`document.querySelector('.editor-canvas__iframe').contentDocument.getElementById('secao-titulos').style.transform = 'translateX(3px)'`);
   await toggle('Escala');
   await toggle('Sombra');
   await eventually(async () => (await hoverCss()).includes('box-shadow'), 'Shadow was not enabled');
-  // Zero values must survive selecting another element and returning.
+  // Valores zero sobrevivem a selecionar outro elemento e voltar.
   await evaluate(`(() => {
     const inputs = [...document.querySelectorAll('.shadow-offset-field input'),
       ...Array.from(document.querySelectorAll('.sidebar-control')).filter(control => /Desfoque|Opacidade/.test(control.textContent)).flatMap(control => [...control.querySelectorAll('input[type="number"]')])];
@@ -127,8 +128,8 @@ export async function runStyleRegressions({ evaluate, command, eventually }) {
   await borderToggle();
   assert.equal(await evaluate(`document.querySelector('.editor-canvas__iframe').contentWindow.getComputedStyle(document.querySelector('.editor-canvas__iframe').contentDocument.getElementById('secao-titulos')).borderImageSource`), 'none');
   console.log('PASS: border/radius controls, restored hover backgrounds, selection restoration and legacy border-image migration');
-  // Border/background helper is exercised in a separate same-origin document,
-  // including save/reopen and export to the original unmodified HTML.
+  // O helper de borda e fundo roda num documento separado da mesma origem, com
+  // salvar/reabrir e exportação aplicada ao HTML original sem alterações.
   const result = await evaluate(`(async () => {
     const {setGradientBorder, updateGradientBorderBackground, getGradientBorder} = await import('/src/utils/gradientBorder.js');
     const {generateProjectCss} = await import('/src/utils/exportCss.js');
@@ -197,11 +198,14 @@ export async function runStyleRegressions({ evaluate, command, eventually }) {
     assert.ok(center[0] >= 127 && center[0] <= 128 && center[1] === 255 && center[2] >= 127 && center[2] <= 128, 'Border gradient leaked through translucent content');
   }
   await evaluate(`document.getElementById('border-regression-test').remove()`);
-  // Use the actual keyboard editing path, including clearing the numeric input.
+  // Caminho real de edição pelo teclado, inclusive apagar o campo numérico.
   await evaluate(`(() => {
     const element = document.querySelector('.editor-canvas__iframe').contentDocument.getElementById('secao-titulos');
     element.style.setProperty('border', '0px none red', 'important');
     element.click();
+  })()`);
+  await openSidebarSections(evaluate);
+  await evaluate(`(() => {
     const input = document.querySelector('input[aria-label="Espessura da Borda"][type="number"]');
     if (!input) throw new Error('Missing border width input');
     input.focus(); input.select();

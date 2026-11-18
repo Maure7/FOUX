@@ -2,15 +2,19 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import useHoverStyles from './inspector/useHoverStyles';
 import { getGradientBorder, setGradientBorder, updateGradientBorderBackground } from '../utils/gradientBorder';
 import { extractComputedStyles, rememberOriginalStyle, transitionsSettled } from '../utils/inspector/styles';
+import { revealBorderStyle, revealBorderWidth } from '../utils/inspector/borders';
+import { importantPriority } from '../utils/inspector/important';
+import { extractAlpha } from '../utils/css/color.js';
 import {
   HOVER_OUTLINE, HOVER_OFFSET, SELECT_OUTLINE, SELECT_OFFSET, ATTR_HOVERED, ATTR_SELECTED,
-  INSPECTOR_STYLE_ID, HOVER_STYLE_ID, SCROLLBAR_STYLE_ID, ORIGINAL_STYLE_ATTR,
+  INSPECTOR_STYLE_ID, HOVER_STYLE_ID, SCROLLBAR_STYLE_ID, ORIGINAL_STYLE_ATTR, FONT_STYLE_PREFIX, EXPORT_PARSER_ATTR,
+  DARK_READER_LOCK_ATTR,
 } from '../utils/inspector/constants';
 
-const FONT_STYLE_PREFIX = 'foux-font-';
 const INTERNAL_IDS = new Set([HOVER_STYLE_ID, INSPECTOR_STYLE_ID, SCROLLBAR_STYLE_ID]);
-// Imported stylesheets may declare borders with !important.
+// Folhas importadas podem declarar bordas com !important.
 const IMPORTANT_BORDER_PROPERTIES = { borderWidth: 'border-width', borderStyle: 'border-style', borderColor: 'border-color' };
+const toKebab = (property) => property.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
 
 const INSPECTOR_CSS = `
   [${ATTR_HOVERED}]:not([${ATTR_SELECTED}]) {
@@ -26,43 +30,44 @@ const INSPECTOR_CSS = `
 function writeStyle(element, cssProperty, value) {
   if (cssProperty === 'borderGradient') {
     setGradientBorder(element, value);
+    if (value) revealBorderWidth(element);
     return;
   }
-  // With a gradient border, the background lives in painted layers.
+  // Com borda em gradiente, o fundo vive nas camadas pintadas.
   if (updateGradientBorderBackground(element, cssProperty, value)) return;
-  if (cssProperty === 'backgroundImage') {
-    element.style.backgroundImage = value;
-    if (value?.startsWith('linear-gradient(')) {
-      element.style.setProperty('background-clip', 'padding-box', 'important');
-      element.style.setProperty('background-repeat', 'no-repeat', 'important');
-      element.style.setProperty('background-size', 'auto', 'important');
-    }
-    return;
-  }
   if (cssProperty === 'borderRadius') {
+    // Sem overflow forçado: cortaria menus e sombras dos filhos, travaria a
+    // rolagem em body/html e apareceria no CSS exportado sem o aluno pedir.
     element.style.setProperty('border-radius', typeof value === 'number' ? `${value}px` : String(value), 'important');
-    element.style.setProperty('overflow', 'hidden', 'important');
     return;
   }
   const borderProperty = IMPORTANT_BORDER_PROPERTIES[cssProperty];
-  if (!borderProperty) {
-    element.style[cssProperty] = value;
+  if (borderProperty) {
+    element.style.setProperty(borderProperty, String(value), 'important');
+    // Lê o elemento, não o estado do React, que pode estar um frame atrás.
+    if (cssProperty === 'borderWidth' && parseFloat(value) > 0) revealBorderStyle(element);
+    if (cssProperty === 'borderColor' && extractAlpha(String(value)) > 0) {
+      revealBorderStyle(element);
+      revealBorderWidth(element);
+    }
     return;
   }
-  element.style.setProperty(borderProperty, String(value), 'important');
-  if (cssProperty === 'borderWidth' && parseFloat(value) > 0) {
-    // A width alone stays invisible while the live style is none/hidden. Read
-    // it from the element: React state may still be a frame behind.
-    const style = element.ownerDocument.defaultView.getComputedStyle(element).borderTopStyle;
-    if (style === 'none' || style === 'hidden') element.style.setProperty('border-style', 'solid', 'important');
+  const property = toKebab(cssProperty);
+  element.style.setProperty(property, value, importantPriority(element, property));
+  if (cssProperty === 'backgroundImage' && value?.startsWith('linear-gradient(')) {
+    element.style.setProperty('background-clip', 'padding-box', 'important');
+    element.style.setProperty('background-repeat', 'no-repeat', 'important');
+    element.style.setProperty('background-size', 'auto', 'important');
   }
 }
+
+const elementsWithId = (doc, id) => [...doc.querySelectorAll('[id]')].filter((element) => element.id === id);
 
 export default function useIframeInspector(iframeRef) {
   const [selectedElement, setSelectedElement] = useState(null);
   const [computedStyles, setComputedStyles] = useState(null);
 
-  // Listeners inside the iframe read refs, never render-time state.
+  // Os listeners dentro do iframe leem refs, nunca o estado da renderização.
   const hoveredRef = useRef(null);
   const selectedRef = useRef(null);
   const cleanupRef = useRef(null);
@@ -80,8 +85,8 @@ export default function useIframeInspector(iframeRef) {
     refreshFrame.current = 0;
   }, []);
 
-  // Style writes reach the iframe immediately; reading computed styles back
-  // (style recalc + layout) and re-rendering the sidebar happen once per frame.
+  // A escrita chega ao iframe na hora; reler os estilos computados (recalc +
+  // layout) e renderizar a sidebar acontecem no máximo uma vez por frame.
   const scheduleRefresh = useCallback(() => {
     const run = () => {
       if (refreshFrame.current) return;
@@ -91,7 +96,7 @@ export default function useIframeInspector(iframeRef) {
         const win = iframeRef.current?.contentWindow;
         if (!element?.isConnected || element.ownerDocument !== win?.document) return;
         setComputedStyles(extractComputedStyles(element, win));
-        // Read again once authored transitions reach the value just written.
+        // Lê de novo quando as transições autorais chegam ao valor recém-escrito.
         const settled = settling.current === element ? null : transitionsSettled(element);
         if (settled) {
           settling.current = element;
@@ -125,12 +130,13 @@ export default function useIframeInspector(iframeRef) {
 
   const serializeDocument = useCallback(() => {
     const doc = iframeRef.current?.contentDocument;
-    // about:blank during unmount must never overwrite a saved project.
+    // O about:blank da desmontagem nunca pode sobrescrever um projeto salvo.
     if (!doc?.body || (!doc.body.innerHTML.trim() && doc.body.children.length === 0)) return null;
 
     const clone = doc.documentElement.cloneNode(true);
     clone.querySelector(`#${INSPECTOR_STYLE_ID}`)?.remove();
     clone.querySelector(`#${SCROLLBAR_STYLE_ID}`)?.remove();
+    clone.querySelectorAll(`[${EXPORT_PARSER_ATTR}], [${DARK_READER_LOCK_ATTR}]`).forEach((node) => node.remove());
     for (const element of [clone, ...clone.querySelectorAll(`[${ATTR_HOVERED}], [${ATTR_SELECTED}]`)]) {
       element.removeAttribute(ATTR_HOVERED);
       element.removeAttribute(ATTR_SELECTED);
@@ -161,7 +167,7 @@ export default function useIframeInspector(iframeRef) {
     `;
   }, [iframeRef]);
 
-  // Fonts are embedded in the document, so the list survives reopening the project.
+  // As fontes ficam embutidas no documento, então a lista sobrevive a reabrir o projeto.
   const getImportedFonts = useCallback(() => {
     const doc = iframeRef.current?.contentDocument;
     if (!doc) return [];
@@ -171,16 +177,23 @@ export default function useIframeInspector(iframeRef) {
       .map((name) => ({ label: name, value: `'${name}'` }));
   }, [iframeRef]);
 
+  // HTML inválido pode repetir um ID; `occurrence` diz qual das repetições é o item.
   const getElementsWithId = useCallback(() => {
     const doc = iframeRef.current?.contentDocument;
     if (!doc) return [];
+    const seen = new Map();
     return [...doc.querySelectorAll('[id]')]
       .filter((element) => element.id && !element.id.startsWith(FONT_STYLE_PREFIX) && !INTERNAL_IDS.has(element.id))
-      .map((element) => ({ id: element.id, tagName: element.tagName }));
+      .map((element) => {
+        const occurrence = seen.get(element.id) ?? 0;
+        seen.set(element.id, occurrence + 1);
+        return { id: element.id, tagName: element.tagName, occurrence };
+      });
   }, [iframeRef]);
 
-  const selectElementById = useCallback((elementId) => {
-    const element = iframeRef.current?.contentDocument?.getElementById(elementId);
+  const selectElementById = useCallback((elementId, occurrence = 0) => {
+    const doc = iframeRef.current?.contentDocument;
+    const element = doc && (occurrence ? elementsWithId(doc, elementId)[occurrence] : doc.getElementById(elementId));
     if (!element) return;
     select(element);
     element.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -188,8 +201,8 @@ export default function useIframeInspector(iframeRef) {
 
   const { assignHoverClass, injectHoverStyles, getHoverRules, clearHoverRules } = useHoverStyles(iframeRef, selectedRef);
 
-  // Returns the selected element to the inline style it had when the document
-  // was first opened (the snapshot the CSS export also compares against).
+  // Devolve o elemento ao estilo inline da primeira abertura do documento
+  // (o mesmo retrato que a exportação de CSS usa como base).
   const restoreSelected = useCallback(() => {
     const element = selectedRef.current;
     if (!element?.isConnected) return false;
@@ -205,8 +218,8 @@ export default function useIframeInspector(iframeRef) {
       changed = true;
     }
     if (clearHoverRules(element)) changed = true;
-    // Read back now, in the same render as the caller's revision bump, so the
-    // gradient toggles resync from the restored styles.
+    // Relê agora, na mesma renderização em que o chamador incrementa a revisão,
+    // para os toggles de gradiente se sincronizarem com o estilo restaurado.
     if (changed) {
       cancelRefresh();
       setComputedStyles(extractComputedStyles(element, iframeRef.current?.contentWindow));
@@ -214,7 +227,41 @@ export default function useIframeInspector(iframeRef) {
     return changed;
   }, [iframeRef, clearHoverRules, cancelRefresh]);
 
-  // Called on every iframe load (initial file, import, undo/redo, language switch).
+  // Todos os elementos voltam ao estilo inline da primeira abertura, sem regras
+  // de hover nem fontes importadas: a versão de página inteira do restoreSelected.
+  const restoreAll = useCallback(() => {
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc?.body) return false;
+    let changed = false;
+    doc.querySelectorAll('[data-foux-gradient-border]').forEach((element) => {
+      if (!getGradientBorder(element)) return;
+      setGradientBorder(element, null);
+      changed = true;
+    });
+    doc.querySelectorAll(`[${ORIGINAL_STYLE_ATTR}]`).forEach((element) => {
+      const original = element.getAttribute(ORIGINAL_STYLE_ATTR);
+      if ((element.getAttribute('style') || '') === original) return;
+      if (original) element.setAttribute('style', original);
+      else element.removeAttribute('style');
+      changed = true;
+    });
+    const hoverRules = doc.getElementById(HOVER_STYLE_ID);
+    if (hoverRules?.textContent.trim()) {
+      hoverRules.textContent = '';
+      changed = true;
+    }
+    doc.querySelectorAll(`style[id^="${FONT_STYLE_PREFIX}"]`).forEach((style) => {
+      style.remove();
+      changed = true;
+    });
+    if (changed && selectedRef.current?.isConnected) {
+      cancelRefresh();
+      setComputedStyles(extractComputedStyles(selectedRef.current, iframeRef.current?.contentWindow));
+    }
+    return changed;
+  }, [iframeRef, cancelRefresh]);
+
+  // Roda a cada carga do iframe (arquivo inicial, importação, desfazer/refazer, troca de idioma).
   const setupListeners = useCallback(() => {
     const iframe = iframeRef.current;
     const doc = iframe?.contentDocument;
@@ -226,21 +273,22 @@ export default function useIframeInspector(iframeRef) {
     cancelRefresh();
 
     doc.querySelectorAll('[style]').forEach(rememberOriginalStyle);
-    // Repaint saved gradient borders with the current clipping and tiling rules.
+    // Repinta as bordas em gradiente salvas com as regras atuais de recorte e repetição.
     doc.querySelectorAll('[data-foux-gradient-border]').forEach((element) => {
       const gradient = getGradientBorder(element);
       if (gradient) setGradientBorder(element, gradient);
     });
 
-    // A separate stylesheet keeps the inspection outlines from replacing authored outlines.
+    // Uma folha separada impede que os contornos da inspeção substituam outlines autorais.
     let inspectorStyle = doc.getElementById(INSPECTOR_STYLE_ID);
     if (!inspectorStyle) {
       inspectorStyle = doc.createElement('style');
       inspectorStyle.id = INSPECTOR_STYLE_ID;
-      doc.head.appendChild(inspectorStyle);
+      (doc.head || doc.documentElement).appendChild(inspectorStyle);
     }
     inspectorStyle.textContent = INSPECTOR_CSS;
-    inspectorStyle.sheet.disabled = previewModeRef.current;
+    // Sem `sheet` quando uma política do documento bloqueia <style>; o editor segue funcionando.
+    if (inspectorStyle.sheet) inspectorStyle.sheet.disabled = previewModeRef.current;
     doc.querySelectorAll(`[${ATTR_HOVERED}], [${ATTR_SELECTED}]`).forEach((element) => {
       element.removeAttribute(ATTR_HOVERED);
       element.removeAttribute(ATTR_SELECTED);
@@ -251,8 +299,8 @@ export default function useIframeInspector(iframeRef) {
     setSelectedElement(null);
     setComputedStyles(null);
 
-    // The tutorial's single box must keep its rounded clipping while students
-    // experiment with borders (PT and ES templates use different IDs).
+    // A caixa única do tutorial precisa manter o recorte arredondado enquanto o
+    // aluno testa bordas (os modelos PT e ES usam IDs diferentes).
     const tutorialBox = doc.getElementById('caja-unica') || doc.getElementById('box-unica');
     if (tutorialBox) {
       rememberOriginalStyle(tutorialBox);
@@ -277,7 +325,7 @@ export default function useIframeInspector(iframeRef) {
       if (event.target === hoveredRef.current) clearHover();
     }
 
-    // Links, buttons and forms inside the student's page must not navigate.
+    // Links, botões e formulários da página do aluno não podem navegar.
     function onClick(event) {
       event.preventDefault();
       event.stopPropagation();
@@ -324,5 +372,6 @@ export default function useIframeInspector(iframeRef) {
     injectHoverStyles,
     getHoverRules,
     restoreSelected,
+    restoreAll,
   };
 }

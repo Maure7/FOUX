@@ -86,8 +86,8 @@ export default function useWorkspaceState() {
     }
   });
 
-  // Skip the first effect run: it would only rewrite what was just loaded
-  // (on desktop, a synchronous disk write per key at startup).
+  // A primeira execução de cada efeito só regravaria o que acabou de ser lido
+  // (no desktop, vários MB de projetos atravessando o IPC na abertura).
   const isProjectsLoadedRef = useRef(false);
   const isFoldersLoadedRef = useRef(false);
   const isActivitiesLoadedRef = useRef(false);

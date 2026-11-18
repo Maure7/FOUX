@@ -4,16 +4,27 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 
-// Uses an installed Chromium browser and its DevTools protocol; no test dependencies.
+// Usa um Chromium já instalado e o protocolo do DevTools; nenhuma dependência de teste.
 const browserPath = process.env.CHROME_PATH || [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
 ].find(existsSync);
 assert.ok(browserPath, 'Set CHROME_PATH to an installed Chromium browser');
+// Portas configuráveis para rodar mais de uma suíte ao mesmo tempo sem colisão.
+const vitePort = Number(process.env.FOUX_TEST_PORT) || 4175;
+const debugPort = Number(process.env.FOUX_DEBUG_PORT) || 9224;
+// Com a porta ocupada, o --strictPort derruba o Vite novo e o teste acabaria dirigindo o
+// servidor e o navegador de outra suíte, com falhas aleatórias nas duas.
+for (const [port, name] of [[vitePort, 'FOUX_TEST_PORT'], [debugPort, 'FOUX_DEBUG_PORT']]) {
+  const busy = await fetch(`http://127.0.0.1:${port}`, { signal: AbortSignal.timeout(1000) }).then(() => true, () => false);
+  assert.ok(!busy, `Porta ${port} já está em uso (outra suíte rodando?); escolha outra com ${name}`);
+}
+const suiteArg = process.argv.find((arg) => arg.startsWith('--suite='));
 const temporaryDir = await mkdtemp(path.join(tmpdir(), 'foux-editor-test-'));
-const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '4175', '--strictPort'], { windowsHide: true, stdio: 'ignore' });
+const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', String(vitePort), '--strictPort'], { windowsHide: true, stdio: 'ignore' });
 let browser;
 let socket;
 const pending = new Map();
@@ -22,7 +33,7 @@ let requestId = 0;
 
 async function eventually(check, message) {
   for (let attempt = 0; attempt < 100; attempt++) {
-    try { const result = await check(); if (result) return result; } catch { /* Wait for readiness. */ }
+    try { const result = await check(); if (result) return result; } catch { /* Ainda carregando. */ }
     await delay(100);
   }
   throw new Error(message);
@@ -47,14 +58,20 @@ async function evaluate(expression) {
 }
 
 try {
-  await eventually(async () => (await fetch('http://127.0.0.1:4175', {signal: AbortSignal.timeout(1000)})).ok, 'Vite did not start');
+  await eventually(async () => (await fetch(`http://127.0.0.1:${vitePort}`, {signal: AbortSignal.timeout(1000)})).ok, 'Vite did not start');
   console.log('Vite ready; starting Chromium');
+  // FOUX_EXTENSION=<pasta descompactada> carrega uma extensão (ex.: Dark Reader) no navegador
+  // de teste. O Chrome 137+ ignora --load-extension; use o Edge via CHROME_PATH.
+  const extension = process.env.FOUX_EXTENSION;
+  const extensionArgs = extension
+    ? ['--disable-features=DisableLoadExtensionCommandLineSwitch', `--disable-extensions-except=${extension}`, `--load-extension=${extension}`]
+    : [];
   browser = spawn(browserPath, [
-    '--headless=new', '--disable-gpu', '--no-sandbox', '--no-first-run', '--no-default-browser-check',
-    '--remote-debugging-port=9224', `--user-data-dir=${path.join(temporaryDir, 'profile')}`, 'about:blank',
+    '--headless=new', '--disable-gpu', '--no-sandbox', '--no-first-run', '--no-default-browser-check', ...extensionArgs,
+    `--remote-debugging-port=${debugPort}`, `--user-data-dir=${path.join(temporaryDir, 'profile')}`, 'about:blank',
   ], { windowsHide: true, stdio: 'ignore' });
   const target = await eventually(async () => {
-    const targets = await (await fetch('http://127.0.0.1:9224/json/list', {signal: AbortSignal.timeout(1000)})).json();
+    const targets = await (await fetch(`http://127.0.0.1:${debugPort}/json/list`, {signal: AbortSignal.timeout(1000)})).json();
     return targets.find((item) => item.type === 'page');
   }, 'Browser did not start');
   console.log('Chromium ready; testing editor');
@@ -73,9 +90,13 @@ try {
   await command('Page.enable');
   await command('Runtime.enable');
   await command('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: temporaryDir });
-  await command('Page.navigate', { url: 'http://127.0.0.1:4175' });
+  await command('Page.navigate', { url: `http://127.0.0.1:${vitePort}` });
   await eventually(() => evaluate('!!document.querySelector(".dashboard") || !!document.querySelector(".project-card")'), 'App did not load');
-  if (process.argv.includes('--design')) {
+  if (suiteArg) {
+    // Suíte avulsa (--suite=arquivo.mjs) que exporta run(); roda contra o app real sem passar pelo fluxo completo.
+    const suite = await import(pathToFileURL(path.resolve(suiteArg.slice('--suite='.length))).href);
+    await suite.run({ evaluate, command, eventually, temporaryDir });
+  } else if (process.argv.includes('--design')) {
     await (await import('./test_design_polish.mjs')).runDesignPolish({ evaluate, command, eventually });
   } else if (process.argv.includes('--rc')) {
     await (await import('./test_release_edges.mjs')).runReleaseEdges({ evaluate, command, eventually });
@@ -111,7 +132,7 @@ try {
 
   await (await import('./test_style_regressions.mjs')).runStyleRegressions({ evaluate, command, eventually });
 
-  // Exercise the real inspector and sidebar rather than only manipulating CSS.
+  // Passa pelo inspector e pela sidebar reais, não só por manipulação de CSS.
   await evaluate(`document.querySelector('iframe').contentDocument.getElementById('title:main').click()`);
   assert.equal(await evaluate(`document.querySelector('iframe').contentDocument.getElementById('title:main').style.outline`), 'blue dotted 3px');
   await evaluate(`(() => {
@@ -123,7 +144,7 @@ try {
   })()`);
   await eventually(() => evaluate(`document.querySelector('iframe').contentDocument.getElementById('title:main').style.color === 'rgb(18, 52, 86)'`), 'Sidebar edit was not applied');
 
-  // Export must use the live DOM, including undo/redo, before autosave finishes.
+  // A exportação lê o DOM vivo, com desfazer/refazer, antes de o autosave terminar.
   await evaluate(`document.querySelector('[aria-label="Desfazer alteração (Ctrl+Z)"]').click()`);
   await eventually(() => evaluate(`document.querySelector('iframe').contentDocument.getElementById('title:main')?.style.color === 'red'`), 'Undo did not restore the original color');
   assert.match(await evaluate(`(async () => {const {generateProjectCss} = await import('/src/utils/exportCss.js'); return generateProjectCss(document.querySelector('iframe').contentDocument);})()`), /color: red;/);
@@ -171,7 +192,7 @@ try {
   assert.doesNotMatch(generated.css, /blob:|data-foux-selected|data-foux-hovered|foux-inspector-styles|foux-hover-target-/);
   assert.equal(new Set(generated.selectors).size, 4);
 
-  // Reapply to the untouched HTML, with no FOUX classes or attributes.
+  // Reaplica no HTML intocado, sem classes nem atributos do FOUX.
   await evaluate(`new Promise(resolve => {
     const iframe = document.createElement('iframe'); iframe.id = 'export-test';
     iframe.srcdoc = ${JSON.stringify(originalHtml)};
@@ -199,7 +220,7 @@ try {
   assert.equal(reapplied.button, 'rgb(0, 128, 0)');
   assert.equal(reapplied.learnTitle, 'rgb(101, 67, 33)');
   assert.equal(await evaluate(`(() => {const iframe = document.getElementById('export-test'); return iframe.contentWindow.getComputedStyle(iframe.contentDocument.getElementById('priority')).color;})()`), 'rgb(0, 0, 255)');
-  // Move the pointer over the external HTML to verify a real :hover match.
+  // O ponteiro passa sobre o HTML externo para conferir um :hover de verdade.
   const hoverPoint = await evaluate(`(() => {
     const iframe = document.getElementById('export-test');
     Object.assign(iframe.style, {position:'fixed',top:'0',left:'0',width:'500px',height:'500px',zIndex:'20000'});
@@ -212,7 +233,7 @@ try {
   await evaluate(`document.querySelector('[aria-label="Exportar CSS"]').click()`);
   const downloaded = await eventually(() => readFile(path.join(temporaryDir, 'Projeto1.css'), 'utf8'), 'CSS was not downloaded');
   assert.equal(downloaded, generated.css);
-  // Interleaved style blocks and linked/imported CSS must retain cascade order.
+  // Blocos <style> intercalados com CSS linkado ou importado mantêm a ordem da cascata.
   await evaluate(`new Promise(resolve => {
     const iframe = document.createElement('iframe'); iframe.id = 'cascade-test';
     const linkedUrl = URL.createObjectURL(new Blob(['#linked {color: blue}'], {type:'text/css'}));
@@ -313,8 +334,8 @@ try {
   console.log('PASS: export, download name, original HTML, duplicate selectors, gradients, hover rules, fonts and authored outlines');
 
   await evaluate(`document.querySelector('[aria-label="Expandir página"]').click()`);
-  // Native fullscreen needs a user gesture and a real display; CI runners often refuse it, so the
-  // fixed-position fallback (same layout, same Esc handling) also counts as an open preview.
+  // A tela cheia nativa exige gesto do usuário e monitor de verdade, e o CI costuma recusá-la;
+  // a alternativa em position: fixed (mesmo layout, mesmo Esc) também conta como prévia aberta.
   await eventually(() => evaluate('!!document.fullscreenElement || !!document.querySelector(".editor-canvas--expanded")'), 'Preview did not open');
   const preview = await evaluate(`(() => {
     const iframe = document.querySelector('.editor-canvas__iframe');
@@ -360,7 +381,7 @@ try {
   socket?.close();
   browser?.kill();
   server.kill();
-  // The directory comes directly from mkdtemp inside the system temporary folder.
+  // A pasta saiu do mkdtemp dentro do temporário do sistema; apagar é seguro.
   await delay(500);
   await rm(temporaryDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 }

@@ -2,30 +2,23 @@ import { useState, useEffect, useMemo } from 'react';
 import { X, Folder } from 'lucide-react';
 import useModal from '../../hooks/useModal';
 import { useLanguage } from '../../context/LanguageContext';
+import { FOLDER_COLORS, DEFAULT_FOLDER_COLOR } from '../../utils/folderColors';
+import ProjectPicker from './ProjectPicker';
 
-const COLOR_PALETTE = [
-  '#e59843', // gold
-  '#ef4444', // red
-  '#22c55e', // green
-  '#3b82f6', // blue
-  '#a855f7', // purple
-  '#ec4899', // pink
-  '#06b6d4', // cyan
-  '#f97316', // orange
-];
-
-export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFolders }) {
+export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFolders, projects = [] }) {
   const { t } = useLanguage();
   const { modalRef, present } = useModal(isOpen);
   const [folderName, setFolderName] = useState('');
-  const [selectedColor, setSelectedColor] = useState(COLOR_PALETTE[0]);
+  const [selectedColor, setSelectedColor] = useState(DEFAULT_FOLDER_COLOR);
+  const [selectedProjects, setSelectedProjects] = useState(() => new Set());
 
   const [prevOpen, setPrevOpen] = useState(isOpen);
 
   if (isOpen && !prevOpen) {
     setPrevOpen(true);
     setFolderName('');
-    setSelectedColor(COLOR_PALETTE[0]);
+    setSelectedColor(DEFAULT_FOLDER_COLOR);
+    setSelectedProjects(new Set());
   } else if (!isOpen && prevOpen) {
     setPrevOpen(false);
   }
@@ -58,7 +51,8 @@ export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFold
 
   const handleCreate = () => {
     const finalName = folderName.trim() || fallbackName;
-    onCreate(finalName, selectedColor);
+    const knownIds = new Set(projects.map((project) => project.id));
+    onCreate(finalName, selectedColor, [...selectedProjects].filter((id) => knownIds.has(id)));
     onClose();
   };
 
@@ -114,18 +108,30 @@ export default function ModalNovaPasta({ isOpen, onClose, onCreate, existingFold
         <div className="modal-folder-colors">
           <span className="modal-name-label">{t('modals.newFolder.borderColorLabel')}</span>
           <div className="color-picker-grid">
-            {COLOR_PALETTE.map((color) => (
+            {FOLDER_COLORS.map(({ key, value: color }) => (
               <button
                 key={color}
                 className={`color-picker-swatch ${selectedColor === color ? 'color-picker-swatch--active' : ''}`}
                 style={{ '--swatch-color': color }}
                 onClick={() => setSelectedColor(color)}
-                aria-label={t('common.color', { color })}
+                aria-label={t(`modals.colors.${key}`)}
                 aria-pressed={selectedColor === color}
               />
             ))}
           </div>
         </div>
+
+        {projects.length > 0 && (
+          <fieldset className="modal-folder-projects">
+            <legend className="modal-name-label">{t('modals.newFolder.projectsLabel')}</legend>
+            <ProjectPicker
+              projects={projects}
+              folders={existingFolders}
+              selectedIds={selectedProjects}
+              onChange={setSelectedProjects}
+            />
+          </fieldset>
+        )}
 
         <div className="modal-footer modal-footer--spread">
           <button className="modal-cancel-btn" onClick={onClose}>{t('common.cancel')}</button>

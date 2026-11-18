@@ -8,14 +8,19 @@ import SliderControl from '../controls/SliderControl';
 import { cssInfo } from '../../../utils/css/glossary.js';
 import { changeMeta } from '../../../utils/historyLabels.js';
 
-// Typography controls are hidden for elements that rarely hold text directly.
-const TEXT_TAGS = new Set([
-  'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'P', 'SPAN', 'A', 'BUTTON', 'LABEL',
-  'LI', 'TD', 'TH', 'BODY', 'DIV', 'SECTION', 'ARTICLE', 'HEADER', 'FOOTER', 'NAV', 'MAIN',
-  'BLOCKQUOTE', 'FIGCAPTION', 'SUMMARY', 'DETAILS', 'STRONG', 'EM', 'B', 'I', 'U', 'SMALL', 'MARK',
-]);
+const SVG_NS = 'http://www.w3.org/2000/svg';
+// Mídia ganha dimensões e disposição no lugar da tipografia.
+const MEDIA_TAGS = new Set(['IMG', 'VIDEO', 'AUDIO', 'CANVAS', 'IFRAME', 'EMBED', 'OBJECT']);
+// Lista do que NÃO tem texto: HTML do aluno usa pre, code, ul, tabelas e tags próprias.
+const NO_TEXT_TAGS = new Set(['HR', 'BR', 'WBR', 'PICTURE', 'SOURCE', 'TRACK', 'MAP', 'AREA']);
+const SVG_TEXT = new Set(['text', 'tspan', 'textPath']);
 
-// Web-safe stacks work offline in Electron; students can import others.
+const isMediaElement = (element) => MEDIA_TAGS.has(element?.tagName)
+  || (element?.namespaceURI === SVG_NS && element.localName === 'svg');
+const holdsText = (element) => !!element && !NO_TEXT_TAGS.has(element.tagName)
+  && (element.namespaceURI !== SVG_NS || SVG_TEXT.has(element.localName));
+
+// Pilhas seguras funcionam offline no Electron; o aluno pode importar outras.
 const SAFE_FONTS = [
   { key: 'defaultBrowserFont', value: '' },
   { label: 'Arial (Sans-serif)', value: 'Arial, Helvetica, sans-serif' },
@@ -30,7 +35,7 @@ const TEXT_ALIGNMENTS = [
   { value: 'justify', Icon: AlignJustify },
 ];
 
-// `summary` is the CSS shown in the undo/redo tooltip for the whole preset.
+// `summary` é o CSS mostrado na dica de desfazer/refazer para o preset inteiro.
 const IMAGE_LAYOUTS = [
   { labelKey: 'sidebar.floatLeft', Icon: AlignLeft, summary: 'float: left', styles: { display: 'inline', float: 'left', margin: '0 12px 12px 0' } },
   { labelKey: 'sidebar.center', Icon: AlignCenter, summary: 'margin: 0 auto', styles: { display: 'block', float: 'none', margin: '0 auto' } },
@@ -39,11 +44,10 @@ const IMAGE_LAYOUTS = [
 
 const firstFamily = (value) => value.split(',')[0].replace(/['"]/g, '').trim().toLowerCase();
 
-function StylesTab({ element, values, disabled, apply, colors, onBoxFocus, injectFont, getImportedFonts, tourStep, t }) {
+function StylesTab({ element, resetKey, values, disabled, apply, colors, onBoxFocus, injectFont, getImportedFonts, tourStep, t }) {
   const fontInputRef = useRef(null);
-  const tagName = element?.tagName;
-  const isImage = tagName === 'IMG';
-  const isTextElement = TEXT_TAGS.has(tagName);
+  const isImage = isMediaElement(element);
+  const isTextElement = holdsText(element);
   const value = (key, fallback) => values?.[key] ?? fallback;
 
   const css = useMemo(() => Object.fromEntries(
@@ -56,8 +60,8 @@ function StylesTab({ element, values, disabled, apply, colors, onBoxFocus, injec
       .map((property) => [property, (number) => apply(property, `${number}px`)]),
   ), [apply]);
 
-  // Read from the document (not kept in memory) so fonts imported in an
-  // earlier session are listed; a reload always clears the selection.
+  // Lido do documento (não da memória) para listar fontes importadas em outra
+  // sessão; recarregar o iframe sempre limpa a seleção.
   const [importedFonts, setImportedFonts] = useState(getImportedFonts);
   const [fontsElement, setFontsElement] = useState(element);
   if (fontsElement !== element) {
@@ -74,7 +78,7 @@ function StylesTab({ element, values, disabled, apply, colors, onBoxFocus, injec
     const fontName = file.name.replace(/\.(ttf|otf|woff2?)$/i, '').replace(/[^a-zA-Z0-9\s-]/g, '').trim() || `Fonte ${Date.now()}`;
     const reader = new FileReader();
     reader.onload = () => {
-      // Data URLs keep the font working after reopening and in the exported CSS.
+      // Data URL mantém a fonte ao reabrir o projeto e dentro do CSS exportado.
       injectFont(fontName, reader.result);
       setImportedFonts(getImportedFonts());
       apply('fontFamily', `'${fontName}'`);
@@ -85,9 +89,9 @@ function StylesTab({ element, values, disabled, apply, colors, onBoxFocus, injec
   return (
     <>
       {isImage && (
-        <CollapsibleSection title={t('sidebar.dimensions')} icon={Image}>
-          <SliderControl label={t('sidebar.width')} {...css.width} unit="px" value={value('width', 200)} min={20} max={1200} disabled={disabled} onChange={onPx.width} />
-          <SliderControl label={t('sidebar.height')} {...css.height} unit="px" value={value('height', 200)} min={20} max={1200} disabled={disabled} onChange={onPx.height} />
+        <CollapsibleSection sectionId="dimensions" title={t('sidebar.dimensions')} icon={Image}>
+          <SliderControl label={t('sidebar.width')} {...css.width} unit="px" value={value('width', 200)} min={20} max={1200} disabled={disabled} resetKey={resetKey} onChange={onPx.width} />
+          <SliderControl label={t('sidebar.height')} {...css.height} unit="px" value={value('height', 200)} min={20} max={1200} disabled={disabled} resetKey={resetKey} onChange={onPx.height} />
           <div className="sidebar-control">
             <PropertyLabel label={t('sidebar.alignment')} {...css.float} />
             <div className="sidebar-align-group">
@@ -111,7 +115,7 @@ function StylesTab({ element, values, disabled, apply, colors, onBoxFocus, injec
       )}
 
       {!isImage && (
-        <CollapsibleSection title={t('sidebar.typography')} icon={Type} tourId="typography" tourStep={tourStep}>
+        <CollapsibleSection sectionId="typography" title={t('sidebar.typography')} icon={Type} tourId="typography" tourStep={tourStep}>
           {isTextElement && (
             <div className="sidebar-control">
               <PropertyLabel label={t('sidebar.fontFamily')} {...css.fontFamily} />
@@ -139,7 +143,7 @@ function StylesTab({ element, values, disabled, apply, colors, onBoxFocus, injec
             </div>
           )}
 
-          <SliderControl label={t('sidebar.fontSize')} {...css.fontSize} unit="px" value={value('fontSize', 16)} min={8} max={72} disabled={disabled} onChange={onPx.fontSize} />
+          <SliderControl label={t('sidebar.fontSize')} {...css.fontSize} unit="px" value={value('fontSize', 16)} min={8} max={72} disabled={disabled} resetKey={resetKey} onChange={onPx.fontSize} />
 
           <div className="sidebar-control">
             <PropertyLabel label={t('sidebar.textAlignment')} {...css.textAlign} />
@@ -166,17 +170,17 @@ function StylesTab({ element, values, disabled, apply, colors, onBoxFocus, injec
         </CollapsibleSection>
       )}
 
-      <CollapsibleSection title={t('sidebar.bordersAndShapes')} icon={Square} tourId="borders" tourStep={tourStep}>
-        <SliderControl label={t('sidebar.borderRadius')} {...css.borderRadius} unit="px" value={value('borderRadius', 0)} min={0} max={50} disabled={disabled} onChange={onPx.borderRadius} />
-        <SliderControl label={t('sidebar.borderWidth')} {...css.borderWidth} unit="px" value={value('borderWidth', 0)} min={0} max={20} disabled={disabled} onChange={onPx.borderWidth} />
+      <CollapsibleSection sectionId="borders" title={t('sidebar.bordersAndShapes')} icon={Square} tourId="borders" tourStep={tourStep}>
+        <SliderControl label={t('sidebar.borderRadius')} {...css.borderRadius} unit="px" value={value('borderRadius', 0)} min={0} max={50} disabled={disabled} resetKey={resetKey} onChange={onPx.borderRadius} />
+        <SliderControl label={t('sidebar.borderWidth')} {...css.borderWidth} unit="px" value={value('borderWidth', 0)} min={0} max={20} disabled={disabled} resetKey={resetKey} onChange={onPx.borderWidth} />
         <ColorControl label={t('sidebar.borderColor')} {...css.borderColor} disabled={disabled} {...colors.border} />
       </CollapsibleSection>
 
-      <CollapsibleSection title={t('sidebar.spacing')} icon={Maximize} tourId="spacing" tourStep={tourStep}>
-        <BoxModelEditor element={element} values={values} disabled={disabled} apply={apply} onBoxFocus={onBoxFocus} t={t} />
+      <CollapsibleSection sectionId="spacing" title={t('sidebar.spacing')} icon={Maximize} tourId="spacing" tourStep={tourStep}>
+        <BoxModelEditor element={element} values={values} disabled={disabled} apply={apply} onBoxFocus={onBoxFocus} resetKey={resetKey} t={t} />
       </CollapsibleSection>
 
-      <CollapsibleSection title={t('sidebar.background')} icon={Paintbrush} tourId="background" tourStep={tourStep}>
+      <CollapsibleSection sectionId="background" title={t('sidebar.background')} icon={Paintbrush} tourId="background" tourStep={tourStep}>
         <ColorControl label={t('sidebar.backgroundColor')} {...css.backgroundColor} disabled={disabled} {...colors.background} />
       </CollapsibleSection>
     </>

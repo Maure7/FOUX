@@ -32,7 +32,7 @@ export const TUTORIAL_HTML = `<!DOCTYPE html>
     .tutorial-banner h1 { font-size: 1.75rem; margin-bottom: 6px; }
     .tutorial-banner p { font-size: 0.95rem; opacity: 0.9; }
 
-    section { margin-bottom: 28px; }
+    section { margin-bottom: 28px; display: flow-root; }
 
     h2 {
       font-size: 1.35rem;

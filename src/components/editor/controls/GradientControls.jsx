@@ -21,7 +21,7 @@ function GradientControls({ gradient, disabled, onChange }) {
         {stops.map(([key, label]) => (
           <div className="sidebar-gradient-color-field" key={key}>
             <span className="sidebar-gradient-color-field__label">{label}</span>
-            <ColorField label={label} value={gradient[key]} disabled={disabled} onChange={(color) => update({ [key]: color })} />
+            <ColorField label={label} value={gradient[key]} disabled={disabled} compact onChange={(color) => update({ [key]: color })} />
           </div>
         ))}
       </div>

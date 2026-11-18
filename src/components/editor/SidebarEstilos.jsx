@@ -5,6 +5,7 @@ import StylesTab from './sidebar/StylesTab';
 import LayoutTab from './sidebar/LayoutTab';
 import HoverTab from './sidebar/HoverTab';
 import useColorControls from './sidebar/useColorControls';
+import useSidebarSections, { SidebarSectionsContext } from '../../hooks/useSidebarSections';
 import { changeMeta, currentCssValue } from '../../utils/historyLabels.js';
 
 const TABS = [
@@ -13,7 +14,8 @@ const TABS = [
   { id: 'eventos', labelKey: 'sidebar.tabEvents' },
 ];
 
-// HoverTab is keyed per element so its state is rebuilt from that element's rules.
+// Identifica o elemento selecionado e cada "Restaurar elemento": a HoverTab é recriada a
+// partir das regras dele e os controles numéricos descartam os rascunhos.
 const elementKeys = new WeakMap();
 let nextElementKey = 0;
 function keyFor(element) {
@@ -49,24 +51,29 @@ function SidebarEstilos({
   onResizeStart,
   tourStep,
   revision,
+  documentKey,
   onRestoreElement,
   onBoxFocus,
+  projectId,
 }) {
   const { t } = useLanguage();
   const [userTab, setActiveTab] = useState('estilos');
   const activeTab = tourStep?.tab || userTab;
   const hasSelection = !!selectedElement;
+  const elementKey = hasSelection ? `${keyFor(selectedElement)}-${revision}` : null;
 
   const stylesRef = useRef(computedStyles);
   useEffect(() => { stylesRef.current = computedStyles; }, [computedStyles]);
 
-  // History is told first: a change of property closes the previous undo step
-  // before this edit reaches the document.
+  // O histórico é avisado antes: trocar de propriedade fecha o passo de desfazer
+  // anterior antes de esta edição chegar ao documento.
   const apply = useCallback((cssProperty, value, meta) => {
     onStyleChange(meta ?? changeMeta(`history.props.${cssProperty}`, selectedElement, currentCssValue(cssProperty, stylesRef.current), value));
     applyStyle(cssProperty, value);
   }, [applyStyle, onStyleChange, selectedElement]);
   const colors = useColorControls({ selectedElement, computedStyles, revision, apply, applyStyle, onStyleChange });
+  // Acordeões abertos/fechados, salvos por projeto.
+  const sections = useSidebarSections(projectId);
 
   return (
     <aside
@@ -122,53 +129,58 @@ function SidebarEstilos({
         </div>
       )}
 
-      <div className="sidebar-content">
-        {activeTab === 'estilos' && (
-          <>
-            {!isLocked && !hasSelection && (
-              <EmptyState Icon={Paintbrush} title={t('sidebar.selectElementToEdit')} hint={t('sidebar.hoverDocumentHint')} />
-            )}
-            <StylesTab
+      <SidebarSectionsContext.Provider value={sections}>
+        <div className="sidebar-content">
+          {activeTab === 'estilos' && (
+            <>
+              {!isLocked && !hasSelection && (
+                <EmptyState Icon={Paintbrush} title={t('sidebar.selectElementToEdit')} hint={t('sidebar.hoverDocumentHint')} />
+              )}
+              <StylesTab
+                element={selectedElement}
+                resetKey={elementKey}
+                values={computedStyles}
+                disabled={isLocked || !hasSelection}
+                apply={apply}
+                colors={colors}
+                onBoxFocus={onBoxFocus}
+                injectFont={injectFont}
+                getImportedFonts={getImportedFonts}
+                tourStep={tourStep}
+                t={t}
+              />
+            </>
+          )}
+
+          {activeTab === 'layout' && (
+            <LayoutTab
+              // Um documento novo (importar, desfazer) traz outra lista de IDs.
+              key={documentKey}
               element={selectedElement}
-              values={computedStyles}
-              disabled={isLocked || !hasSelection}
-              apply={apply}
               colors={colors}
-              onBoxFocus={onBoxFocus}
-              injectFont={injectFont}
-              getImportedFonts={getImportedFonts}
+              getElementsWithId={getElementsWithId}
+              selectElementById={selectElementById}
               tourStep={tourStep}
               t={t}
             />
-          </>
-        )}
+          )}
 
-        {activeTab === 'layout' && (
-          <LayoutTab
-            element={selectedElement}
-            colors={colors}
-            getElementsWithId={getElementsWithId}
-            selectElementById={selectElementById}
-            tourStep={tourStep}
-            t={t}
-          />
-        )}
-
-        {activeTab === 'eventos' && (hasSelection ? (
-          <HoverTab
-            key={`${keyFor(selectedElement)}-${revision}`}
-            element={selectedElement}
-            getHoverRules={getHoverRules}
-            assignHoverClass={assignHoverClass}
-            injectHoverStyles={injectHoverStyles}
-            onStyleChange={onStyleChange}
-            tourStep={tourStep}
-            t={t}
-          />
-        ) : (
-          <EmptyState Icon={Zap} title={t('sidebar.hoverSelectElement')} hint={t('sidebar.hoverClickCanvas')} />
-        ))}
-      </div>
+          {activeTab === 'eventos' && (hasSelection ? (
+            <HoverTab
+              key={elementKey}
+              element={selectedElement}
+              getHoverRules={getHoverRules}
+              assignHoverClass={assignHoverClass}
+              injectHoverStyles={injectHoverStyles}
+              onStyleChange={onStyleChange}
+              tourStep={tourStep}
+              t={t}
+            />
+          ) : (
+            <EmptyState Icon={Zap} title={t('sidebar.hoverSelectElement')} hint={t('sidebar.hoverClickCanvas')} />
+          ))}
+        </div>
+      </SidebarSectionsContext.Provider>
     </aside>
   );
 }

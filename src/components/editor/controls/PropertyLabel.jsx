@@ -1,14 +1,18 @@
 import { memo } from 'react';
 import { Info } from 'lucide-react';
 
-// Friendly name, the official CSS token and a one-line hint. The hint button
-// sits outside any <label>, so clicking it never toggles the related control.
+// Nome amigável, o token oficial do CSS e uma dica de uma linha. O botão de dica
+// fica fora de qualquer <label>, então o clique nunca alterna o controle ao lado.
 function PropertyLabel({ label, token, hint, className = '' }) {
   return (
     <span className={`sidebar-control__label prop-label ${className}`}>
       <span className="prop-label__name">{label}</span>
-      {token && <code className="prop-label__token">{token}</code>}
-      {hint && <HintButton hint={hint} />}
+      {(token || hint) && (
+        <span className="prop-label__meta">
+          {token && <code className="prop-label__token">{token}</code>}
+          {hint && <HintButton hint={hint} />}
+        </span>
+      )}
     </span>
   );
 }

@@ -16,18 +16,6 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
 }
 
-[data-theme="solarized"] .header__logo,
-[data-theme="solarized"] .editor-header__logo {
-  color: #fdf6e3 !important;
-  font-weight: 800 !important;
-  letter-spacing: -0.3px !important;
-}
-
-[data-theme="solarized"] .header__logo:hover,
-[data-theme="solarized"] .editor-header__logo:hover {
-  color: #6cdbcc !important;
-}
-
 [data-theme="solarized"] .editor-header__project-name {
   color: #fdf6e3 !important;
   background: rgba(147, 161, 161, 0.08) !important;
@@ -502,4 +490,23 @@
 
 [data-theme="solarized"] .settings-switch input:checked+.settings-switch__slider::after {
   background: #ffffff !important;
+}
+
+/* Sobre as superfícies azul-petróleo mais claras, o laranja de destaque (#e76f3c) e o
+   cinza base1 (#93a1a1) ficam logo abaixo de 4.5:1; texto pequeno usa tons um pouco
+   mais claros da mesma família. */
+[data-theme="solarized"] :is(.foux-editor-element-badge__tag, .challenge-hud__category, .challenge-hud__btn--primary) {
+  color: #f08f62;
+}
+
+[data-theme="solarized"] :is(.challenge-hud__btn:not(.challenge-hud__btn--primary), .profile-stat-card__label) {
+  color: var(--text-muted);
+}
+
+[data-theme="solarized"] .activity-header__link:hover {
+  color: #f08f62;
+}
+
+[data-theme="solarized"] .foux-layout-id-item__hash {
+  color: #f08f62;
 }

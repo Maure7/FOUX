@@ -9,13 +9,31 @@ import ShadowPad from '../controls/ShadowPad';
 import SliderControl from '../controls/SliderControl';
 import { getGradientBorder } from '../../../utils/gradientBorder';
 import { buildHoverDeclarations, readHoverState, shadowCss } from '../../../utils/inspector/hoverRules';
+import { HOVER_STYLE_ID } from '../../../utils/inspector/constants';
+import { hoverShade, visibleBackground } from '../../../utils/css/contrast.js';
 import { cssInfo } from '../../../utils/css/glossary.js';
 import { changeMeta } from '../../../utils/historyLabels.js';
 
 const SHADOW_RANGE = 30;
 const clampOffset = (value) => Math.max(-SHADOW_RANGE, Math.min(SHADOW_RANGE, Math.round(value)));
 
-// The hint button stays outside the <label> so clicking it never toggles the checkbox.
+// Fundo estático sem as regras de hover: o mouse costuma estar sobre o elemento
+// logo após o clique que o selecionou, e o :hover mascararia a leitura.
+// A cor de partida do hover é um tom do fundo visível: o preto fixo de antes
+// escondia texto escuro e sumia em páginas escuras.
+function readStaticBackground(element) {
+  const doc = element.ownerDocument;
+  const win = doc.defaultView;
+  const sheet = doc.getElementById(HOVER_STYLE_ID)?.sheet;
+  const wasDisabled = sheet?.disabled;
+  if (sheet) sheet.disabled = true;
+  const image = win.getComputedStyle(element).backgroundImage;
+  const suggestedColor = hoverShade(visibleBackground(element, win));
+  if (sheet) sheet.disabled = wasDisabled;
+  return { coversImage: !!image && image !== 'none', suggestedColor };
+}
+
+// O botão de dica fica fora do <label> para o clique nunca alternar o checkbox.
 function ToggleRow({ checked, label, token, hint, onChange }) {
   return (
     <div className="sidebar-toggle-line">
@@ -48,11 +66,16 @@ function OffsetField({ axis, label, value, onChange }) {
   );
 }
 
-// The parent keys this tab by element, so state always starts from the rules
-// already saved for the selected element. Rules are written only after user
-// input: merely viewing the tab (or the tour) never touches the document.
+// O pai cria esta aba por elemento, então o estado sempre parte das regras já
+// salvas para ele. As regras só são escritas após uma ação do usuário: apenas
+// abrir a aba (ou o tour) nunca altera o documento.
 function HoverTab({ element, getHoverRules, assignHoverClass, injectHoverStyles, onStyleChange, tourStep, t }) {
-  const [hover, setHover] = useState(() => readHoverState(getHoverRules(element), element.ownerDocument));
+  // O fundo estático só muda pela aba Estilos, que desmonta esta aba.
+  const [{ coversImage, suggestedColor }] = useState(() => readStaticBackground(element));
+  const [hover, setHover] = useState(() => {
+    const saved = readHoverState(getHoverRules(element), element.ownerDocument);
+    return saved.bg ? saved : { ...saved, bgColor: suggestedColor };
+  });
   const latest = useRef(hover);
   const pending = useRef(false);
   const frame = useRef(0);
@@ -62,18 +85,18 @@ function HoverTab({ element, getHoverRules, assignHoverClass, injectHoverStyles,
     frame.current = 0;
     if (!pending.current) return;
     pending.current = false;
-    const css = buildHoverDeclarations(latest.current, getGradientBorder(element));
+    const css = buildHoverDeclarations(latest.current, getGradientBorder(element), coversImage);
     if (!css && !getHoverRules(element)) return;
     const cls = assignHoverClass(element);
     if (!cls) return;
     onStyleChange(changeMeta('history.props.hover', element));
     injectHoverStyles(`.${cls}`, css, element);
-  }, [element, getHoverRules, assignHoverClass, injectHoverStyles, onStyleChange]);
+  }, [element, coversImage, getHoverRules, assignHoverClass, injectHoverStyles, onStyleChange]);
 
-  // Switching tabs or elements right after an edit must not drop it.
+  // Trocar de aba ou de elemento logo após uma edição não pode perdê-la.
   useEffect(() => flush, [flush]);
 
-  // Drags (scale, blur, shadow pad) rebuild the stylesheet at most once per frame.
+  // Arrastes (escala, blur, sombra) reescrevem a folha no máximo uma vez por frame.
   const update = useCallback((patch) => {
     latest.current = { ...latest.current, ...patch };
     setHover(latest.current);
@@ -99,7 +122,7 @@ function HoverTab({ element, getHoverRules, assignHoverClass, injectHoverStyles,
 
   return (
     <>
-      <CollapsibleSection title={t('sidebar.eventsHover')} icon={Palette} tourId="events" tourStep={tourStep}>
+      <CollapsibleSection sectionId="hoverColors" title={t('sidebar.eventsHover')} icon={Palette} tourId="events" tourStep={tourStep}>
         <div className="sidebar-control">
           <ToggleRow checked={hover.bg} label={t('sidebar.hoverBgColor')} {...cssInfo(t, 'hoverBackground')} onChange={set.bg} />
           {hover.bg && (
@@ -126,7 +149,7 @@ function HoverTab({ element, getHoverRules, assignHoverClass, injectHoverStyles,
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title={t('sidebar.hoverScaleSection')} icon={Maximize}>
+      <CollapsibleSection sectionId="hoverScale" title={t('sidebar.hoverScaleSection')} icon={Maximize}>
         <div className="sidebar-control">
           <ToggleRow checked={hover.scale} label={t('sidebar.hoverScaleToggle')} {...cssInfo(t, 'scale')} onChange={set.scale} />
           {hover.scale && (
@@ -135,7 +158,7 @@ function HoverTab({ element, getHoverRules, assignHoverClass, injectHoverStyles,
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title={t('sidebar.hoverShadowSection')} icon={Square}>
+      <CollapsibleSection sectionId="hoverShadow" title={t('sidebar.hoverShadowSection')} icon={Square}>
         <div className="sidebar-control">
           <ToggleRow checked={hover.shadow} label={t('sidebar.hoverShadowToggle')} {...cssInfo(t, 'boxShadow')} onChange={set.shadow} />
           {hover.shadow && (

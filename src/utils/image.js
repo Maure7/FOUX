@@ -1,6 +1,6 @@
-// The avatar is stored inside the workspace data, which the desktop app
-// rewrites on every autosave. A camera photo (several MB as base64) would make
-// each save proportionally slower, so it is reduced to the size it is shown at.
+// A foto de perfil fica dentro dos dados do workspace, que o desktop regrava a cada
+// salvamento. Uma foto de câmera (vários MB em base64) deixaria toda gravação mais
+// lenta, então ela é reduzida ao tamanho em que aparece.
 export async function imageFileToAvatar(file, maxSize = 256) {
   const url = URL.createObjectURL(file);
   try {

@@ -11,6 +11,7 @@ export default function ModalConfirm({
   message,
   confirmLabel,
   cancelLabel,
+  variant,
 }) {
   const { t } = useLanguage();
   const { modalRef, present } = useModal(isOpen);
@@ -21,8 +22,8 @@ export default function ModalConfirm({
     confirmLabel: confirmLabel || t('common.delete'),
     cancelLabel: cancelLabel || t('common.cancel'),
   };
-  // Parents may clear the selected item immediately. Keep the outgoing dialog
-  // intact until its exit finishes instead of changing its text mid-transition.
+  // O pai pode limpar o item na hora; o diálogo que está saindo mantém o texto até
+  // a animação terminar, em vez de trocar no meio da transição.
   const [lastOpenContent, setLastOpenContent] = useState(content);
   if (isOpen && Object.keys(content).some(key => content[key] !== lastOpenContent[key])) {
     setLastOpenContent(content);
@@ -44,7 +45,7 @@ export default function ModalConfirm({
   return (
     <div className="modal-overlay" data-state={isOpen ? 'open' : 'closed'} inert={!isOpen} onClick={onClose}>
       <div
-        className="modal-card modal-card--confirm"
+        className={`modal-card modal-card--confirm ${variant ? `modal-card--${variant}` : ''}`}
         onClick={(e) => e.stopPropagation()}
         ref={modalRef}
         role="alertdialog"

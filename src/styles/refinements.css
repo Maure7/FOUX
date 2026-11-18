@@ -1,5 +1,5 @@
-/* Product-level polish shared by every theme: steady numbers, tactile sliders,
-   a sliding segmented control and a framed work table for the edited page. */
+/* Acabamento comum a todos os temas: números estáveis, sliders táteis, seletor
+   segmentado deslizante e uma mesa emoldurada em volta da página editada. */
 
 :root {
   --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
@@ -29,12 +29,12 @@
   --segment-shadow: inset 0 1px 1.5px rgba(255, 255, 255, .45), inset 0 -1px 2px rgba(0, 0, 0, .25);
 }
 
-/* Digits keep one width, so values never shift sideways while a control is dragged. */
+/* Dígitos de largura fixa: o valor não pula para os lados enquanto o controle é arrastado. */
 :is(.editor-sidebar, .challenge-hud, .challenge-victory, .challenge-record, .profile-stat-card, .foux-tooltip) {
   font-variant-numeric: tabular-nums;
 }
 
-/* ---------- Calmer base surfaces ---------- */
+/* ---------- Superfícies base mais calmas ---------- */
 [data-theme="light"] body,
 [data-theme="light"] :is(.dashboard, .settings-page, .profile-page) {
   background-color: #f4f6f9;
@@ -61,7 +61,7 @@
   box-shadow: 0 14px 32px -10px rgba(0, 0, 0, .55), 0 0 12px rgba(245, 158, 11, .08), inset 0 1px 0 rgba(255, 255, 255, .08) !important;
 }
 
-/* ---------- Segmented view switch ---------- */
+/* ---------- Seletor segmentado de visualização ---------- */
 :root .view-toggle {
   position: relative;
   display: grid;
@@ -97,7 +97,7 @@
   box-shadow: none !important;
 }
 
-/* ---------- Tactile sliders ---------- */
+/* ---------- Sliders táteis ---------- */
 :root .sidebar-slider {
   height: 6px;
   border-color: transparent !important;
@@ -112,12 +112,12 @@
   transform: scale(1.12) !important;
 }
 
-/* ---------- Gradient angle dial ---------- */
+/* ---------- Disco do ângulo do gradiente ---------- */
 :root .gradient-angle-disc__inner {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08), inset 0 2px 6px rgba(0, 0, 0, .35);
 }
 
-/* ---------- Work table around the edited page ---------- */
+/* ---------- Mesa em volta da página editada ---------- */
 :root .editor-canvas:not(:has(.editor-dropzone)):not(.editor-canvas--expanded):not(:fullscreen) {
   padding: 12px;
 }
@@ -139,8 +139,8 @@
   :root .view-toggle::before { transition: none; }
 }
 
-/* ---------- One focus ring per text field ----------
-   The field's own border becomes the ring, so it never doubles with an outline. */
+/* ---------- Um anel de foco por campo de texto ----------
+   A própria borda do campo vira o anel, para nunca dobrar com um outline. */
 :root :is(
   input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="file"]),
   select, textarea

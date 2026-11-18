@@ -139,7 +139,11 @@ npm run dev
 | `npm run test:i18n` | Idiomas e manuais |
 | `npm run test:rc` | Verificações de release |
 | `npm run test:ui` | Design, contraste e temas |
+| `npm run test:user-html` | Edição de HTML de aluno: bordas, gradientes, hover e desfazer |
+| `npm run test:ui-audit` | Regressões de interface: pastas, vidro e transparência reduzida |
 | `npm run test:desktop` | Executa `release/win-unpacked` com perfil temporário |
+| `npm run test:desktop:source` | Abre o Electron a partir do código (fora do `npm test`: exige o binário do Electron) |
+| `npm run bench:sidebar` | Mede o custo por evento da sidebar (benchmark, fora do `npm test`) |
 | `npm run icons` | Gera os ícones do aplicativo |
 | `npm run dist:win` | Gera o instalador (apenas Windows) |
 | `npm run verify:release` | Confere os artefatos do instalador |

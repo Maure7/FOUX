@@ -17,7 +17,7 @@ export default function useFloatingMenu(menuRef, x, y) {
         const availableLeft = left - 8;
         const submenuWidth = submenu.offsetWidth;
         submenu.dataset.side = submenuWidth <= availableRight ? 'right' : submenuWidth <= availableLeft ? 'left' : 'stacked';
-        // Short windows and long destination lists must remain reachable.
+        // Janelas baixas e listas longas de destinos precisam continuar alcançáveis.
         submenu.style.top = '-6px';
         const rect = submenu.getBoundingClientRect();
         if (rect.bottom > window.innerHeight - 8) submenu.style.top = `${-6 - (rect.bottom - window.innerHeight + 8)}px`;

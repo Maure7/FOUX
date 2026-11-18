@@ -1,9 +1,15 @@
 import { memo, useState } from 'react';
 
-// Keeps incomplete text (empty, "-", "1.") while typing and reports only
-// finite, clamped numbers, so invalid CSS never reaches the canvas.
-function NumericInput({ value, onChange, min, max, ...props }) {
+// Mantém texto incompleto ("", "-", "1.") durante a digitação e só repassa
+// números finitos e limitados, para CSS inválido nunca chegar ao canvas.
+function NumericInput({ value, onChange, min, max, resetKey, ...props }) {
   const [draft, setDraft] = useState(null);
+  // O texto digitado pertence ao elemento em que foi digitado.
+  const [draftKey, setDraftKey] = useState(resetKey);
+  if (draftKey !== resetKey) {
+    setDraftKey(resetKey);
+    setDraft(null);
+  }
   return (
     <input
       {...props}

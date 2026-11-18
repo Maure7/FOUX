@@ -2,7 +2,7 @@ const RGB = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/;
 const ALPHA = /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*([\d.]+)/;
 const HEX = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
 
-// getComputedStyle always reports rgb()/rgba(); <input type="color"> only accepts #rrggbb.
+// getComputedStyle sempre devolve rgb()/rgba(); <input type="color"> só aceita #rrggbb.
 export function cssColorToHex(value, fallback = value) {
   const match = typeof value === 'string' ? value.match(RGB) : null;
   if (!match) return fallback;
@@ -24,7 +24,7 @@ export function hexAlphaToRgba(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${a.toFixed(2)})`;
 }
 
-/** Returns '#rrggbb' for complete typed values (with or without '#'), otherwise null. */
+/** '#rrggbb' para valores digitados completos (com ou sem '#'); senão null. */
 export function normalizeHex(text) {
   const match = String(text).trim().match(HEX);
   if (!match) return null;

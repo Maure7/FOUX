@@ -10,7 +10,7 @@ const CONFETTI = Array.from({ length: 14 }, (_, index) => index);
 export default function ChallengeVictory({ result, onClose, t }) {
   const isOpen = !!result;
   const { modalRef, present } = useModal(isOpen);
-  // Keep the outgoing result while the exit transition runs.
+  // Mantém o resultado na tela enquanto a transição de saída acontece.
   const [shown, setShown] = useState(result);
   if (result && result !== shown) setShown(result);
 

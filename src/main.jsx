@@ -8,16 +8,18 @@ import './styles/scrollbars.css'
 import './styles/interaction-polish.css'
 import './styles/glass.css'
 import './styles/refinements.css'
+import './styles/logo.css'
+import './styles/themes/light-comfort.css'
 import App from './App.jsx'
 
 function flushPendingChanges() {
-  // Complete editor updates and React's persistence effects before acknowledging.
+  // Conclui as atualizações do editor e os efeitos de persistência do React antes de responder ao processo principal.
   flushSync(() => window.dispatchEvent(new Event('foux:before-close')));
 }
 window.fouxDesktop?.onBeforeClose(flushPendingChanges);
 if (window.fouxDesktop) {
   window.addEventListener('beforeunload', flushPendingChanges);
-  // Renderer-initiated closes also pass through the main-process save handshake.
+  // Fechamentos pedidos pela própria página também passam pelo aperto de mão de salvamento.
   window.close = () => window.fouxDesktop.requestClose();
 }
 

@@ -42,7 +42,7 @@ export default function useSidebarResize() {
       remove();
       setIsResizing(false);
       try { appStorage.setItem('foux_sidebar_width', String(finalWidth)); }
-      catch { /* Keep the usable width in memory if storage is unavailable. */ }
+      catch { /* Sem armazenamento, a largura fica só na memória. */ }
     };
     cleanup.current = remove;
     window.addEventListener('mousemove', move);

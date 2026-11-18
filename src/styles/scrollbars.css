@@ -1,4 +1,4 @@
-/* Shared by the application and the isolated canvas document. */
+/* Usado pela aplicação e também injetado no documento isolado do canvas. */
 :root {
   --foux-scroll-track: #141416;
   --foux-scroll-thumb: #5b4630;
@@ -28,7 +28,7 @@
   scrollbar-width: thin !important;
 }
 
-/* Chromium's standard properties otherwise override the custom pseudo-elements. */
+/* Senão as propriedades padrão do Chromium sobrepõem os pseudo-elementos customizados. */
 @supports selector(::-webkit-scrollbar) {
   * {
     scrollbar-color: auto !important;

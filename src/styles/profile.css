@@ -354,7 +354,7 @@
 }
 
 [data-theme="light"] .profile-page__back:hover {
-  background: #ffffff;
+  background: var(--lc-surface);
   color: #0f172a;
   border-color: #94a3b8;
 }
@@ -364,7 +364,7 @@
 }
 
 [data-theme="light"] .profile-card {
-  background: #ffffff;
+  background: var(--lc-surface);
   border-color: #e2e8f0;
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
 }
@@ -416,7 +416,7 @@
 
 [data-theme="light"] .profile-input:focus,
 [data-theme="light"] .profile-textarea:focus {
-  background: #ffffff;
+  background: var(--lc-surface);
   border-color: #ea580c;
 }
 
@@ -427,7 +427,7 @@
 }
 
 [data-theme="light"] .profile-stat-card:hover {
-  background: #ffffff;
+  background: var(--lc-surface);
   border-color: #cbd5e1;
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
 }
@@ -454,7 +454,7 @@
   }
 }
 
-/* Challenge mode record (accordion card) */
+/* Recorde do Modo Desafios (card em acordeão) */
 .profile-card.challenge-record {
   padding: 0;
   overflow: hidden;

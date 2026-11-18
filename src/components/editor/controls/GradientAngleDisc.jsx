@@ -9,12 +9,12 @@ function GradientAngleDisc({ angle, colorStart = '#e59843', colorEnd = '#9333ea'
   const discRef = useRef(null);
   const onAngleChangeRef = useRef(onAngleChange);
   const beginDrag = useDocumentDrag();
-  // The document-level drag listener outlives the render that started it.
+  // O listener de arraste no documento vive mais que a renderização que o iniciou.
   useEffect(() => { onAngleChangeRef.current = onAngleChange; }, [onAngleChange]);
 
   const angleAt = (clientX, clientY) => {
     const rect = discRef.current.getBoundingClientRect();
-    // atan2 starts at the positive X axis; CSS 0deg points up.
+    // atan2 parte do eixo X positivo; no CSS, 0deg aponta para cima.
     const degrees = Math.atan2(clientY - (rect.top + rect.height / 2), clientX - (rect.left + rect.width / 2)) * (180 / Math.PI) + 90;
     return Math.round(degrees < 0 ? degrees + 360 : degrees) % 360;
   };

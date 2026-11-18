@@ -2,8 +2,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 const FOCUSABLE = 'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
 
-// Shared lifecycle for the existing dialogs: retain the exit, contain focus and
-// return it to the trigger. Callbacks and project actions still run immediately.
+// Ciclo de vida comum dos diálogos: segura a animação de saída, prende o foco e o
+// devolve ao botão que abriu. Callbacks e ações no projeto rodam na hora.
 export default function useModal(isOpen) {
   const modalRef = useRef(null);
   const [present, setPresent] = useState(isOpen);
@@ -23,7 +23,7 @@ export default function useModal(isOpen) {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const controls = () => [...modal.querySelectorAll(FOCUSABLE)].filter(element => element.getClientRects().length && !element.closest('[inert]'));
-    // Prefer the editable field; destructive dialogs start at Cancel.
+    // Prefere o campo editável; diálogos destrutivos começam no Cancelar.
     const initialFocus = modal.querySelector('input:not(:disabled), .modal-cancel-btn') || controls()[0];
     initialFocus?.focus({ preventScroll: true });
     if (initialFocus?.matches('#modal-rename-input')) initialFocus.select();

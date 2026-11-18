@@ -1,11 +1,12 @@
-import { getGradientBorder } from '../gradientBorder';
+import { getGradientBorder } from '../gradientBorder.js';
 import { normalizeHex } from './color.js';
 
 const RGB_FUNCTION = /rgba?\(([^)]+)\)/;
 const RGB_FUNCTIONS = /rgba?\([^)]+\)/g;
 const WHITE = Object.freeze({ r: 255, g: 255, b: 255, a: 1 });
+const BLACK = Object.freeze({ r: 0, g: 0, b: 0, a: 1 });
 
-/** Parses rgb()/rgba() (as reported by getComputedStyle) and hex colors. */
+/** Lê rgb()/rgba() (como o getComputedStyle informa) e cores em hex. */
 export function parseColor(value) {
   if (typeof value !== 'string' || !value || value === 'transparent') return null;
   const match = value.match(RGB_FUNCTION);
@@ -24,7 +25,7 @@ const linear = (channel) => {
   return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
 };
 
-// WCAG 2.x relative luminance and contrast ratio.
+// Luminância relativa e razão de contraste do WCAG 2.x.
 const luminance = ({ r, g, b }) => 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
 
 export function contrastRatio(first, second) {
@@ -39,8 +40,8 @@ const over = (top, bottom) => ({
   a: 1,
 });
 
-// Gradient borders keep the real fill in metadata; the painted layers would
-// otherwise be mistaken for the background behind the text.
+// Bordas em gradiente guardam o preenchimento real nos metadados; as camadas
+// pintadas seriam confundidas com o fundo atrás do texto.
 function paintLayers(element, style) {
   const border = getGradientBorder(element);
   const image = border ? border.background.image : style.backgroundImage;
@@ -49,8 +50,8 @@ function paintLayers(element, style) {
   return { stops, fill };
 }
 
-// Every opaque color the text may sit on. Gradients contribute each stop,
-// so the reported ratio is the worst case across the gradient.
+// Toda cor opaca sobre a qual o texto pode ficar. Gradientes entram com cada
+// parada, então a razão informada é o pior caso ao longo do gradiente.
 function backgroundCandidates(element, win) {
   const layers = [];
   for (let node = element; node?.nodeType === 1; node = node.parentElement) {
@@ -67,6 +68,18 @@ function backgroundCandidates(element, win) {
   return layers.reduceRight((below, stops) => stops.flatMap((stop) => below.map((color) => over(stop, color))), [WHITE]);
 }
 
+/** Cor opaca que aparece atrás do conteúdo do elemento (num gradiente, a primeira parada). */
+export function visibleBackground(element, win) {
+  return backgroundCandidates(element, win)[0];
+}
+
+/** '#rrggbb' 15% mais perto do preto, ou do branco num fundo escuro: diferente o bastante para notar, sem destoar. */
+export function hoverShade(color) {
+  const target = contrastRatio(color, BLACK) >= contrastRatio(color, WHITE) ? BLACK : WHITE;
+  return `#${['r', 'g', 'b'].map((channel) => Math.round(color[channel] + (target[channel] - color[channel]) * 0.15)
+    .toString(16).padStart(2, '0')).join('')}`;
+}
+
 function hasVisibleText(element) {
   const walker = element.ownerDocument.createTreeWalker(element, 4 /* SHOW_TEXT */);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
@@ -75,7 +88,7 @@ function hasVisibleText(element) {
   return false;
 }
 
-/** { ratio, large } for the element's text color over its visible background, or null without text. */
+/** { ratio, large } da cor do texto sobre o fundo visível; null quando não há texto. */
 export function textContrast(element, win, style = win.getComputedStyle(element)) {
   if (!hasVisibleText(element)) return null;
   const text = parseColor(style.color);
@@ -84,11 +97,11 @@ export function textContrast(element, win, style = win.getComputedStyle(element)
     .map((background) => contrastRatio(text.a < 1 ? over(text, background) : text, background)));
   const size = parseFloat(style.fontSize);
   const bold = (parseInt(style.fontWeight, 10) || 400) >= 700;
-  // WCAG "large text": 18pt (24px), or 14pt (18.66px) bold.
+  // "Texto grande" do WCAG: 18pt (24px), ou 14pt (18,66px) em negrito.
   return { ratio, large: size >= 24 || (bold && size >= 18.66) };
 }
 
-/** 'AAA' | 'AA' | 'large' (passes only as large text) | 'fail' */
+/** 'AAA' | 'AA' | 'large' (só passa como texto grande) | 'fail' */
 export function wcagLevel({ ratio, large }) {
   const [aa, aaa] = large ? [3, 4.5] : [4.5, 7];
   if (ratio >= aaa) return 'AAA';

@@ -1,9 +1,18 @@
 import { Search, Settings, FolderPlus, HelpCircle, User } from 'lucide-react';
+import FouxLogo from '../ui/FouxLogo';
 
-export default function Header({ searchQuery, onSearchChange, onNewFolder, onOpenConfig, onOpenProfile, onOpenFaq, userProfile, t }) {
+export default function Header({ onGoHome, searchQuery, onSearchChange, onNewFolder, onOpenConfig, onOpenProfile, onOpenFaq, userProfile, t }) {
   return (
     <header className="header" id="header">
-      <span className="header__logo">FOUX</span>
+      <button
+        type="button"
+        className="header__logo"
+        onClick={onGoHome}
+        aria-label={t('dashboard.goHome')}
+        title={t('dashboard.goHome')}
+      >
+        <FouxLogo decorative />
+      </button>
 
       <div className="header__controls">
         <div className="header__search">

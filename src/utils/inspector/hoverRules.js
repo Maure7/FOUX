@@ -11,15 +11,15 @@ export const DEFAULT_HOVER = Object.freeze({
 export const shadowCss = ({ shadowX, shadowY, shadowBlur, shadowOpacity }, separator = ', ') =>
   `${shadowX}px ${shadowY}px ${shadowBlur}px rgba(0${separator}0${separator}0${separator}${(shadowOpacity / 100).toFixed(2)})`;
 
-// `css` is the merged declaration text returned by getHoverRules(); CSSOM has
-// already normalized it (rgb() colors, shadow color possibly before offsets).
+// `css` é o texto mesclado que getHoverRules() devolve; o CSSOM já o normalizou
+// (cores em rgb(), cor da sombra possivelmente antes dos deslocamentos).
 export function readHoverState(css, doc) {
   if (!css) return DEFAULT_HOVER;
   const style = doc.createElement('span').style;
   style.cssText = css;
   const state = { ...DEFAULT_HOVER };
 
-  // With a gradient border, a solid hover fill is also painted as an image layer.
+  // Com borda em gradiente, a cor sólida do hover também é pintada como camada de imagem.
   const hasBgGradient = css.includes('linear-gradient') && !css.includes('background-color');
   state.bg = hasBgGradient || css.includes('background-color');
   if (hasBgGradient) {
@@ -46,8 +46,9 @@ export function readHoverState(css, doc) {
   return state;
 }
 
-// !important lets the preview win over the student's own selectors.
-export function buildHoverDeclarations(state, borderGradient) {
+// !important faz a prévia vencer os seletores do próprio aluno. `coversImage`
+// avisa que o elemento tem imagem ou gradiente de fundo, que esconderia a cor sólida.
+export function buildHoverDeclarations(state, borderGradient, coversImage = false) {
   const rules = [];
   if (state.bg) {
     const image = state.bgGradient.enabled ? gradientCss(state.bgGradient) : null;
@@ -69,6 +70,7 @@ export function buildHoverDeclarations(state, borderGradient) {
       );
     } else {
       rules.push(`background-color: ${state.bgColor} !important`);
+      if (coversImage) rules.push('background-image: none !important');
     }
   }
   if (state.text) rules.push(`color: ${state.textColor} !important`);

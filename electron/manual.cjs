@@ -1,9 +1,15 @@
 const path = require('node:path');
+const { filePathFromUrl, isFileUrlFor } = require('./app-url.cjs');
 
-// Only the two manuals linked by this renderer may open in the system viewer.
+const MANUALS = ['manual_pt.pdf', 'manual_es.pdf'];
+
+// Só os dois manuais linkados pelo app abrem no visualizador do sistema, sempre a
+// partir da pasta de recursos, qualquer que seja o caminho de instalação.
 function resolveManualPath(url, appUrl, resourceDirectory) {
-  for (const filename of ['manual_pt.pdf', 'manual_es.pdf']) {
-    if (url === new URL(`docs/${filename}`, appUrl).href) {
+  const appFile = filePathFromUrl(appUrl);
+  if (!appFile) return null;
+  for (const filename of MANUALS) {
+    if (isFileUrlFor(url, path.join(path.dirname(appFile), 'docs', filename))) {
       return path.join(resourceDirectory, 'docs', filename);
     }
   }

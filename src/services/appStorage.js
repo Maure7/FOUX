@@ -1,5 +1,5 @@
-// Desktop writes are acknowledged only after the main process saves to disk.
-// The web application continues using the browser's localStorage.
+// No desktop o processo principal guarda os dados e grava o arquivo em lote, logo
+// após a alteração e sempre ao fechar a janela. Na web continua o localStorage.
 const desktop = globalThis.window?.fouxDesktop?.storage;
 const data = desktop ? { ...desktop.snapshot() } : null;
 
@@ -10,11 +10,14 @@ export const appStorage = desktop ? {
   setItem(key, value) {
     key = String(key);
     value = String(value);
+    // Valor igual não cruza o IPC: a lista de projetos pode ter vários MB.
+    if (data[key] === value) return;
     desktop.setItem(key, value);
     data[key] = value;
   },
   removeItem(key) {
     key = String(key);
+    if (!Object.hasOwn(data, key)) return;
     desktop.removeItem(key);
     delete data[key];
   },

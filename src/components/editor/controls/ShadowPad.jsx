@@ -2,7 +2,7 @@ import { memo, useEffect, useRef } from 'react';
 import useDocumentDrag from '../../../hooks/useDocumentDrag';
 import PropertyLabel from './PropertyLabel';
 
-// 2D joystick for box-shadow offsets; the pad radius maps to ±max pixels.
+// Joystick 2D para os deslocamentos do box-shadow; o raio do pad equivale a ±max pixels.
 function ShadowPad({ x, y, max = 30, label, token, hint, onChange }) {
   const padRef = useRef(null);
   const onChangeRef = useRef(onChange);

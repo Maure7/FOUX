@@ -19,5 +19,5 @@ export function hasCompletedTutorial() {
 
 export function completeTutorial() {
   try { appStorage.setItem(TUTORIAL_COMPLETED_KEY, 'true'); }
-  catch { /* The project preference remains available when storage is blocked. */ }
+  catch { /* Com o armazenamento bloqueado, vale a preferência do projeto. */ }
 }

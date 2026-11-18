@@ -5,8 +5,8 @@ import '../../../styles/challenges.css';
 
 const EDGE = 8;
 
-// Floating, draggable card. It starts in the canvas' lower-left corner and can
-// be collapsed to the header (time and progress) to free the canvas.
+// Card flutuante e arrastável. Começa no canto inferior esquerdo do canvas e pode
+// ser recolhido até o cabeçalho (tempo e progresso) para liberar a área.
 function ChallengeHud({ session, language, onHighlight, onSkip, onQuit, t }) {
   const hudRef = useRef(null);
   const [position, setPosition] = useState(null);
@@ -25,7 +25,7 @@ function ChallengeHud({ session, language, onHighlight, onSkip, onQuit, t }) {
   const percent = Math.round((done / session.total) * 100);
   const elapsed = (session.passedAt ?? Math.max(now, session.startedAt)) - session.startedAt;
 
-  // Pointer capture keeps the drag alive while the cursor crosses the iframe.
+  // O pointer capture mantém o arraste vivo quando o cursor passa por cima do iframe.
   const startDrag = (event) => {
     if (event.button !== 0 || event.target.closest('button')) return;
     const hud = hudRef.current;

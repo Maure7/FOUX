@@ -16,18 +16,6 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
 }
 
-[data-theme="dark"] .header__logo,
-[data-theme="dark"] .editor-header__logo {
-  color: #f4f4f6 !important;
-  font-weight: 800 !important;
-  letter-spacing: -0.3px !important;
-}
-
-[data-theme="dark"] .header__logo:hover,
-[data-theme="dark"] .editor-header__logo:hover {
-  color: #fbbf24 !important;
-}
-
 [data-theme="dark"] .editor-header__project-name {
   color: #f4f4f6 !important;
   background: rgba(255, 255, 255, 0.04) !important;

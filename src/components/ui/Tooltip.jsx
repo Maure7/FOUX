@@ -4,7 +4,7 @@ import '../../styles/Tooltip.css';
 
 const TOP_BARS = '.header, .editor-header';
 const TRIGGERS = 'button, [role="button"]';
-// Elsewhere only explicit hints get a tooltip; labelled sidebar buttons stay quiet.
+// No resto, só dicas explícitas viram tooltip; botões rotulados da sidebar ficam quietos.
 const HINTS = '.editor-sidebar [data-tooltip], .challenge-hud [data-tooltip]';
 
 function tooltipText(element) {
@@ -14,8 +14,8 @@ function tooltipText(element) {
   return (element.dataset.tooltip || element.getAttribute('aria-label') || labelledBy || actionText || '').replace(/\s+/g, ' ').trim();
 }
 
-// One delegated listener serves every toolbar button: native `title` tooltips
-// are converted to data-tooltip so they look the same in every theme.
+// Um único listener delegado atende todos os botões: o `title` nativo vira
+// data-tooltip para ter a mesma aparência em todos os temas.
 export function TooltipProvider({ children, delay = 450 }) {
   const id = useId();
   const [tip, setTip] = useState(null);

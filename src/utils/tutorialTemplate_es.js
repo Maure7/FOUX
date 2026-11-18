@@ -1,4 +1,4 @@
-/* Tutorial educativo en español. Conserva la estructura y las clases del modelo portugués. */
+/* Tutorial em espanhol: mesma estrutura e mesmas classes do modelo em português, porque a troca de idioma mapeia os elementos pela posição (o test_i18n confere). */
 export const TUTORIAL_HTML_ES = `<!DOCTYPE html>
 <html lang="es-419">
 <head>
@@ -29,7 +29,7 @@ export const TUTORIAL_HTML_ES = `<!DOCTYPE html>
     .tutorial-banner h1 { font-size: 1.75rem; margin-bottom: 6px; }
     .tutorial-banner p { font-size: 0.95rem; opacity: 0.9; }
 
-    section { margin-bottom: 28px; }
+    section { margin-bottom: 28px; display: flow-root; }
 
     h2 {
       font-size: 1.35rem;

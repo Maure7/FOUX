@@ -21,7 +21,7 @@ const pending = new Map();
 
 async function eventually(check, message) {
   for (let attempt = 0; attempt < 100; attempt++) {
-    try { const result = await check(); if (result) return result; } catch { /* Wait for startup. */ }
+    try { const result = await check(); if (result) return result; } catch { /* Ainda iniciando. */ }
     await delay(100);
   }
   throw new Error(message);
@@ -49,7 +49,7 @@ async function launch(binary, args, port) {
     env, windowsHide: true, stdio: 'ignore',
   });
   child.on('error', (error) => console.error(error));
-  // The one-time migration briefly opens and destroys a hidden renderer.
+  // A migração única abre e destrói um renderer oculto logo no início.
   await delay(1000);
   const target = await eventually(async () => {
     const targets = await (await fetch(`http://127.0.0.1:${port}/json/list`, { signal: AbortSignal.timeout(1000) })).json();
@@ -86,8 +86,8 @@ async function close(expression = 'window.close()') {
   child = null;
 }
 
-// Capture the system-viewer call in the main process of the real packaged app,
-// without leaving PDF viewer windows open on the user's desktop.
+// Intercepta, no processo principal do app empacotado, a chamada ao visualizador do
+// sistema, para não deixar janelas de PDF abertas na área de trabalho.
 async function checkNativeManual(language) {
   const targets = await (await fetch('http://127.0.0.1:9351/json/list')).json();
   const inspector = new WebSocket(targets[0].webSocketDebuggerUrl);
@@ -124,7 +124,7 @@ try {
     assert.deepEqual(await readFile(path.join(root, `release/win-unpacked/resources/docs/manual_${language}.pdf`)),
       await readFile(path.join(root, `public/docs/manual_${language}.pdf`)));
   }
-  // Seed the old default Chromium session using the same packaged file URL.
+  // Semeia a sessão padrão antiga do Chromium com a mesma URL de arquivo do pacote.
   const legacyMain = path.join(temporary, 'legacy.cjs');
   await writeFile(legacyMain, `
     const {app, BrowserWindow} = require('electron');
@@ -165,7 +165,7 @@ try {
       html: document.querySelector('iframe')?.contentDocument?.documentElement?.outerHTML,
     }));
   })`);
-  // Close in the SAME task as a real sidebar edit: the 800 ms debounce cannot run.
+  // Fecha na MESMA tarefa de uma edição real da sidebar: o autosave de 800 ms não chega a rodar.
   await close(`(() => {
     const input = document.querySelector('input[type="color"]');
     if (!input) throw new Error('Missing inspector color input');
@@ -190,7 +190,7 @@ try {
   await evaluate('document.querySelector(".project-card--saved").click()');
   await eventually(() => evaluate(`document.querySelector('iframe')?.contentDocument?.getElementById('titulo-ejercicio')?.style.color === 'rgb(18, 52, 86)'`), 'Edited Spanish styles did not survive reopening');
   await close();
-  // A further restart must also retain the same data.
+  // Mais um reinício e os dados continuam os mesmos.
   await launch(executable, [], 9349);
   assert.equal(await evaluate('document.documentElement.dataset.theme'), 'light');
   await evaluate('document.querySelector(".header__icon-btn").click()');

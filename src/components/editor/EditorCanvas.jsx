@@ -2,15 +2,27 @@ import { activateOnKey } from '../../utils/keyboard';
 import { memo, useRef, useMemo, useEffect } from 'react';
 import { Upload } from 'lucide-react';
 import { syncCanvasScrollbars } from '../../utils/canvasScrollbars';
+import { DARK_READER_LOCK_ATTR } from '../../utils/inspector/constants';
 
 function neutralizeHtml(html) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   doc.querySelectorAll('meta[http-equiv]').forEach(meta => {
-    if (meta.httpEquiv.toLowerCase() === 'refresh') meta.remove();
+    const kind = meta.httpEquiv.toLowerCase();
+    // refresh navegaria o canvas; uma CSP da página bloquearia as folhas que o
+    // próprio editor injeta (seleção, hover, fontes). Scripts seguem barrados pelo sandbox.
+    if (kind === 'refresh' || kind.startsWith('content-security-policy')) meta.remove();
   });
   const base = doc.querySelector('base') || doc.createElement('base');
   base.target = '_blank';
   if (!base.isConnected) doc.head.prepend(base);
+  // No início do <head>: a extensão consulta o bloqueio assim que o documento começa.
+  // Inserido depois do <base> para a ordem ser a mesma ao recarregar o HTML salvo (que já
+  // traz o <base>), senão desfazer não devolveria o documento idêntico. A marca faz o
+  // serializeDocument tirá-lo do HTML salvo; um bloqueio do próprio aluno fica.
+  const lock = doc.createElement('meta');
+  lock.name = 'darkreader-lock';
+  lock.setAttribute(DARK_READER_LOCK_ATTR, '');
+  doc.head.prepend(lock);
   return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
 }
 
@@ -65,6 +77,7 @@ function EditorCanvas({ initialHtml, documentVersion = 0, onFileSelect, iframeRe
           className="editor-canvas__iframe"
           srcDoc={safeHtml}
           title={t('editor.previewTitle')}
+          // Sem allow-scripts: o JS da página do aluno nunca roda nem alcança a janela do editor.
           sandbox="allow-same-origin"
           onLoad={onIframeLoad}
         />

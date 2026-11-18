@@ -12,7 +12,7 @@ export function describeElement(element) {
   return clip(name ? `${tag}.${name}` : tag);
 }
 
-// Short, language-neutral CSS text for the undo/redo tooltips.
+// Texto CSS curto e neutro em idioma para as dicas de desfazer/refazer.
 export function formatCssValue(value) {
   if (value === null || value === undefined || value === '') return 'none';
   if (typeof value === 'number') return String(value);
@@ -32,7 +32,7 @@ const PX_PROPERTIES = new Set(['width', 'height', 'fontSize', 'borderRadius', 'b
 const RAW_COLORS = { color: '_rawColor', backgroundColor: '_rawBg', borderColor: '_rawBorderColor' };
 const SIDE_INDEX = { Top: 0, Right: 1, Bottom: 2, Left: 3 };
 
-/** The value a property had before an edit, read from extractComputedStyles(). */
+/** Valor que a propriedade tinha antes da edição, lido de extractComputedStyles(). */
 export function currentCssValue(property, styles) {
   if (!styles) return undefined;
   const side = property.match(/^(padding|margin)(Top|Right|Bottom|Left)$/);
@@ -43,7 +43,7 @@ export function currentCssValue(property, styles) {
   return styles[property];
 }
 
-/** History metadata: { labelKey, target, from?, to? }. */
+/** Metadados do histórico: { labelKey, target, from?, to? }. */
 export function changeMeta(labelKey, element, from, to) {
   return {
     labelKey,

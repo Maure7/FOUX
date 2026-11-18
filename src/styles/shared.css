@@ -88,6 +88,47 @@
   background: var(--bg-input);
   color: var(--text-primary);
 }
+
+/* "⋯" dos cards da grade: no canto inferior direito, alinhado à linha da data (curta),
+   para não cobrir o nome. Acima do brilho do cursor (::after) e do selo de favorito. */
+.project-card__options {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: var(--transition);
+}
+
+.project-card:hover .project-card__options {
+  opacity: 1;
+}
+
+.project-card__options:hover {
+  background: var(--bg-input);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] .project-card__options:hover {
+  background: #f4f4f5;
+  border-color: #e4e4e7;
+}
+
+[data-theme="liquid-glass"] .project-card__options:hover {
+  background: rgba(255, 255, 255, .12);
+  border-color: rgba(255, 255, 255, .24);
+}
 .project-card--list-new {
   flex-direction: row;
   min-height: auto;
@@ -609,7 +650,7 @@
 }
 .projects-grid,
 .projects-list {
-  /* Frequent view changes remain immediate and keep the pointer's target. */
+  /* Trocas frequentes de visualização seguem imediatas e mantêm o alvo do cursor. */
   animation: none;
 }
 @media (max-width: 960px) {
@@ -1001,6 +1042,7 @@
   color: #ef4444;
 }
 .sidebar-inline-number {
+  min-height: 24px;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: 4px;
@@ -1234,9 +1276,9 @@
   color: var(--text-secondary);
 }
 [data-theme="light"] .activity-header__toggle {
-  background: #ffffff;
+  background: var(--lc-surface);
   border-color: #e4e4e7;
-  color: #71717a;
+  color: #63636d;
 }
 
 [data-theme="light"] .activity-header__toggle:hover {
@@ -1278,6 +1320,8 @@
 }
 
 .activity-item__delete {
+  flex-shrink: 0;
+  margin-right: 8px;
   display: flex;
   align-items: center;
   justify-content: center;

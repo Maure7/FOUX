@@ -1,6 +1,6 @@
-/* FOUX glass materials. Liquid Glass gets the full lens (refraction, mesh, rim
-   and pointer light); the other palettes borrow the same rim and pointer light at
-   a quieter level so every theme shares one sense of depth. */
+/* Materiais de vidro do FOUX. O Liquid Glass recebe a lente completa (refração,
+   malha, borda e luz do cursor); as outras paletas usam a mesma borda e luz com
+   menos intensidade, para todos os temas terem a mesma noção de profundidade. */
 
 @property --glass-mouse-x {
   syntax: '<percentage>';
@@ -63,8 +63,8 @@
     inset 0 -1px 2px rgba(var(--glass-accent-rgb), .16);
 }
 
-/* Cards carry a spotlight that follows the cursor. It lives on its own layer above
-   the card's preview, so it is never hidden, and it fades with opacity only. */
+/* Os cards têm um brilho que segue o cursor. Ele mora numa camada própria acima da
+   prévia (nunca fica escondido) e entra e sai só com opacidade. */
 :root :is(.project-card, .list-item, .profile-card, .profile-stat-card, .settings-section, .activity-section, .activity-item, .challenge-record, .modal-action-btn) {
   position: relative;
   background-image: linear-gradient(180deg, var(--glass-rim), transparent 2px) !important;
@@ -87,8 +87,8 @@
 :root :is(.project-card, .list-item, .profile-card, .profile-stat-card, .settings-section, .activity-section, .activity-item, .challenge-record, .modal-action-btn):hover::after { opacity: 1; }
 :root .card-pin-badge { z-index: 2; }
 
-/* Floating layers are real glass in every theme: the page behind them bends at
-   the rim and blurs, while the tint keeps every line of text at AA contrast. */
+/* Camadas flutuantes são vidro em todos os temas: a página atrás curva na borda e
+   desfoca, e a tinta mantém todo o texto em contraste AA. */
 :root:not([data-theme="liquid-glass"]) :is(.modal-card, .context-menu, .context-menu__submenu, .toast, .tutorial-tour__card, .foux-tooltip, .challenge-hud) {
   background: linear-gradient(155deg, var(--floating-highlight), transparent 48%), var(--floating-glass) !important;
   -webkit-backdrop-filter: blur(11.6px) saturate(170%);
@@ -96,7 +96,7 @@
 }
 :root:not([data-theme="liquid-glass"]) :is(.toast, .tutorial-tour__card, .foux-tooltip, .challenge-hud) { --floating-glass: var(--floating-glass-dense); }
 :root:not([data-theme="liquid-glass"]) .context-menu__submenu { --floating-glass: var(--floating-solid); backdrop-filter: none; }
-/* The scrim only dims; a blurred scrim would leave the dialog nothing to refract. */
+/* O fundo do modal só escurece: se desfocasse, o card não teria o que refratar. */
 :root .modal-overlay {
   -webkit-backdrop-filter: none;
   backdrop-filter: none !important;
@@ -104,7 +104,7 @@
 
 /* ---------- Liquid Glass ---------- */
 
-/* A fixed layer is composited once, so scrolling never repaints the mesh. */
+/* Camada fixa é composta uma vez só: rolar a página não repinta a malha. */
 [data-theme="liquid-glass"] body {
   background: #0c0b11;
 }
@@ -122,7 +122,7 @@
     linear-gradient(160deg, #131119 0%, #0c0b11 55%, #110f17 100%);
 }
 
-/* Top bars are glass without an outline; only buttons and cards carry a rim. */
+/* Barras do topo são vidro sem contorno; só botões e cards têm borda. */
 :root[data-theme="liquid-glass"] :is(.header, .editor-header, .settings-page__header, .profile-page__header) {
   background: linear-gradient(135deg, rgba(255, 255, 255, .06) 0%, rgba(var(--glass-tint-rgb), .18) 50%, rgba(var(--glass-tint-rgb), .1) 100%) !important;
   border: 0 !important;
@@ -131,8 +131,8 @@
   backdrop-filter: var(--glass-material) var(--glass-lens);
 }
 
-/* Layers that can float over the white page keep a deeper tint so text stays at
-   AA contrast even when the lens sits on top of the student's document. */
+/* Camadas que podem flutuar sobre a página branca do aluno usam tinta mais densa,
+   para o texto continuar AA mesmo com a lente em cima do documento. */
 :root[data-theme="liquid-glass"] :is(.modal-card, .context-menu, .toast, .tutorial-tour__card, .foux-tooltip, .challenge-hud) {
   --glass-depth: .74;
   background:
@@ -145,9 +145,9 @@
 }
 :root[data-theme="liquid-glass"] :is(.toast, .tutorial-tour__card, .foux-tooltip, .challenge-hud) { --glass-depth: .86; }
 :root[data-theme="liquid-glass"] .context-menu { --glass-depth: .6; }
-/* The tint thins out toward the rim, where the lens bends the page hardest, and
-   stays dense in the middle where the text sits. Two crossed ramps give a soft
-   rounded falloff without masking the content. */
+/* A tinta afina perto da borda, onde a lente curva mais a página, e fica densa no
+   meio, onde está o texto. Duas rampas cruzadas dão uma queda suave e arredondada
+   sem precisar de máscara. */
 :root :is(.modal-card, .context-menu, .toast, .challenge-hud) {
   --rim-rgb: var(--floating-rgb);
   --rim-core: .53;
@@ -172,12 +172,22 @@
   backdrop-filter: var(--glass-material) url(#foux-liquid-subtle);
 }
 
-/* A nested backdrop only sees its parent's own paint in Chromium, so the scrim and
-   submenus stay plain and the card on top refracts the real page. */
+/* No Chromium um backdrop aninhado só enxerga a pintura do pai: o fundo do modal e
+   os submenus ficam lisos para o card por cima refratar a página de verdade. */
 :root[data-theme="liquid-glass"] .modal-overlay {
   background: rgba(6, 6, 10, .55) !important;
   -webkit-backdrop-filter: none;
   backdrop-filter: none !important;
+}
+/* Entrada e saída do fundo do modal pela cor (ver dashboard-layout.css): estes
+   estados vêm depois de todos os temas para vencer os !important de fundo. */
+:root .modal-overlay[data-state="closed"] {
+  background-color: transparent !important;
+}
+@starting-style {
+  :root .modal-overlay[data-state="open"] {
+    background-color: transparent !important;
+  }
 }
 :root[data-theme="liquid-glass"] .context-menu__submenu {
   background: rgba(var(--glass-tint-rgb), .94) !important;
@@ -185,7 +195,7 @@
   backdrop-filter: none;
 }
 
-/* The sidebar repaints on every slider step, so it keeps blur without the lens. */
+/* A sidebar repinta a cada passo dos sliders: mantém o desfoque, mas sem a lente. */
 :root[data-theme="liquid-glass"] .editor-sidebar {
   background-color: transparent;
   background-image:
@@ -227,7 +237,7 @@
   box-shadow: 0 10px 28px -8px rgba(0, 0, 0, .4), var(--glass-rim-light-soft), 0 0 0 1px rgba(255, 255, 255, .35) !important;
 }
 
-/* Pills sit inside glass panels, so they shape light with gradients instead of a second backdrop. */
+/* Pílulas ficam dentro de painéis de vidro: a luz vem de gradientes, não de um segundo backdrop. */
 :root[data-theme="liquid-glass"] :is(
   .sidebar-tab, .header__icon-btn, .header__new-folder, .editor-header__icon-btn,
   .editor-header__back, .editor-toolbar-btn, .editor-header__tutorial-btn, .folder-tag
@@ -245,15 +255,22 @@
   box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, .45), inset 0 -1px 2px rgba(var(--glass-accent-rgb), .22);
 }
 
-/* The work table around the student's page shows the mesh through a calm frame. */
+/* A mesa em volta da página do aluno deixa a malha aparecer numa moldura discreta. */
 :root[data-theme="liquid-glass"] .editor-canvas:not(:has(.editor-dropzone)) {
   background: transparent;
 }
 
-/* Choosing Liquid Glass is an explicit request for translucency, so only the
-   quieter glass of the other palettes follows the system transparency setting. */
+/* Escolher o Liquid Glass é pedir translucidez de propósito; só o vidro discreto
+   das outras paletas segue a preferência de transparência do sistema. */
 @media (prefers-reduced-transparency: reduce) {
-  :root:not([data-theme="liquid-glass"]) :is(.modal-card, .context-menu, .toast, .tutorial-tour__card) {
+  :root:not([data-theme="liquid-glass"]) :is(
+    .modal-card, .context-menu, .context-menu__submenu, .toast, .tutorial-tour__card, .foux-tooltip,
+    .challenge-hud, .batch-bar, .batch-bar__popover, .folder-color-picker__popover
+  ) {
+    /* Sem o desfoque, o fundo translúcido deixava o conteúdo de trás vazar pelo
+       texto (modais, menus e o card do tour); quem pede menos transparência
+       recebe a superfície sólida do tema. */
+    background: var(--floating-solid) !important;
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
   }
@@ -279,8 +296,8 @@
 }
 :root[data-theme="liquid-glass"] .editor-header::after { content: none; }
 
-/* Tour and Challenge mode are the two learning entry points, so they light up
-   clearly under the pointer instead of staying at their resting dimness. */
+/* Tour e Modo Desafios são as duas portas de entrada do aprendizado: acendem com
+   clareza sob o cursor. */
 :root .editor-header__tutorial-btn:not(:disabled):hover {
   opacity: 1;
   color: var(--text-primary);

@@ -1,5 +1,5 @@
-/* Challenge mode: floating HUD over the canvas and the victory dialog. The HUD
-   uses the shared floating material, so each theme supplies its own surface. */
+/* Modo Desafios: HUD flutuante sobre o canvas e o diálogo de vitória. O HUD usa
+   o material flutuante comum, então cada tema fornece a própria superfície. */
 .challenge-hud {
   --hud-pass: #16a34a;
   position: absolute;
@@ -19,8 +19,8 @@
   animation: hud-enter var(--duration-enter) var(--ease-out);
 }
 
-/* The HUD floats over the student's (often white) page, so the glass needs the
-   denser surface the tour card uses to keep its text readable. */
+/* O HUD flutua sobre a página do aluno (quase sempre branca): o vidro precisa da
+   mesma superfície densa do card do tour para o texto continuar legível. */
 [data-theme="liquid-glass"] .challenge-hud {
   border-color: var(--glass-border);
   background: linear-gradient(155deg, var(--floating-highlight), transparent 48%), var(--tour-surface);
@@ -213,7 +213,7 @@
 @keyframes hud-fade { from { opacity: 0; } }
 @keyframes hud-check { from { opacity: 0; transform: scale(.4) rotate(-20deg); } }
 
-/* Victory dialog */
+/* Diálogo de vitória */
 .modal-card.challenge-victory {
   position: relative;
   display: flex;

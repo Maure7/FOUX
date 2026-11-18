@@ -1,0 +1,299 @@
+/* Ferramentas de cor da sidebar: cores recentes e conta-gotas restrito ao canvas. */
+
+.sidebar-color-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sidebar-color-field--compact .sidebar-color-input { gap: 4px; }
+.sidebar-color-field--compact .sidebar-color-picker { width: 30px; height: 30px; flex-shrink: 0; }
+.sidebar-color-field--compact .sidebar-color-text { padding: 7px 6px; }
+.sidebar-color-field--compact .sidebar-eyedropper-btn { width: 26px; height: 30px; }
+
+/* Botão do conta-gotas: mesma altura do seletor, ao lado do hex. */
+.sidebar-eyedropper-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.sidebar-eyedropper-btn:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--border-light);
+}
+
+.sidebar-eyedropper-btn:active:not(:disabled) { transform: scale(0.94); }
+
+.sidebar-eyedropper-btn.is-active {
+  color: var(--accent-gold-light);
+  border-color: var(--accent-gold);
+  background: var(--accent-gold-bg);
+  box-shadow: 0 0 0 3px var(--accent-gold-bg);
+}
+
+.sidebar-eyedropper-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Cores recentes */
+.sidebar-recent-colors {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sidebar-recent-colors__label {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.sidebar-recent-colors__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.sidebar-recent-colors--compact .sidebar-recent-colors__swatches { gap: 4px; }
+
+.sidebar-recent-colors__swatch {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  /* Anel duplo: o claro de fora destaca cores escuras na sidebar escura (#111 sumia),
+     o escuro de dentro separa cores claras do anel claro. */
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 5px;
+  background: var(--swatch);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: transform var(--duration-press) var(--ease-out), box-shadow var(--duration-fast) ease, border-color var(--duration-fast) ease;
+}
+
+.sidebar-recent-colors--compact .sidebar-recent-colors__swatch { width: 16px; height: 16px; border-radius: 4px; }
+
+.sidebar-recent-colors__swatch:active:not(:disabled) { transform: scale(0.9); }
+
+.sidebar-recent-colors__swatch:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.sidebar-recent-colors__swatch[aria-pressed="true"] {
+  border-color: var(--text-primary);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35), 0 0 0 2px var(--accent-gold-bg);
+}
+
+.sidebar-recent-colors__swatch:disabled { opacity: 0.4; cursor: not-allowed; }
+
+@media (hover: hover) and (pointer: fine) {
+  .sidebar-recent-colors__swatch:hover:not(:disabled) { transform: scale(1.12); }
+}
+
+/* Modo conta-gotas: só o canvas aceita clique; o botão ativo continua cancelando. */
+.foux-picking-color,
+.foux-picking-color * { cursor: not-allowed !important; }
+.foux-picking-color .eyedropper-layer,
+.foux-picking-color .eyedropper-layer * { cursor: crosshair !important; }
+.foux-picking-color [data-eyedropper-active] { cursor: pointer !important; }
+
+.eyedropper-layer {
+  position: fixed;
+  z-index: 40;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 2px var(--accent-gold);
+}
+
+.eyedropper-layer__hint {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 24px);
+  padding: 6px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-pill);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 0.72rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: eyedropper-hint-in var(--duration-enter) var(--ease-out);
+}
+
+/* Traço + halo: o alvo continua visível sobre qualquer cor da página do aluno. */
+.eyedropper-layer__target {
+  position: absolute;
+  border: 1.5px dashed var(--accent-gold);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+  transition: left 60ms linear, top 60ms linear, width 60ms linear, height 60ms linear;
+}
+
+/* Lupa que acompanha o cursor (transform: só composição durante o movimento). */
+.eyedropper-badge {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 41;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 190px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: var(--font);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.eyedropper-badge__swatch {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 2px solid var(--border-light);
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.eyedropper-badge__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.eyedropper-badge__hex {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.eyedropper-badge__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+  font-size: 0.66rem;
+  color: var(--text-muted);
+}
+
+.eyedropper-badge__meta code {
+  color: var(--accent-gold-light);
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+}
+
+.eyedropper-badge__toggle { opacity: 0.8; }
+.eyedropper-badge__warning { flex-basis: 100%; color: var(--danger-text); line-height: 1.3; }
+
+@keyframes eyedropper-hint-in {
+  from { opacity: 0; transform: translate(-50%, -6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eyedropper-layer__hint { animation: none; }
+  .eyedropper-layer__target { transition: none; }
+  .sidebar-section__region { transition: opacity var(--duration-fast) ease; }
+}
+
+/* Tema claro: a sidebar continua escura, com os controles grafite do tema. */
+[data-theme="light"] .sidebar-eyedropper-btn {
+  background: #18181b;
+  border-color: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #a1a1aa;
+}
+
+[data-theme="light"] .sidebar-eyedropper-btn:hover:not(:disabled) {
+  color: #ffffff;
+  background: #27272a;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+[data-theme="light"] .sidebar-eyedropper-btn.is-active {
+  color: #0a0a0c;
+  background: var(--lc-surface);
+  border-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18);
+}
+
+[data-theme="light"] .sidebar-recent-colors__label { color: #a1a1aa; }
+[data-theme="light"] .sidebar-recent-colors__swatch { border-color: rgba(255, 255, 255, 0.34); }
+[data-theme="light"] .sidebar-recent-colors__swatch[aria-pressed="true"] { border-color: #ffffff; }
+
+[data-theme="light"] :is(.eyedropper-badge, .eyedropper-layer__hint) {
+  background: var(--lc-surface);
+  border-color: rgba(24, 24, 27, 0.14);
+  color: #18181b;
+  box-shadow: 0 10px 30px rgba(24, 24, 27, 0.18);
+}
+
+[data-theme="light"] .eyedropper-badge__meta { color: #52525b; }
+[data-theme="light"] .eyedropper-badge__meta code { color: #7c3aed; }
+[data-theme="light"] .eyedropper-layer { box-shadow: inset 0 0 0 2px #7c3aed; }
+[data-theme="light"] .eyedropper-layer__target { border-color: #7c3aed; }
+
+/* Liquid Glass: vidro translúcido e cantos arredondados como os demais botões. */
+[data-theme="liquid-glass"] .sidebar-eyedropper-btn {
+  color: #f5f5f7;
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="liquid-glass"] .sidebar-eyedropper-btn:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+[data-theme="liquid-glass"] .sidebar-eyedropper-btn.is-active {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2), 0 0 0 3px rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="liquid-glass"] .sidebar-recent-colors__swatch { border-radius: 999px; border-color: rgba(255, 255, 255, 0.4); }
+
+[data-theme="liquid-glass"] :is(.eyedropper-badge, .eyedropper-layer__hint) {
+  background: rgba(20, 17, 27, 0.72);
+  border-color: rgba(255, 255, 255, 0.2);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.14), 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="liquid-glass"] .eyedropper-badge { border-radius: 18px; }
+[data-theme="liquid-glass"] .eyedropper-badge__swatch { border-radius: 999px; }
+[data-theme="liquid-glass"] .eyedropper-badge__meta code { color: #ffffff; }
+[data-theme="liquid-glass"] .eyedropper-layer { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.75), inset 0 0 0 3px rgba(20, 17, 27, 0.35); }
+[data-theme="liquid-glass"] .eyedropper-layer__target {
+  border-color: rgba(20, 17, 27, 0.8);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.85), inset 0 0 0 1px rgba(255, 255, 255, 0.85);
+}

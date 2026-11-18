@@ -1,4 +1,4 @@
-import { INSPECTOR_STYLE_ID, HOVER_STYLE_ID, ORIGINAL_STYLE_ATTR, SCROLLBAR_STYLE_ID } from './inspector/constants';
+import { INSPECTOR_STYLE_ID, HOVER_STYLE_ID, ORIGINAL_STYLE_ATTR, SCROLLBAR_STYLE_ID, EXPORT_PARSER_ATTR } from './inspector/constants';
 import { splitOutsideValues, resolveUrls, copyStyle, formatRule } from './css/format';
 
 export function getElementSelector(element) {
@@ -18,7 +18,7 @@ export function getElementSelector(element) {
     if (isUnique(`${tag}.${escape(name)}`)) return `${tag}.${escape(name)}`;
   }
   if (isUnique(tag)) return tag;
-  // Only repeated, unnamed elements need a position or a parent selector.
+  // Só elementos repetidos e sem nome precisam de posição ou do seletor do pai.
   if (!element.parentElement) return tag;
   const siblings = [...element.parentElement.children].filter((node) => node.localName === element.localName);
   const local = `${tag}${siblings.length > 1 ? `:nth-of-type(${siblings.indexOf(element) + 1})` : ''}`;
@@ -37,13 +37,15 @@ async function readRules(doc, sheet, baseUrl, visited = new Set(), active = true
   let cssRules;
   try { cssRules = [...sheet.cssRules]; }
   catch {
-    // Some public stylesheets allow CORS fetches even when CSSOM access is denied.
+    // Algumas folhas públicas aceitam fetch com CORS mesmo negando acesso ao CSSOM.
     let parser;
     try {
       const response = await fetch(baseUrl, { signal: AbortSignal.timeout(10000) });
       if (!response.ok) throw new Error('Unable to read stylesheet');
       parser = doc.createElement('style');
       parser.media = 'not all';
+      // Um salvamento automático durante o fetch não pode gravar esta folha no projeto.
+      parser.setAttribute(EXPORT_PARSER_ATTR, '');
       parser.textContent = resolveUrls(await response.text(), baseUrl)
         .replace(/@import\s+(?:"([^"]*)"|'([^']*)')|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\/\*[\s\S]*?\*\//gi,
           (match, doubleQuoted, singleQuoted) => doubleQuoted === undefined && singleQuoted === undefined
@@ -92,7 +94,7 @@ function matches(element, selector, includeHover = false) {
   catch { return false; }
 }
 
-// A conservative comparison keeps !important only for actual cascade conflicts.
+// Comparação conservadora: o !important só fica quando há conflito real na cascata.
 function specificity(selector) {
   const withoutStrings = selector.replace(/"[^"\\]*(?:\\.[^"\\]*)*"|'[^'\\]*(?:\\.[^'\\]*)*'/g, '');
   return [
@@ -152,7 +154,7 @@ export async function generateProjectCss(doc) {
     original.cssText = element.getAttribute(ORIGINAL_STYLE_ATTR) || '';
     const style = copyStyle(doc, element.style);
     const matchingRules = sourceRules.filter((rule) => matches(element, rule.selector, true));
-    // Reuse a more specific authored selector only if needed to beat !important.
+    // Reaproveita um seletor autoral mais específico só quando é preciso vencer um !important.
     for (const rule of matchingRules) {
       for (const candidate of splitOutsideValues(rule.selector, ',')) {
         if (candidate.includes(':') || !matches(element, candidate)) continue;

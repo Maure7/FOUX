@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 
 const MAP_SIZE = 128;
-// Fraction of each side that bends light; the bend grows steeply toward the rim and the
-// centre stays neutral, so the backdrop warps most at the edges.
+// Fração de cada lado que curva a luz: a curvatura cresce rápido perto da borda e o
+// centro fica neutro, então o fundo deforma mais nas beiradas.
 const BEZEL = 0.34;
 const SHEEN_SURFACES = [
   '.project-card', '.folder-card', '.list-item', '.profile-card', '.profile-stat-card', '.settings-section',
@@ -26,7 +26,7 @@ function lensMap() {
       const v = (y / (MAP_SIZE - 1)) * 2 - 1;
       const dx = bend(u);
       const dy = bend(v);
-      // Corners bend diagonally with the same strength as the edges, like a squircle rim.
+      // Os cantos curvam na diagonal com a mesma força das bordas, como um squircle.
       const limit = Math.max(1, Math.hypot(dx, dy));
       image.data[index] = 128 - (dx / limit) * 127;
       image.data[index + 1] = 128 - (dy / limit) * 127;
@@ -47,9 +47,9 @@ function Lens({ id, scale, map }) {
   );
 }
 
-// The light follows the pointer on the surfaces under it (an item and the card that holds
-// it), and never while the student is dragging a slider or resizing an element, so
-// editing keeps its frame budget.
+// A luz segue o cursor nas superfícies sob ele (o item e o card que o contém), mas
+// para enquanto o aluno arrasta um slider ou redimensiona algo: a edição mantém o
+// orçamento de frame.
 function usePointerSheen() {
   useEffect(() => {
     if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return undefined;

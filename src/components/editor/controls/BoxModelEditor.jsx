@@ -9,7 +9,7 @@ const NO_SIDES = [0, 0, 0, 0];
 const allEqual = (sides) => sides.every((value) => value === sides[0]);
 const boxOf = (event) => event.target.closest?.('[data-box]')?.dataset.box ?? null;
 
-function SideInput({ property, index, value, disabled, onChange, t }) {
+function SideInput({ property, index, value, disabled, resetKey, onChange, t }) {
   return (
     <NumericInput
       className={`box-model__input box-model__input--${SIDES[index].toLowerCase()}`}
@@ -17,6 +17,7 @@ function SideInput({ property, index, value, disabled, onChange, t }) {
       value={value}
       min={0}
       disabled={disabled}
+      resetKey={resetKey}
       onChange={(number) => onChange(property, index, number)}
     />
   );
@@ -42,10 +43,10 @@ function RingLabel({ property, linked, disabled, onToggle, t }) {
   );
 }
 
-// Shorthand inputs first (all four sides), then a DevTools-like diagram for
-// each side. Hovering or focusing either property tells the canvas which box
-// area to paint over the selected element.
-function BoxModelEditor({ element, values, disabled, apply, onBoxFocus, t }) {
+// Primeiro os campos shorthand (os quatro lados), depois um diagrama estilo
+// DevTools por lado. Passar o mouse ou focar uma das propriedades diz ao canvas
+// qual área do box pintar sobre o elemento selecionado.
+function BoxModelEditor({ element, values, disabled, apply, onBoxFocus, resetKey, t }) {
   const sides = { padding: values?.paddingSides ?? NO_SIDES, margin: values?.marginSides ?? NO_SIDES };
   const initialLinks = () => ({ element, padding: allEqual(sides.padding), margin: allEqual(sides.margin) });
   const [links, setLinks] = useState(initialLinks);
@@ -66,7 +67,7 @@ function BoxModelEditor({ element, values, disabled, apply, onBoxFocus, t }) {
   const toggle = (property) => setLinks((current) => ({ ...current, [property]: !current[property] }));
   const contentText = values?.contentSize ? `${values.contentSize[0]} × ${values.contentSize[1]}` : '—';
   const side = (property, index) => (
-    <SideInput property={property} index={index} value={sides[property][index]} disabled={disabled} onChange={setSide} t={t} />
+    <SideInput property={property} index={index} value={sides[property][index]} disabled={disabled} resetKey={resetKey} onChange={setSide} t={t} />
   );
 
   return (
@@ -87,6 +88,7 @@ function BoxModelEditor({ element, values, disabled, apply, onBoxFocus, t }) {
             placeholder={t('sidebar.mixedSides')}
             min={0}
             disabled={disabled}
+            resetKey={resetKey}
             onChange={(number) => apply(property, `${number}px`)}
           />
           <span className="sidebar-control__unit">px</span>

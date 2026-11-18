@@ -23,8 +23,8 @@ function measure(root, iframe, element) {
 
 const widths = ([top, right, bottom, left]) => `${top}px ${right}px ${bottom}px ${left}px`;
 
-// Drawn in the editor, above the iframe, so the student's document (and its
-// export) never receives helper markup. `values` only signals a style change.
+// Desenhado no editor, sobre o iframe, para o documento do aluno (e a exportação)
+// nunca receber marcação auxiliar. `values` só sinaliza que um estilo mudou.
 function CanvasOverlay({ iframeRef, element, boxMode, flashKey, values, t }) {
   const rootRef = useRef(null);
   const [geometry, setGeometry] = useState(null);
@@ -63,7 +63,7 @@ function CanvasOverlay({ iframeRef, element, boxMode, flashKey, values, t }) {
     };
   }, [active, element, iframeRef, values]);
 
-  // A measurement taken for another element (or before deactivation) is stale.
+  // Uma medida tirada de outro elemento (ou antes de desativar) está velha.
   const shown = active && geometry?.element === element ? geometry : null;
   const { frame, rect, margin, border, padding } = shown || {};
   return (

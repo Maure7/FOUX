@@ -4,7 +4,7 @@ import { readHoverState } from '../utils/inspector/hoverRules';
 
 export const ROUND_SIZE = 8;
 
-/** Fisher–Yates on a copy. */
+/** Fisher–Yates sobre uma cópia. */
 export function shuffle(items) {
   const result = [...items];
   for (let index = result.length - 1; index > 0; index--) {
@@ -22,8 +22,8 @@ export function findTarget(doc, challenge) {
   return null;
 }
 
-// One computed-style read of a single element: cheap enough to run on every
-// edit frame while a round is active.
+// Uma leitura de estilo computado de um único elemento: barata o bastante para
+// rodar a cada frame de edição enquanto a rodada está ativa.
 export function isComplete(challenge, doc, getHoverRules) {
   const element = findTarget(doc, challenge);
   const win = doc?.defaultView;
@@ -39,9 +39,9 @@ export function isComplete(challenge, doc, getHoverRules) {
   });
 }
 
-// One challenge per category, in a new order every round. Challenges already
-// met by earlier edits of the tutorial are left out; when a category runs dry
-// its place goes to a leftover from the other categories.
+// Um desafio por categoria, em ordem nova a cada rodada. Os que edições anteriores
+// do tutorial já cumpriram ficam de fora; quando uma categoria se esgota, a vaga vai
+// para uma sobra das outras categorias.
 export function drawRound(doc, getHoverRules, size = ROUND_SIZE) {
   const open = CHALLENGES.filter((challenge) => findTarget(doc, challenge) && !isComplete(challenge, doc, getHoverRules));
   const picks = shuffle(CATEGORIES)

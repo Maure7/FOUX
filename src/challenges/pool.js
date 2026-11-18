@@ -1,8 +1,8 @@
 import { parseColor } from '../utils/css/contrast.js';
 
-// Statements live here (not in the locales) so they load only with the editor.
-// Targets list the PT and ES tutorial IDs; the tutorial translates its IDs
-// when the interface language changes.
+// Os enunciados ficam aqui, e não nos locales, para só carregarem junto com o editor.
+// Cada alvo lista os IDs do tutorial em PT e ES, porque o tutorial traduz os IDs
+// quando o idioma da interface muda.
 const TARGET = {
   title: ['titulo-exercicio', 'titulo-ejercicio'],
   paragraph: ['paragrafo-exercicio', 'parrafo-ejercicio'],
@@ -23,7 +23,7 @@ const TARGET = {
 
 export const CATEGORIES = ['color', 'gradient', 'typography', 'boxModel', 'borders', 'shadow', 'hover', 'layout'];
 
-// Hue windows are wide on purpose: "a shade of blue" accepts navy and sky blue.
+// As faixas de matiz são largas de propósito: "um tom de azul" aceita marinho e celeste.
 const HUES = { red: [[340, 360], [0, 18]], green: [[75, 170]], blue: [[185, 255]], purple: [[255, 300]] };
 
 export function isHue(value, family) {
@@ -46,8 +46,8 @@ const px = (value) => parseFloat(value) || 0;
 const sides = (style, property) => ['Top', 'Right', 'Bottom', 'Left'].map((side) => px(style[`${property}${side}`]));
 const firstFamily = (style) => style.fontFamily.split(',')[0].replace(/['"]/g, '').trim().toLowerCase();
 
-// Each check receives { style, background, gradient, borderGradient, hover }
-// (see engine.js) and must be true only once the student made the change.
+// Cada check recebe { style, background, gradient, borderGradient, hover } (ver
+// engine.js) e só pode ser verdadeiro depois que o aluno fez a alteração.
 export const CHALLENGES = [
   {
     id: 'color-card-blue', category: 'color', target: TARGET.card1,

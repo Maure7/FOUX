@@ -3,8 +3,8 @@ import NumericInput from './NumericInput';
 import PropertyLabel from './PropertyLabel';
 import useDraft from '../../../hooks/useDraft';
 
-function SliderControl({ label, token, hint, unit, value, min, max, step = 1, disabled, onChange }) {
-  const [shown, setShown] = useDraft(parseFloat(value) || 0);
+function SliderControl({ label, token, hint, unit, value, min, max, step = 1, disabled, resetKey, onChange }) {
+  const [shown, setShown] = useDraft(parseFloat(value) || 0, resetKey);
   const change = (next) => {
     setShown(next);
     onChange(next);
@@ -24,6 +24,7 @@ function SliderControl({ label, token, hint, unit, value, min, max, step = 1, di
           max={max}
           step={step}
           disabled={disabled}
+          resetKey={resetKey}
           onChange={change}
         />
         {unit && <span className="sidebar-control__unit">{unit}</span>}
