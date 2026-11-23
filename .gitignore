@@ -28,3 +28,8 @@ build/icons/
 
 # Documentação privada (mantida apenas localmente)
 /docs/
+
+# Configuração de ferramentas de IA (mantida apenas localmente)
+/.claude/
+/.agents/
+/skills-lock.json
