@@ -89,8 +89,7 @@ FOUX1/
 ├── electron/           janela, IPC restrito e salvamento atômico
 ├── public/docs/        manuais PT e ES empacotados
 ├── scripts/            testes, ícones e pipeline Windows
-├── build/              recursos e validação do empacotamento
-└── docs/               relatórios técnicos e instruções de build
+└── build/              recursos e validação do empacotamento
 ```
 
 | Diretório | Responsabilidade |
@@ -154,14 +153,6 @@ npm run dev
 - As capturas da matriz visual ficam em `release/qa/`.
 - A assinatura digital depende de certificado configurado por quem distribui.
 - Os testes não usam os projetos pessoais do usuário.
-
-## Documentação
-
-- [Auditoria de interface](docs/AUDITORIA_INTERFACE_2026-10-28.md)
-- [Instruções de build para Windows](docs/BUILD_WINDOWS.md)
-- [Documentação do Electron](docs/ELECTRON.md)
-- [Refinamentos de interface](docs/UI_REFINEMENTS.md)
-- [Liquid Glass e sistema de design](docs/RELATORIO_LIQUID_GLASS_E_DESIGN_SYSTEM_2026-11-13.md)
 
 ## Autor
 

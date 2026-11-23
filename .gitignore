@@ -25,3 +25,6 @@ build/icons/
 *.njsproj
 *.sln
 *.sw?
+
+# Documentação privada (mantida apenas localmente)
+/docs/
